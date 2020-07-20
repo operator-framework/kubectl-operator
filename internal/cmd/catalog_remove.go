@@ -7,19 +7,19 @@ import (
 	"github.com/joelanford/kubectl-operator/internal/pkg/log"
 )
 
-func newCatalogUninstallCmd(cfg *action.Configuration) *cobra.Command {
-	u := action.NewUninstallCatalog(cfg)
+func newCatalogRemoveCmd(cfg *action.Configuration) *cobra.Command {
+	u := action.NewRemoveCatalog(cfg)
 	cmd := &cobra.Command{
-		Use:   "uninstall <catalog_name>",
-		Short: "Uninstall an operator catalog",
+		Use:   "remove <catalog_name>",
+		Short: "Remove a operator catalog",
 		Args:  cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			u.CatalogName = args[0]
 
 			if err := u.Run(cmd.Context()); err != nil {
-				log.Fatalf("failed to uninstall catalog %q: %v", u.CatalogName, err)
+				log.Fatalf("failed to remove catalog %q: %v", u.CatalogName, err)
 			}
-			log.Printf("catalogsource %q uninstalled", u.CatalogName)
+			log.Printf("catalogsource %q removed", u.CatalogName)
 		},
 	}
 

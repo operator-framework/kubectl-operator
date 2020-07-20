@@ -18,13 +18,13 @@ import (
 	"github.com/joelanford/kubectl-operator/internal/pkg/log"
 )
 
-type InstallCatalog struct {
+type AddCatalog struct {
 	config *Configuration
 
 	IndexImage     string
 	DisplayName    string
 	Publisher      string
-	InstallTimeout time.Duration
+	AddTimeout     time.Duration
 	CleanupTimeout time.Duration
 
 	RegistryOptions []containerdregistry.RegistryOption
@@ -32,88 +32,88 @@ type InstallCatalog struct {
 	registry *containerdregistry.Registry
 }
 
-func NewInstallCatalog(cfg *Configuration) *InstallCatalog {
-	return &InstallCatalog{
+func NewAddCatalog(cfg *Configuration) *AddCatalog {
+	return &AddCatalog{
 		config: cfg,
 	}
 }
 
-func (i *InstallCatalog) BindFlags(fs *pflag.FlagSet) {
-	fs.StringVarP(&i.DisplayName, "display-name", "d", "", "display name of the index")
-	fs.StringVarP(&i.Publisher, "publisher", "p", "", "publisher of the index")
-	fs.DurationVarP(&i.InstallTimeout, "timeout", "t", time.Minute, "the amount of time to wait before cancelling the install")
-	fs.DurationVar(&i.CleanupTimeout, "cleanup-timeout", time.Minute, "the amount to time to wait before cancelling cleanup")
+func (a *AddCatalog) BindFlags(fs *pflag.FlagSet) {
+	fs.StringVarP(&a.DisplayName, "display-name", "d", "", "display name of the index")
+	fs.StringVarP(&a.Publisher, "publisher", "p", "", "publisher of the index")
+	fs.DurationVarP(&a.AddTimeout, "timeout", "t", time.Minute, "the amount of time to wait before cancelling the catalog addition")
+	fs.DurationVar(&a.CleanupTimeout, "cleanup-timeout", time.Minute, "the amount to time to wait before cancelling cleanup")
 }
 
-func (i *InstallCatalog) Run(ctx context.Context) (*v1alpha1.CatalogSource, error) {
+func (a *AddCatalog) Run(ctx context.Context) (*v1alpha1.CatalogSource, error) {
 	var err error
-	i.registry, err = containerdregistry.NewRegistry(i.RegistryOptions...)
+	a.registry, err = containerdregistry.NewRegistry(a.RegistryOptions...)
 	if err != nil {
 		return nil, err
 	}
 
 	defer func() {
-		if err := i.registry.Destroy(); err != nil {
+		if err := a.registry.Destroy(); err != nil {
 			log.Printf("registry cleanup: %v", err)
 		}
 	}()
 
-	imageRef, err := container.ImageFromString(i.IndexImage)
+	imageRef, err := container.ImageFromString(a.IndexImage)
 	if err != nil {
 		return nil, err
 	}
 	csKey := types.NamespacedName{
-		Namespace: i.config.Namespace,
+		Namespace: a.config.Namespace,
 		Name:      imageRef.Name,
 	}
 
-	labels, err := i.labelsFor(ctx, i.IndexImage)
+	labels, err := a.labelsFor(ctx, a.IndexImage)
 	if err != nil {
 		return nil, err
 	}
 
-	i.setDefaults(labels)
+	a.setDefaults(labels)
 
 	opts := []catalog.Option{
-		catalog.Image(i.IndexImage),
-		catalog.DisplayName(i.DisplayName),
-		catalog.Publisher(i.Publisher),
+		catalog.Image(a.IndexImage),
+		catalog.DisplayName(a.DisplayName),
+		catalog.Publisher(a.Publisher),
 	}
 	cs := catalog.Build(csKey, opts...)
-	if err := i.install(ctx, cs); err != nil {
-		defer i.cleanup(cs)
+	if err := a.add(ctx, cs); err != nil {
+		defer a.cleanup(cs)
 		return nil, err
 	}
 	return cs, nil
 }
 
-func (i *InstallCatalog) labelsFor(ctx context.Context, indexImage string) (map[string]string, error) {
+func (a *AddCatalog) labelsFor(ctx context.Context, indexImage string) (map[string]string, error) {
 	simpleRef := image.SimpleReference(indexImage)
-	if err := i.registry.Pull(ctx, simpleRef); err != nil {
+	if err := a.registry.Pull(ctx, simpleRef); err != nil {
 		return nil, fmt.Errorf("pull image: %v", err)
 	}
-	labels, err := i.registry.Labels(ctx, simpleRef)
+	labels, err := a.registry.Labels(ctx, simpleRef)
 	if err != nil {
 		return nil, fmt.Errorf("get image labels: %v", err)
 	}
 	return labels, nil
 }
 
-func (i *InstallCatalog) setDefaults(labels map[string]string) {
-	if i.DisplayName == "" {
+func (a *AddCatalog) setDefaults(labels map[string]string) {
+	if a.DisplayName == "" {
 		if v, ok := labels["operators.operatorframework.io.index.display-name"]; ok {
-			i.DisplayName = v
+			a.DisplayName = v
 		}
 	}
-	if i.Publisher == "" {
+	if a.Publisher == "" {
 		if v, ok := labels["operators.operatorframework.io.index.publisher"]; ok {
-			i.Publisher = v
+			a.Publisher = v
 		}
 	}
 }
 
-func (i *InstallCatalog) install(ctx context.Context, cs *v1alpha1.CatalogSource) error {
-	if err := i.config.Client.Create(ctx, cs); err != nil {
+func (a *AddCatalog) add(ctx context.Context, cs *v1alpha1.CatalogSource) error {
+	if err := a.config.Client.Create(ctx, cs); err != nil {
 		return fmt.Errorf("create catalogsource: %v", err)
 	}
 
@@ -122,7 +122,7 @@ func (i *InstallCatalog) install(ctx context.Context, cs *v1alpha1.CatalogSource
 		return fmt.Errorf("get catalogsource key: %v", err)
 	}
 	if err := wait.PollImmediateUntil(time.Millisecond*250, func() (bool, error) {
-		if err := i.config.Client.Get(ctx, csKey, cs); err != nil {
+		if err := a.config.Client.Get(ctx, csKey, cs); err != nil {
 			return false, err
 		}
 		if cs.Status.GRPCConnectionState != nil {
@@ -137,10 +137,10 @@ func (i *InstallCatalog) install(ctx context.Context, cs *v1alpha1.CatalogSource
 	return nil
 }
 
-func (i *InstallCatalog) cleanup(cs *v1alpha1.CatalogSource) {
-	ctx, cancel := context.WithTimeout(context.Background(), i.CleanupTimeout)
+func (a *AddCatalog) cleanup(cs *v1alpha1.CatalogSource) {
+	ctx, cancel := context.WithTimeout(context.Background(), a.CleanupTimeout)
 	defer cancel()
-	if err := i.config.Client.Delete(ctx, cs); err != nil {
+	if err := a.config.Client.Delete(ctx, cs); err != nil {
 		log.Printf("delete catalogsource %q: %v", cs.Name, err)
 	}
 }

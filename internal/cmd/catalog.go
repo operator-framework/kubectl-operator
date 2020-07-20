@@ -12,9 +12,9 @@ func newCatalogCmd(cfg *action.Configuration) *cobra.Command {
 		Short: "Manage operator catalogs",
 	}
 	cmd.AddCommand(
-		newCatalogInstallCmd(cfg),
+		newCatalogAddCmd(cfg),
 		newCatalogListCmd(cfg),
-		newCatalogUninstallCmd(cfg),
+		newCatalogRemoveCmd(cfg),
 	)
 	return cmd
 }

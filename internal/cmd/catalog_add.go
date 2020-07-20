@@ -12,34 +12,34 @@ import (
 	"github.com/joelanford/kubectl-operator/internal/pkg/log"
 )
 
-func newCatalogInstallCmd(cfg *action.Configuration) *cobra.Command {
-	i := action.NewInstallCatalog(cfg)
+func newCatalogAddCmd(cfg *action.Configuration) *cobra.Command {
+	a := action.NewAddCatalog(cfg)
 
 	cmd := &cobra.Command{
-		Use:   "install <index_image>",
-		Short: "Install an operator catalog",
+		Use:   "add <index_image>",
+		Short: "Add an operator catalog",
 		Args:  cobra.ExactArgs(1),
 		PreRun: func(cmd *cobra.Command, args []string) {
 			regLogger := logrus.New()
 			regLogger.SetOutput(ioutil.Discard)
-			i.RegistryOptions = []containerdregistry.RegistryOption{
+			a.RegistryOptions = []containerdregistry.RegistryOption{
 				containerdregistry.WithLog(logrus.NewEntry(regLogger)),
 			}
 		},
 		Run: func(cmd *cobra.Command, args []string) {
-			ctx, cancel := context.WithTimeout(cmd.Context(), i.InstallTimeout)
+			ctx, cancel := context.WithTimeout(cmd.Context(), a.AddTimeout)
 			defer cancel()
 
-			i.IndexImage = args[0]
+			a.IndexImage = args[0]
 
-			cs, err := i.Run(ctx)
+			cs, err := a.Run(ctx)
 			if err != nil {
-				log.Fatalf("failed to install catalog: %v", err)
+				log.Fatalf("failed to add catalog: %v", err)
 			}
 			log.Printf("created catalogsource %q\n", cs.Name)
 		},
 	}
-	i.BindFlags(cmd.Flags())
+	a.BindFlags(cmd.Flags())
 
 	return cmd
 }

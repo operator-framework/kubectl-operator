@@ -50,5 +50,6 @@ func newListAvailableCmd(cfg *action.Configuration) *cobra.Command {
 			_ = tw.Flush()
 		},
 	}
+	l.BindFlags(cmd.Flags())
 	return cmd
 }
