@@ -16,9 +16,9 @@ func newCatalogAddCmd(cfg *action.Configuration) *cobra.Command {
 	a := action.NewAddCatalog(cfg)
 
 	cmd := &cobra.Command{
-		Use:   "add <index_image>",
+		Use:   "add <name> <index_image>",
 		Short: "Add an operator catalog",
-		Args:  cobra.ExactArgs(1),
+		Args:  cobra.ExactArgs(2),
 		PreRun: func(cmd *cobra.Command, args []string) {
 			regLogger := logrus.New()
 			regLogger.SetOutput(ioutil.Discard)
@@ -30,7 +30,8 @@ func newCatalogAddCmd(cfg *action.Configuration) *cobra.Command {
 			ctx, cancel := context.WithTimeout(cmd.Context(), a.AddTimeout)
 			defer cancel()
 
-			a.IndexImage = args[0]
+			a.CatalogSourceName = args[0]
+			a.IndexImage = args[1]
 
 			cs, err := a.Run(ctx)
 			if err != nil {

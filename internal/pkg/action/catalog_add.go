@@ -11,7 +11,6 @@ import (
 	"github.com/spf13/pflag"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"sigs.k8s.io/cluster-api/util/container"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/joelanford/kubectl-operator/internal/pkg/catalog"
@@ -21,11 +20,12 @@ import (
 type AddCatalog struct {
 	config *Configuration
 
-	IndexImage     string
-	DisplayName    string
-	Publisher      string
-	AddTimeout     time.Duration
-	CleanupTimeout time.Duration
+	CatalogSourceName string
+	IndexImage        string
+	DisplayName       string
+	Publisher         string
+	AddTimeout        time.Duration
+	CleanupTimeout    time.Duration
 
 	RegistryOptions []containerdregistry.RegistryOption
 
@@ -58,13 +58,9 @@ func (a *AddCatalog) Run(ctx context.Context) (*v1alpha1.CatalogSource, error) {
 		}
 	}()
 
-	imageRef, err := container.ImageFromString(a.IndexImage)
-	if err != nil {
-		return nil, err
-	}
 	csKey := types.NamespacedName{
 		Namespace: a.config.Namespace,
-		Name:      imageRef.Name,
+		Name:      a.CatalogSourceName,
 	}
 
 	labels, err := a.labelsFor(ctx, a.IndexImage)
