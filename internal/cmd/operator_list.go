@@ -16,9 +16,9 @@ import (
 	"github.com/joelanford/kubectl-operator/internal/pkg/log"
 )
 
-func newListCmd(cfg *action.Configuration) *cobra.Command {
+func newOperatorListCmd(cfg *action.Configuration) *cobra.Command {
 	var allNamespaces bool
-	l := action.NewListOperators(cfg)
+	l := action.NewOperatorList(cfg)
 	cmd := &cobra.Command{
 		Use:   "list",
 		Short: "List installed operators",

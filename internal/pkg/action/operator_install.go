@@ -20,7 +20,7 @@ import (
 	"github.com/joelanford/kubectl-operator/internal/pkg/subscription"
 )
 
-type InstallOperator struct {
+type OperatorInstall struct {
 	config *Configuration
 
 	Package             string
@@ -32,13 +32,13 @@ type InstallOperator struct {
 	CreateOperatorGroup bool
 }
 
-func NewInstallOperator(cfg *Configuration) *InstallOperator {
-	return &InstallOperator{
+func NewOperatorInstall(cfg *Configuration) *OperatorInstall {
+	return &OperatorInstall{
 		config: cfg,
 	}
 }
 
-func (i *InstallOperator) BindFlags(fs *pflag.FlagSet) {
+func (i *OperatorInstall) BindFlags(fs *pflag.FlagSet) {
 	fs.StringVarP(&i.Channel, "channel", "c", "", "subscription channel")
 	fs.StringVarP(&i.Approve, "approval", "a", "", "approval (Automatic or Manual)")
 	fs.DurationVarP(&i.InstallTimeout, "timeout", "t", time.Minute, "the amount of time to wait before cancelling the install")
@@ -48,7 +48,7 @@ func (i *InstallOperator) BindFlags(fs *pflag.FlagSet) {
 	fs.VarP(imVal, "install-mode", "i", "install mode")
 }
 
-func (i *InstallOperator) Run(ctx context.Context) (*v1alpha1.ClusterServiceVersion, error) {
+func (i *OperatorInstall) Run(ctx context.Context) (*v1alpha1.ClusterServiceVersion, error) {
 	og, err := i.getOperatorGroup(ctx)
 	if err != nil {
 		return nil, err
@@ -126,7 +126,7 @@ func (i *InstallOperator) Run(ctx context.Context) (*v1alpha1.ClusterServiceVers
 	return csv, nil
 }
 
-func (i InstallOperator) getOperatorGroup(ctx context.Context) (*v1.OperatorGroup, error) {
+func (i OperatorInstall) getOperatorGroup(ctx context.Context) (*v1.OperatorGroup, error) {
 	ogs := &v1.OperatorGroupList{}
 	err := i.config.Client.List(ctx, ogs, client.InNamespace(i.config.Namespace))
 	if err != nil {
@@ -143,7 +143,7 @@ func (i InstallOperator) getOperatorGroup(ctx context.Context) (*v1.OperatorGrou
 	}
 }
 
-func (i *InstallOperator) getPackageManifest(ctx context.Context) (*operatorsv1.PackageManifest, error) {
+func (i *OperatorInstall) getPackageManifest(ctx context.Context) (*operatorsv1.PackageManifest, error) {
 	pm := &operatorsv1.PackageManifest{}
 	key := types.NamespacedName{
 		Namespace: i.config.Namespace,
@@ -155,7 +155,7 @@ func (i *InstallOperator) getPackageManifest(ctx context.Context) (*operatorsv1.
 	return pm, nil
 }
 
-func (i *InstallOperator) createOperatorGroup(ctx context.Context, supported sets.String) (*v1.OperatorGroup, error) {
+func (i *OperatorInstall) createOperatorGroup(ctx context.Context, supported sets.String) (*v1.OperatorGroup, error) {
 	og := &v1.OperatorGroup{}
 	og.SetName(i.config.Namespace)
 	og.SetNamespace(i.config.Namespace)
@@ -177,7 +177,7 @@ func (i *InstallOperator) createOperatorGroup(ctx context.Context, supported set
 	return og, nil
 }
 
-func (i *InstallOperator) validateOperatorGroup(og v1.OperatorGroup, supported sets.String) error {
+func (i *OperatorInstall) validateOperatorGroup(og v1.OperatorGroup, supported sets.String) error {
 	ogTargetNs := sets.NewString(og.Spec.TargetNamespaces...)
 	imTargetNs := sets.NewString(i.InstallMode.TargetNamespaces...)
 	ownNamespaceNs := sets.NewString(i.config.Namespace)
@@ -209,7 +209,7 @@ func getSupportedInstallModes(csvInstallModes []v1alpha1.InstallMode) sets.Strin
 	return supported
 }
 
-func (i *InstallOperator) getPackageChannel(pm *operatorsv1.PackageManifest) (*operatorsv1.PackageChannel, error) {
+func (i *OperatorInstall) getPackageChannel(pm *operatorsv1.PackageManifest) (*operatorsv1.PackageChannel, error) {
 	if i.Channel == "" {
 		i.Channel = pm.Status.DefaultChannel
 	}
@@ -225,7 +225,7 @@ func (i *InstallOperator) getPackageChannel(pm *operatorsv1.PackageManifest) (*o
 	return packageChannel, nil
 }
 
-func (i *InstallOperator) cleanup(ctx context.Context, sub *v1alpha1.Subscription) {
+func (i *OperatorInstall) cleanup(ctx context.Context, sub *v1alpha1.Subscription) {
 	if err := i.config.Client.Delete(ctx, sub); err != nil {
 		log.Printf("delete subscription %q: %v", sub.Name, err)
 	}

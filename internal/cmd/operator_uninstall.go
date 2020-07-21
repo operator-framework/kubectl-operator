@@ -7,8 +7,8 @@ import (
 	"github.com/joelanford/kubectl-operator/internal/pkg/log"
 )
 
-func newUninstallCmd(cfg *action.Configuration) *cobra.Command {
-	u := action.NewUninstallOperator(cfg)
+func newOperatorUninstallCmd(cfg *action.Configuration) *cobra.Command {
+	u := action.NewOperatorUninstall(cfg)
 	cmd := &cobra.Command{
 		Use:   "uninstall <operator>",
 		Short: "Uninstall an operator",

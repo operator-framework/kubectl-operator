@@ -7,19 +7,19 @@ import (
 	"github.com/operator-framework/api/pkg/operators/v1alpha1"
 )
 
-type RemoveCatalog struct {
+type CatalogRemove struct {
 	config *Configuration
 
 	CatalogName string
 }
 
-func NewRemoveCatalog(cfg *Configuration) *RemoveCatalog {
-	return &RemoveCatalog{
+func NewCatalogRemove(cfg *Configuration) *CatalogRemove {
+	return &CatalogRemove{
 		config: cfg,
 	}
 }
 
-func (r *RemoveCatalog) Run(ctx context.Context) error {
+func (r *CatalogRemove) Run(ctx context.Context) error {
 	cs := v1alpha1.CatalogSource{}
 	cs.SetNamespace(r.config.Namespace)
 	cs.SetName(r.CatalogName)

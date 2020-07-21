@@ -11,19 +11,19 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-type ListAvailableOperators struct {
+type OperatorListAvailable struct {
 	config *Configuration
 
 	Catalog NamespacedName
 }
 
-func NewListAvailableOperators(cfg *Configuration) *ListAvailableOperators {
-	return &ListAvailableOperators{
+func NewOperatorListAvailable(cfg *Configuration) *OperatorListAvailable {
+	return &OperatorListAvailable{
 		config: cfg,
 	}
 }
 
-func (l *ListAvailableOperators) Run(ctx context.Context) ([]v1.PackageManifest, error) {
+func (l *OperatorListAvailable) Run(ctx context.Context) ([]v1.PackageManifest, error) {
 	pms := v1.PackageManifestList{}
 
 	labelSelector := client.MatchingLabels{}
@@ -39,7 +39,7 @@ func (l *ListAvailableOperators) Run(ctx context.Context) ([]v1.PackageManifest,
 	return pms.Items, nil
 }
 
-func (l *ListAvailableOperators) BindFlags(fs *pflag.FlagSet) {
+func (l *OperatorListAvailable) BindFlags(fs *pflag.FlagSet) {
 	fs.VarP(&l.Catalog, "catalog", "c", "catalog to query (default: search all cluster catalogs)")
 }
 

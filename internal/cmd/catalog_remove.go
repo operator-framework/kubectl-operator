@@ -8,7 +8,7 @@ import (
 )
 
 func newCatalogRemoveCmd(cfg *action.Configuration) *cobra.Command {
-	u := action.NewRemoveCatalog(cfg)
+	u := action.NewCatalogRemove(cfg)
 	cmd := &cobra.Command{
 		Use:   "remove <catalog_name>",
 		Short: "Remove a operator catalog",

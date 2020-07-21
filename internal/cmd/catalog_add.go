@@ -13,7 +13,7 @@ import (
 )
 
 func newCatalogAddCmd(cfg *action.Configuration) *cobra.Command {
-	a := action.NewAddCatalog(cfg)
+	a := action.NewCatalogAdd(cfg)
 
 	cmd := &cobra.Command{
 		Use:   "add <name> <index_image>",

@@ -16,7 +16,7 @@ import (
 
 func newCatalogListCmd(cfg *action.Configuration) *cobra.Command {
 	var allNamespaces bool
-	l := action.NewListCatalogs(cfg)
+	l := action.NewCatalogList(cfg)
 	cmd := &cobra.Command{
 		Use:   "list",
 		Short: "List installed operator catalogs",

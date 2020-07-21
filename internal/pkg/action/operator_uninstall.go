@@ -15,7 +15,7 @@ import (
 	"github.com/joelanford/kubectl-operator/internal/pkg/log"
 )
 
-type UninstallOperator struct {
+type OperatorUninstall struct {
 	config *Configuration
 
 	Package             string
@@ -23,18 +23,18 @@ type UninstallOperator struct {
 	DeleteCRDs          bool
 }
 
-func NewUninstallOperator(cfg *Configuration) *UninstallOperator {
-	return &UninstallOperator{
+func NewOperatorUninstall(cfg *Configuration) *OperatorUninstall {
+	return &OperatorUninstall{
 		config: cfg,
 	}
 }
 
-func (u *UninstallOperator) BindFlags(fs *pflag.FlagSet) {
+func (u *OperatorUninstall) BindFlags(fs *pflag.FlagSet) {
 	fs.BoolVar(&u.DeleteOperatorGroup, "delete-operator-group", false, "delete operator group if no other operators remain")
 	fs.BoolVar(&u.DeleteCRDs, "delete-crds", false, "delete all owned CRDs and all CRs")
 }
 
-func (u *UninstallOperator) Run(ctx context.Context) error {
+func (u *OperatorUninstall) Run(ctx context.Context) error {
 	subs := v1alpha1.SubscriptionList{}
 	if err := u.config.Client.List(ctx, &subs, client.InNamespace(u.config.Namespace)); err != nil {
 		return fmt.Errorf("list subscriptions: %v", err)
@@ -87,7 +87,7 @@ func (u *UninstallOperator) Run(ctx context.Context) error {
 	return nil
 }
 
-func (u *UninstallOperator) deleteCSVandCRDs(ctx context.Context, csvName string, ignoreNotFound bool) error {
+func (u *OperatorUninstall) deleteCSVandCRDs(ctx context.Context, csvName string, ignoreNotFound bool) error {
 	csvKey := types.NamespacedName{
 		Name:      csvName,
 		Namespace: u.config.Namespace,

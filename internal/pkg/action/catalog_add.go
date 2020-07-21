@@ -17,7 +17,7 @@ import (
 	"github.com/joelanford/kubectl-operator/internal/pkg/log"
 )
 
-type AddCatalog struct {
+type CatalogAdd struct {
 	config *Configuration
 
 	CatalogSourceName string
@@ -32,20 +32,20 @@ type AddCatalog struct {
 	registry *containerdregistry.Registry
 }
 
-func NewAddCatalog(cfg *Configuration) *AddCatalog {
-	return &AddCatalog{
+func NewCatalogAdd(cfg *Configuration) *CatalogAdd {
+	return &CatalogAdd{
 		config: cfg,
 	}
 }
 
-func (a *AddCatalog) BindFlags(fs *pflag.FlagSet) {
+func (a *CatalogAdd) BindFlags(fs *pflag.FlagSet) {
 	fs.StringVarP(&a.DisplayName, "display-name", "d", "", "display name of the index")
 	fs.StringVarP(&a.Publisher, "publisher", "p", "", "publisher of the index")
 	fs.DurationVarP(&a.AddTimeout, "timeout", "t", time.Minute, "the amount of time to wait before cancelling the catalog addition")
 	fs.DurationVar(&a.CleanupTimeout, "cleanup-timeout", time.Minute, "the amount to time to wait before cancelling cleanup")
 }
 
-func (a *AddCatalog) Run(ctx context.Context) (*v1alpha1.CatalogSource, error) {
+func (a *CatalogAdd) Run(ctx context.Context) (*v1alpha1.CatalogSource, error) {
 	var err error
 	a.registry, err = containerdregistry.NewRegistry(a.RegistryOptions...)
 	if err != nil {
@@ -83,7 +83,7 @@ func (a *AddCatalog) Run(ctx context.Context) (*v1alpha1.CatalogSource, error) {
 	return cs, nil
 }
 
-func (a *AddCatalog) labelsFor(ctx context.Context, indexImage string) (map[string]string, error) {
+func (a *CatalogAdd) labelsFor(ctx context.Context, indexImage string) (map[string]string, error) {
 	simpleRef := image.SimpleReference(indexImage)
 	if err := a.registry.Pull(ctx, simpleRef); err != nil {
 		return nil, fmt.Errorf("pull image: %v", err)
@@ -95,7 +95,7 @@ func (a *AddCatalog) labelsFor(ctx context.Context, indexImage string) (map[stri
 	return labels, nil
 }
 
-func (a *AddCatalog) setDefaults(labels map[string]string) {
+func (a *CatalogAdd) setDefaults(labels map[string]string) {
 	if a.DisplayName == "" {
 		if v, ok := labels["operators.operatorframework.io.index.display-name"]; ok {
 			a.DisplayName = v
@@ -108,7 +108,7 @@ func (a *AddCatalog) setDefaults(labels map[string]string) {
 	}
 }
 
-func (a *AddCatalog) add(ctx context.Context, cs *v1alpha1.CatalogSource) error {
+func (a *CatalogAdd) add(ctx context.Context, cs *v1alpha1.CatalogSource) error {
 	if err := a.config.Client.Create(ctx, cs); err != nil {
 		return fmt.Errorf("create catalogsource: %v", err)
 	}
@@ -133,7 +133,7 @@ func (a *AddCatalog) add(ctx context.Context, cs *v1alpha1.CatalogSource) error 
 	return nil
 }
 
-func (a *AddCatalog) cleanup(cs *v1alpha1.CatalogSource) {
+func (a *CatalogAdd) cleanup(cs *v1alpha1.CatalogSource) {
 	ctx, cancel := context.WithTimeout(context.Background(), a.CleanupTimeout)
 	defer cancel()
 	if err := a.config.Client.Delete(ctx, cs); err != nil {

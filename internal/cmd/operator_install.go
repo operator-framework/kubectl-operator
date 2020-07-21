@@ -9,8 +9,8 @@ import (
 	"github.com/joelanford/kubectl-operator/internal/pkg/log"
 )
 
-func newInstallCmd(cfg *action.Configuration) *cobra.Command {
-	i := action.NewInstallOperator(cfg)
+func newOperatorInstallCmd(cfg *action.Configuration) *cobra.Command {
+	i := action.NewOperatorInstall(cfg)
 	cmd := &cobra.Command{
 		Use:   "install <operator>",
 		Short: "Install an operator",

@@ -29,10 +29,10 @@ operators from the installed catalogs.`,
 
 	cmd.AddCommand(
 		newCatalogCmd(&cfg),
-		newInstallCmd(&cfg),
-		newUninstallCmd(&cfg),
-		newListCmd(&cfg),
-		newListAvailableCmd(&cfg),
+		newOperatorInstallCmd(&cfg),
+		newOperatorUninstallCmd(&cfg),
+		newOperatorListCmd(&cfg),
+		newOperatorListAvailableCmd(&cfg),
 	)
 
 	return cmd

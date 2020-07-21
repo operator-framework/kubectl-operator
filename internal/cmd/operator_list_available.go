@@ -16,8 +16,8 @@ import (
 	"github.com/joelanford/kubectl-operator/internal/pkg/log"
 )
 
-func newListAvailableCmd(cfg *action.Configuration) *cobra.Command {
-	l := action.NewListAvailableOperators(cfg)
+func newOperatorListAvailableCmd(cfg *action.Configuration) *cobra.Command {
+	l := action.NewOperatorListAvailable(cfg)
 	cmd := &cobra.Command{
 		Use:   "list-available",
 		Short: "List operators available to be installed",
