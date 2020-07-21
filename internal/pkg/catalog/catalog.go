@@ -30,9 +30,6 @@ func Build(key types.NamespacedName, opts ...Option) *v1alpha1.CatalogSource {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      key.Name,
 			Namespace: key.Namespace,
-			Labels: map[string]string{
-				"createdBy": "kubectl-operator",
-			},
 		},
 		Spec: v1alpha1.CatalogSourceSpec{
 			SourceType: v1alpha1.SourceTypeGrpc,

@@ -19,9 +19,6 @@ func Build(key types.NamespacedName, channel string, source types.NamespacedName
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      key.Name,
 			Namespace: key.Namespace,
-			Labels: map[string]string{
-				"createdBy": "kubectl-operator",
-			},
 		},
 		Spec: &v1alpha1.SubscriptionSpec{
 			Package:                key.Name,
