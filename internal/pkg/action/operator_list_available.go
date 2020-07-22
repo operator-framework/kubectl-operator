@@ -26,9 +26,25 @@ func NewOperatorListAvailable(cfg *Configuration) *OperatorListAvailable {
 
 func (l *OperatorListAvailable) Run(ctx context.Context) ([]v1.PackageManifest, error) {
 	if l.Package != "" {
-		return nil, fmt.Errorf("listing all versions of a package is not currently supported")
+		pm, err := l.getPackageManifestByName(ctx, l.Package)
+		if err != nil {
+			return nil, err
+		}
+		return []v1.PackageManifest{*pm}, nil
 	}
 	return l.getAllPackageManifests(ctx)
+}
+
+func (l *OperatorListAvailable) getPackageManifestByName(ctx context.Context, packageName string) (*v1.PackageManifest, error) {
+	pm := v1.PackageManifest{}
+	pmKey := types.NamespacedName{
+		Namespace: l.config.Namespace,
+		Name:      packageName,
+	}
+	if err := l.config.Client.Get(ctx, pmKey, &pm); err != nil {
+		return nil, err
+	}
+	return &pm, nil
 }
 
 func (l *OperatorListAvailable) getAllPackageManifests(ctx context.Context) ([]v1.PackageManifest, error) {

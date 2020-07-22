@@ -78,7 +78,7 @@ func (i *OperatorInstall) Run(ctx context.Context) (*v1alpha1.ClusterServiceVers
 			}
 			log.Printf("operatorgroup %q created", og.Name)
 		} else {
-			return nil, fmt.Errorf("namespace %q has no existing operator group", i.config.Namespace)
+			return nil, fmt.Errorf("namespace %q has no existing operator group; use --create-operator-group to create one automatically", i.config.Namespace)
 		}
 	} else if err := i.validateOperatorGroup(*og, supported); err != nil {
 		return nil, err
@@ -301,10 +301,4 @@ func (i *OperatorInstall) getCSV(ctx context.Context, ip *v1alpha1.InstallPlan) 
 		return nil, fmt.Errorf("get clusterserviceversion: %v", err)
 	}
 	return csv, nil
-}
-
-func (i *OperatorInstall) cleanup(ctx context.Context, sub *v1alpha1.Subscription) {
-	if err := i.config.Client.Delete(ctx, sub); err != nil {
-		log.Printf("delete subscription %q: %v", sub.Name, err)
-	}
 }

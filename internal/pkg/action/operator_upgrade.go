@@ -10,8 +10,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	"github.com/joelanford/kubectl-operator/internal/pkg/log"
 )
 
 type OperatorUpgrade struct {
@@ -126,10 +124,4 @@ func (u *OperatorUpgrade) getCSV(ctx context.Context, ip *v1alpha1.InstallPlan) 
 		return nil, fmt.Errorf("get clusterserviceversion: %v", err)
 	}
 	return csv, nil
-}
-
-func (u *OperatorUpgrade) cleanup(ctx context.Context, sub *v1alpha1.Subscription) {
-	if err := u.config.Client.Delete(ctx, sub); err != nil {
-		log.Printf("delete subscription %q: %v", sub.Name, err)
-	}
 }

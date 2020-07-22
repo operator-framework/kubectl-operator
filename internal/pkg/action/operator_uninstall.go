@@ -56,13 +56,15 @@ func (u *OperatorUninstall) Run(ctx context.Context) error {
 	}
 	log.Printf("subscription %q deleted", sub.Name)
 
-	if sub.Status.CurrentCSV != sub.Status.InstalledCSV {
+	if sub.Status.CurrentCSV != "" && sub.Status.CurrentCSV != sub.Status.InstalledCSV {
 		if err := u.deleteCSVandCRDs(ctx, sub.Status.CurrentCSV, true); err != nil {
 			return err
 		}
 	}
-	if err := u.deleteCSVandCRDs(ctx, sub.Status.InstalledCSV, false); err != nil {
-		return err
+	if sub.Status.InstalledCSV != "" {
+		if err := u.deleteCSVandCRDs(ctx, sub.Status.InstalledCSV, false); err != nil {
+			return err
+		}
 	}
 
 	if u.DeleteOperatorGroup {
