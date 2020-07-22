@@ -21,8 +21,12 @@ func newOperatorListAvailableCmd(cfg *action.Configuration) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "list-available",
 		Short: "List operators available to be installed",
-		Args:  cobra.ExactArgs(0),
+		Args:  cobra.MaximumNArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
+			if len(args) == 1 {
+				l.Package = args[0]
+			}
+
 			operators, err := l.Run(cmd.Context())
 			if err != nil {
 				log.Fatal(err)

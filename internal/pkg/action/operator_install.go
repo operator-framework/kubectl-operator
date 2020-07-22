@@ -2,7 +2,6 @@ package action
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"time"
 
@@ -25,7 +24,7 @@ type OperatorInstall struct {
 
 	Package             string
 	Channel             string
-	Approve             string
+	Approval            subscription.ApprovalValue
 	InstallMode         operator.InstallMode
 	InstallTimeout      time.Duration
 	CleanupTimeout      time.Duration
@@ -40,12 +39,11 @@ func NewOperatorInstall(cfg *Configuration) *OperatorInstall {
 
 func (i *OperatorInstall) BindFlags(fs *pflag.FlagSet) {
 	fs.StringVarP(&i.Channel, "channel", "c", "", "subscription channel")
-	fs.StringVarP(&i.Approve, "approval", "a", "", "approval (Automatic or Manual)")
+	fs.VarP(&i.Approval, "approval", "a", fmt.Sprintf("approval (%s or %s)", v1alpha1.ApprovalManual, v1alpha1.ApprovalAutomatic))
+	fs.VarP(&i.InstallMode, "install-mode", "i", "install mode")
 	fs.DurationVarP(&i.InstallTimeout, "timeout", "t", time.Minute, "the amount of time to wait before cancelling the install")
 	fs.DurationVar(&i.CleanupTimeout, "cleanup-timeout", time.Minute, "the amount to time to wait before cancelling cleanup")
 	fs.BoolVar(&i.CreateOperatorGroup, "create-operator-group", false, "create operator group if necessary")
-	imVal := pflag.PFlagFromGoFlag(&flag.Flag{Value: &i.InstallMode}).Value
-	fs.VarP(imVal, "install-mode", "i", "install mode")
 }
 
 func (i *OperatorInstall) Run(ctx context.Context) (*v1alpha1.ClusterServiceVersion, error) {
@@ -85,9 +83,7 @@ func (i *OperatorInstall) Run(ctx context.Context) (*v1alpha1.ClusterServiceVers
 	}
 
 	opts := []subscription.Option{}
-	if i.Approve != "" {
-		opts = append(opts, subscription.InstallPlanApproval(v1alpha1.Approval(i.Approve)))
-	}
+	opts = append(opts, subscription.InstallPlanApproval(i.Approval.Approval))
 
 	subKey := types.NamespacedName{
 		Namespace: i.config.Namespace,
@@ -103,6 +99,34 @@ func (i *OperatorInstall) Run(ctx context.Context) (*v1alpha1.ClusterServiceVers
 	}
 	log.Printf("subscription %q created", sub.Name)
 
+	// We need to approve the initial install plan
+	if i.Approval.Approval == v1alpha1.ApprovalManual {
+		if err := wait.PollImmediateUntil(time.Millisecond*250, func() (bool, error) {
+			if err := i.config.Client.Get(ctx, subKey, sub); err != nil {
+				return false, err
+			}
+			if sub.Status.InstallPlanRef != nil {
+				return true, nil
+			}
+			return false, nil
+		}, ctx.Done()); err != nil {
+			return nil, fmt.Errorf("waiting for subscription install plan to exist: %v", err)
+		}
+
+		ip := v1alpha1.InstallPlan{}
+		ipKey := types.NamespacedName{
+			Namespace: sub.Status.InstallPlanRef.Namespace,
+			Name:      sub.Status.InstallPlanRef.Name,
+		}
+		if err := i.config.Client.Get(ctx, ipKey, &ip); err != nil {
+			return nil, fmt.Errorf("get install plan: %v", err)
+		}
+		ip.Spec.Approved = true
+		if err := i.config.Client.Update(ctx, &ip); err != nil {
+			return nil, fmt.Errorf("approve install plan: %v", err)
+		}
+	}
+
 	if err := wait.PollImmediateUntil(time.Millisecond*250, func() (bool, error) {
 		if err := i.config.Client.Get(ctx, subKey, sub); err != nil {
 			return false, err
@@ -112,7 +136,7 @@ func (i *OperatorInstall) Run(ctx context.Context) (*v1alpha1.ClusterServiceVers
 		}
 		return false, nil
 	}, ctx.Done()); err != nil {
-		return nil, fmt.Errorf("waiting for state \"AtLatestKnown\": %v", err)
+		return nil, fmt.Errorf("waiting for subscription state \"AtLatestKnown\": %v", err)
 	}
 
 	csvKey := types.NamespacedName{

@@ -15,6 +15,7 @@ type OperatorListAvailable struct {
 	config *Configuration
 
 	Catalog NamespacedName
+	Package string
 }
 
 func NewOperatorListAvailable(cfg *Configuration) *OperatorListAvailable {
@@ -24,8 +25,13 @@ func NewOperatorListAvailable(cfg *Configuration) *OperatorListAvailable {
 }
 
 func (l *OperatorListAvailable) Run(ctx context.Context) ([]v1.PackageManifest, error) {
-	pms := v1.PackageManifestList{}
+	if l.Package != "" {
+		return nil, fmt.Errorf("listing all versions of a package is not currently supported")
+	}
+	return l.getAllPackageManifests(ctx)
+}
 
+func (l *OperatorListAvailable) getAllPackageManifests(ctx context.Context) ([]v1.PackageManifest, error) {
 	labelSelector := client.MatchingLabels{}
 	if l.Catalog.Name != "" {
 		labelSelector["catalog"] = l.Catalog.Name
@@ -33,6 +39,8 @@ func (l *OperatorListAvailable) Run(ctx context.Context) ([]v1.PackageManifest, 
 	if l.Catalog.Namespace != "" {
 		labelSelector["catalog-namespace"] = l.Catalog.Namespace
 	}
+
+	pms := v1.PackageManifestList{}
 	if err := l.config.Client.List(ctx, &pms, labelSelector); err != nil {
 		return nil, err
 	}

@@ -1,6 +1,8 @@
 package subscription
 
 import (
+	"fmt"
+
 	"github.com/operator-framework/api/pkg/operators/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -31,4 +33,30 @@ func Build(key types.NamespacedName, channel string, source types.NamespacedName
 		o(s)
 	}
 	return s
+}
+
+const defaultApproval = v1alpha1.ApprovalManual
+
+type ApprovalValue struct {
+	v1alpha1.Approval
+}
+
+func (a *ApprovalValue) Set(str string) error {
+	switch v := v1alpha1.Approval(str); v {
+	case v1alpha1.ApprovalAutomatic, v1alpha1.ApprovalManual:
+		a.Approval = v
+		return nil
+	}
+	return fmt.Errorf("invalid approval value %q", str)
+}
+
+func (a *ApprovalValue) String() string {
+	if a.Approval == "" {
+		a.Approval = defaultApproval
+	}
+	return string(a.Approval)
+}
+
+func (a ApprovalValue) Type() string {
+	return "ApprovalValue"
 }
