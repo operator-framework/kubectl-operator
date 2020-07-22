@@ -30,6 +30,7 @@ operators from the installed catalogs.`,
 	cmd.AddCommand(
 		newCatalogCmd(&cfg),
 		newOperatorInstallCmd(&cfg),
+		newOperatorUpgradeCmd(&cfg),
 		newOperatorUninstallCmd(&cfg),
 		newOperatorListCmd(&cfg),
 		newOperatorListAvailableCmd(&cfg),

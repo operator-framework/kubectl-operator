@@ -24,6 +24,7 @@ type OperatorInstall struct {
 
 	Package             string
 	Channel             string
+	StartingCSV         string
 	Approval            subscription.ApprovalValue
 	InstallMode         operator.InstallMode
 	InstallTimeout      time.Duration
@@ -40,6 +41,7 @@ func NewOperatorInstall(cfg *Configuration) *OperatorInstall {
 func (i *OperatorInstall) BindFlags(fs *pflag.FlagSet) {
 	fs.StringVarP(&i.Channel, "channel", "c", "", "subscription channel")
 	fs.VarP(&i.Approval, "approval", "a", fmt.Sprintf("approval (%s or %s)", v1alpha1.ApprovalManual, v1alpha1.ApprovalAutomatic))
+	fs.StringVarP(&i.StartingCSV, "starting-csv", "s", "", "install specific csv for operator")
 	fs.VarP(&i.InstallMode, "install-mode", "i", "install mode")
 	fs.DurationVarP(&i.InstallTimeout, "timeout", "t", time.Minute, "the amount of time to wait before cancelling the install")
 	fs.DurationVar(&i.CleanupTimeout, "cleanup-timeout", time.Minute, "the amount to time to wait before cancelling cleanup")
@@ -82,69 +84,26 @@ func (i *OperatorInstall) Run(ctx context.Context) (*v1alpha1.ClusterServiceVers
 		return nil, err
 	}
 
-	opts := []subscription.Option{}
-	opts = append(opts, subscription.InstallPlanApproval(i.Approval.Approval))
-
-	subKey := types.NamespacedName{
-		Namespace: i.config.Namespace,
-		Name:      i.Package,
-	}
-	sourceKey := types.NamespacedName{
-		Namespace: pm.Status.CatalogSourceNamespace,
-		Name:      pm.Status.CatalogSource,
-	}
-	sub := subscription.Build(subKey, i.Channel, sourceKey, opts...)
-	if err := i.config.Client.Create(ctx, sub); err != nil {
-		return nil, fmt.Errorf("create subscription: %v", err)
+	sub, err := i.createSubscription(ctx, pm)
+	if err != nil {
+		return nil, err
 	}
 	log.Printf("subscription %q created", sub.Name)
 
+	ip, err := i.getInstallPlan(ctx, sub)
+	if err != nil {
+		return nil, err
+	}
+
 	// We need to approve the initial install plan
 	if i.Approval.Approval == v1alpha1.ApprovalManual {
-		if err := wait.PollImmediateUntil(time.Millisecond*250, func() (bool, error) {
-			if err := i.config.Client.Get(ctx, subKey, sub); err != nil {
-				return false, err
-			}
-			if sub.Status.InstallPlanRef != nil {
-				return true, nil
-			}
-			return false, nil
-		}, ctx.Done()); err != nil {
-			return nil, fmt.Errorf("waiting for subscription install plan to exist: %v", err)
-		}
-
-		ip := v1alpha1.InstallPlan{}
-		ipKey := types.NamespacedName{
-			Namespace: sub.Status.InstallPlanRef.Namespace,
-			Name:      sub.Status.InstallPlanRef.Name,
-		}
-		if err := i.config.Client.Get(ctx, ipKey, &ip); err != nil {
-			return nil, fmt.Errorf("get install plan: %v", err)
-		}
-		ip.Spec.Approved = true
-		if err := i.config.Client.Update(ctx, &ip); err != nil {
-			return nil, fmt.Errorf("approve install plan: %v", err)
+		if err := i.approveInstallPlan(ctx, ip); err != nil {
+			return nil, err
 		}
 	}
 
-	if err := wait.PollImmediateUntil(time.Millisecond*250, func() (bool, error) {
-		if err := i.config.Client.Get(ctx, subKey, sub); err != nil {
-			return false, err
-		}
-		if sub.Status.State == v1alpha1.SubscriptionStateAtLatest {
-			return true, nil
-		}
-		return false, nil
-	}, ctx.Done()); err != nil {
-		return nil, fmt.Errorf("waiting for subscription state \"AtLatestKnown\": %v", err)
-	}
-
-	csvKey := types.NamespacedName{
-		Namespace: i.config.Namespace,
-		Name:      sub.Status.InstalledCSV,
-	}
-	csv := &v1alpha1.ClusterServiceVersion{}
-	if err := i.config.Client.Get(ctx, csvKey, csv); err != nil {
+	csv, err := i.getCSV(ctx, ip)
+	if err != nil {
 		return nil, fmt.Errorf("get clusterserviceversion: %v", err)
 	}
 	return csv, nil
@@ -247,6 +206,101 @@ func (i *OperatorInstall) getPackageChannel(pm *operatorsv1.PackageManifest) (*o
 		return nil, fmt.Errorf("channel %q does not exist for package %q", i.Channel, i.Package)
 	}
 	return packageChannel, nil
+}
+
+func (i *OperatorInstall) createSubscription(ctx context.Context, pm *operatorsv1.PackageManifest) (*v1alpha1.Subscription, error) {
+	opts := []subscription.Option{
+		subscription.InstallPlanApproval(i.Approval.Approval),
+	}
+	if i.StartingCSV != "" {
+		opts = append(opts, subscription.StartingCSV(i.StartingCSV))
+	}
+
+	subKey := types.NamespacedName{
+		Namespace: i.config.Namespace,
+		Name:      i.Package,
+	}
+	sourceKey := types.NamespacedName{
+		Namespace: pm.Status.CatalogSourceNamespace,
+		Name:      pm.Status.CatalogSource,
+	}
+	sub := subscription.Build(subKey, i.Channel, sourceKey, opts...)
+	if err := i.config.Client.Create(ctx, sub); err != nil {
+		return nil, fmt.Errorf("create subscription: %v", err)
+
+	}
+	return sub, nil
+}
+
+func (i *OperatorInstall) getInstallPlan(ctx context.Context, sub *v1alpha1.Subscription) (*v1alpha1.InstallPlan, error) {
+	subKey := types.NamespacedName{
+		Namespace: sub.GetNamespace(),
+		Name:      sub.GetName(),
+	}
+	if err := wait.PollImmediateUntil(time.Millisecond*250, func() (bool, error) {
+		if err := i.config.Client.Get(ctx, subKey, sub); err != nil {
+			return false, err
+		}
+		if sub.Status.InstallPlanRef != nil {
+			return true, nil
+		}
+		return false, nil
+	}, ctx.Done()); err != nil {
+		return nil, fmt.Errorf("waiting for install plan to exist: %v", err)
+	}
+
+	ip := v1alpha1.InstallPlan{}
+	ipKey := types.NamespacedName{
+		Namespace: sub.Status.InstallPlanRef.Namespace,
+		Name:      sub.Status.InstallPlanRef.Name,
+	}
+	if err := i.config.Client.Get(ctx, ipKey, &ip); err != nil {
+		return nil, fmt.Errorf("get install plan: %v", err)
+	}
+	return &ip, nil
+}
+
+func (i *OperatorInstall) approveInstallPlan(ctx context.Context, ip *v1alpha1.InstallPlan) error {
+	ip.Spec.Approved = true
+	if err := i.config.Client.Update(ctx, ip); err != nil {
+		return fmt.Errorf("approve install plan: %v", err)
+	}
+	return nil
+}
+
+func (i *OperatorInstall) getCSV(ctx context.Context, ip *v1alpha1.InstallPlan) (*v1alpha1.ClusterServiceVersion, error) {
+	ipKey := types.NamespacedName{
+		Namespace: ip.GetNamespace(),
+		Name:      ip.GetName(),
+	}
+	if err := wait.PollImmediateUntil(time.Millisecond*250, func() (bool, error) {
+		if err := i.config.Client.Get(ctx, ipKey, ip); err != nil {
+			return false, err
+		}
+		if ip.Status.Phase == v1alpha1.InstallPlanPhaseComplete {
+			return true, nil
+		}
+		return false, nil
+	}, ctx.Done()); err != nil {
+		return nil, fmt.Errorf("waiting for operator installation to complete: %v", err)
+	}
+
+	csvKey := types.NamespacedName{
+		Namespace: i.config.Namespace,
+	}
+	for _, s := range ip.Status.Plan {
+		if s.Resource.Kind == "ClusterServiceVersion" {
+			csvKey.Name = s.Resource.Name
+		}
+	}
+	if csvKey.Name == "" {
+		return nil, fmt.Errorf("could not find installed CSV in install plan")
+	}
+	csv := &v1alpha1.ClusterServiceVersion{}
+	if err := i.config.Client.Get(ctx, csvKey, csv); err != nil {
+		return nil, fmt.Errorf("get clusterserviceversion: %v", err)
+	}
+	return csv, nil
 }
 
 func (i *OperatorInstall) cleanup(ctx context.Context, sub *v1alpha1.Subscription) {

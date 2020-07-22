@@ -49,14 +49,14 @@ func newOperatorListCmd(cfg *action.Configuration) *cobra.Command {
 				nsCol = "\tNAMESPACE"
 			}
 			tw := tabwriter.NewWriter(os.Stdout, 3, 4, 2, ' ', 0)
-			_, _ = fmt.Fprintf(tw, "PACKAGE%s\tSUBSCRIPTION\tINSTALLED CSV\tSTATUS\tAGE\n", nsCol)
+			_, _ = fmt.Fprintf(tw, "PACKAGE%s\tSUBSCRIPTION\tINSTALLED CSV\tCURRENT CSV\tSTATUS\tAGE\n", nsCol)
 			for _, sub := range subs {
 				ns := ""
 				if allNamespaces {
 					ns = "\t" + sub.Namespace
 				}
 				age := time.Now().Sub(sub.CreationTimestamp.Time)
-				_, _ = fmt.Fprintf(tw, "%s%s\t%s\t%s\t%s\t%s\n", sub.Spec.Package, ns, sub.Name, sub.Status.InstalledCSV, sub.Status.State, duration.HumanDuration(age))
+				_, _ = fmt.Fprintf(tw, "%s%s\t%s\t%s\t%s\t%s\t%s\n", sub.Spec.Package, ns, sub.Name, sub.Status.InstalledCSV, sub.Status.CurrentCSV, sub.Status.State, duration.HumanDuration(age))
 			}
 			_ = tw.Flush()
 

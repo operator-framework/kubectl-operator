@@ -11,8 +11,14 @@ import (
 type Option func(*v1alpha1.Subscription)
 
 func InstallPlanApproval(v v1alpha1.Approval) Option {
-	return func(cs *v1alpha1.Subscription) {
-		cs.Spec.InstallPlanApproval = v
+	return func(s *v1alpha1.Subscription) {
+		s.Spec.InstallPlanApproval = v
+	}
+}
+
+func StartingCSV(v string) Option {
+	return func(s *v1alpha1.Subscription) {
+		s.Spec.StartingCSV = v
 	}
 }
 
