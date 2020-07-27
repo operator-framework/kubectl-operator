@@ -19,7 +19,6 @@ func newOperatorUninstallCmd(cfg *action.Configuration) *cobra.Command {
 				log.Fatalf("uninstall operator: %v", err)
 			}
 			log.Printf("operator %q uninstalled", u.Package)
-
 		},
 	}
 	u.BindFlags(cmd.Flags())

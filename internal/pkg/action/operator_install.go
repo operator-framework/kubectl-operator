@@ -3,6 +3,8 @@ package action
 import (
 	"context"
 	"fmt"
+	"regexp"
+	"strings"
 	"time"
 
 	v1 "github.com/operator-framework/api/pkg/operators/v1"
@@ -24,7 +26,7 @@ type OperatorInstall struct {
 
 	Package             string
 	Channel             string
-	StartingCSV         string
+	Version             string
 	Approval            subscription.ApprovalValue
 	InstallMode         operator.InstallMode
 	InstallTimeout      time.Duration
@@ -41,11 +43,11 @@ func NewOperatorInstall(cfg *Configuration) *OperatorInstall {
 func (i *OperatorInstall) BindFlags(fs *pflag.FlagSet) {
 	fs.StringVarP(&i.Channel, "channel", "c", "", "subscription channel")
 	fs.VarP(&i.Approval, "approval", "a", fmt.Sprintf("approval (%s or %s)", v1alpha1.ApprovalManual, v1alpha1.ApprovalAutomatic))
-	fs.StringVarP(&i.StartingCSV, "starting-csv", "s", "", "install specific csv for operator")
+	fs.StringVarP(&i.Version, "version", "v", "", "install specific version for operator (default latest)")
 	fs.VarP(&i.InstallMode, "install-mode", "i", "install mode")
 	fs.DurationVarP(&i.InstallTimeout, "timeout", "t", time.Minute, "the amount of time to wait before cancelling the install")
 	fs.DurationVar(&i.CleanupTimeout, "cleanup-timeout", time.Minute, "the amount to time to wait before cancelling cleanup")
-	fs.BoolVar(&i.CreateOperatorGroup, "create-operator-group", false, "create operator group if necessary")
+	fs.BoolVarP(&i.CreateOperatorGroup, "create-operator-group", "C", false, "create operator group if necessary")
 }
 
 func (i *OperatorInstall) Run(ctx context.Context) (*v1alpha1.ClusterServiceVersion, error) {
@@ -84,7 +86,7 @@ func (i *OperatorInstall) Run(ctx context.Context) (*v1alpha1.ClusterServiceVers
 		return nil, err
 	}
 
-	sub, err := i.createSubscription(ctx, pm)
+	sub, err := i.createSubscription(ctx, pm, pc)
 	if err != nil {
 		return nil, err
 	}
@@ -208,12 +210,14 @@ func (i *OperatorInstall) getPackageChannel(pm *operatorsv1.PackageManifest) (*o
 	return packageChannel, nil
 }
 
-func (i *OperatorInstall) createSubscription(ctx context.Context, pm *operatorsv1.PackageManifest) (*v1alpha1.Subscription, error) {
+func (i *OperatorInstall) createSubscription(ctx context.Context, pm *operatorsv1.PackageManifest, pc *operatorsv1.PackageChannel) (*v1alpha1.Subscription, error) {
 	opts := []subscription.Option{
 		subscription.InstallPlanApproval(i.Approval.Approval),
 	}
-	if i.StartingCSV != "" {
-		opts = append(opts, subscription.StartingCSV(i.StartingCSV))
+
+	if i.Version != "" {
+		guessedStartingCSV := guessStartingCSV(pc.CurrentCSV, i.Version)
+		opts = append(opts, subscription.StartingCSV(guessedStartingCSV))
 	}
 
 	subKey := types.NamespacedName{
@@ -230,6 +234,24 @@ func (i *OperatorInstall) createSubscription(ctx context.Context, pm *operatorsv
 
 	}
 	return sub, nil
+}
+
+func guessStartingCSV(csvNameExample, desiredVersion string) string {
+	csvBaseName, vChar, _ := parseCSVName(csvNameExample)
+	version := strings.TrimPrefix(desiredVersion, "v")
+	return fmt.Sprintf("%s.%s%s", csvBaseName, vChar, version)
+}
+
+const (
+	operatorNameRegexp = `[a-z0-9]([-a-z0-9]*[a-z0-9])?`
+	semverRegexp       = `(?P<major>0|[1-9]\d*)\.(?P<minor>0|[1-9]\d*)\.(?P<patch>0|[1-9]\d*)(?:-(?P<prerelease>(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+(?P<buildmetadata>[0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?`
+)
+
+var csvNameRegexp = regexp.MustCompile(`^(` + operatorNameRegexp + `).(v?)(` + semverRegexp + `)$`)
+
+func parseCSVName(csvName string) (string, string, string) {
+	matches := csvNameRegexp.FindAllStringSubmatch(csvName, -1)
+	return matches[0][1], matches[0][3], matches[0][4]
 }
 
 func (i *OperatorInstall) getInstallPlan(ctx context.Context, sub *v1alpha1.Subscription) (*v1alpha1.InstallPlan, error) {
