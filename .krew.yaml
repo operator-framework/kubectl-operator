@@ -1,0 +1,48 @@
+apiVersion: krew.googlecontainertools.github.com/v1alpha2
+kind: Plugin
+metadata:
+  name: operator
+spec:
+  version: {{ .TagName }}
+  homepage: https://github.com/joelanford/kubectl-operator
+  shortDescription: Manage Kubernetes Operators with Operator Lifecycle Manager
+  description: |
+    This plugin is a package manager for Operators in your cluster. It
+    simplifies adding and removing Operator catalogs, and it has familiar
+    commands for installing, uninstalling, and listing available and
+    installed Operators.
+  caveats: |
+    * This plugin requires Operator Lifecycle Manager to be installed in your
+      cluster. See the installation instructions at https://olm.operatorframework.io/docs/getting-started/
+  platforms:
+  - selector:
+      matchLabels:
+        os: darwin
+        arch: amd64
+    {{addURIAndSha "https://github.com/joelanford/kubectl-operator/releases/download/{{ .TagName }}/kubectl-operator_{{ .TagName }}_darwin_amd64.tar.gz" .TagName }}
+    bin: kubectl-operator
+  - selector:
+      matchLabels:
+        os: linux
+        arch: amd64
+    {{addURIAndSha "https://github.com/joelanford/kubectl-operator/releases/download/{{ .TagName }}/kubectl-operator_{{ .TagName }}_linux_amd64.tar.gz" .TagName }}
+    bin: kubectl-operator
+  - selector:
+      matchLabels:
+        os: linux
+        arch: ppc64le
+    {{addURIAndSha "https://github.com/joelanford/kubectl-operator/releases/download/{{ .TagName }}/kubectl-operator_{{ .TagName }}_linux_ppc64le.tar.gz" .TagName }}
+    bin: kubectl-operator
+  - selector:
+      matchLabels:
+        os: linux
+        arch: s390x
+    {{addURIAndSha "https://github.com/joelanford/kubectl-operator/releases/download/{{ .TagName }}/kubectl-operator_{{ .TagName }}_linux_s390x.tar.gz" .TagName }}
+    bin: kubectl-operator
+  - selector:
+      matchLabels:
+        os: windows
+        arch: amd64
+    {{addURIAndSha "https://github.com/joelanford/kubectl-operator/releases/download/{{ .TagName }}/kubectl-operator_{{ .TagName }}_windows_amd64.tar.gz" .TagName }}
+    bin: kubectl-operator.exe
+
