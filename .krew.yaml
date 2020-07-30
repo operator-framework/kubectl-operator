@@ -4,7 +4,7 @@ metadata:
   name: operator
 spec:
   version: {{ .TagName }}
-  homepage: https://github.com/joelanford/kubectl-operator
+  homepage: https://github.com/operator-framework/kubectl-operator
   shortDescription: Manage Kubernetes Operators with Operator Lifecycle Manager
   description: |
     This plugin is a package manager for Operators in your cluster. It
@@ -19,30 +19,30 @@ spec:
       matchLabels:
         os: darwin
         arch: amd64
-    {{addURIAndSha "https://github.com/joelanford/kubectl-operator/releases/download/{{ .TagName }}/kubectl-operator_{{ .TagName }}_darwin_amd64.tar.gz" .TagName }}
+    {{addURIAndSha "https://github.com/operator-framework/kubectl-operator/releases/download/{{ .TagName }}/kubectl-operator_{{ .TagName }}_darwin_amd64.tar.gz" .TagName }}
     bin: kubectl-operator
   - selector:
       matchLabels:
         os: linux
         arch: amd64
-    {{addURIAndSha "https://github.com/joelanford/kubectl-operator/releases/download/{{ .TagName }}/kubectl-operator_{{ .TagName }}_linux_amd64.tar.gz" .TagName }}
+    {{addURIAndSha "https://github.com/operator-framework/kubectl-operator/releases/download/{{ .TagName }}/kubectl-operator_{{ .TagName }}_linux_amd64.tar.gz" .TagName }}
     bin: kubectl-operator
   - selector:
       matchLabels:
         os: linux
         arch: ppc64le
-    {{addURIAndSha "https://github.com/joelanford/kubectl-operator/releases/download/{{ .TagName }}/kubectl-operator_{{ .TagName }}_linux_ppc64le.tar.gz" .TagName }}
+    {{addURIAndSha "https://github.com/operator-framework/kubectl-operator/releases/download/{{ .TagName }}/kubectl-operator_{{ .TagName }}_linux_ppc64le.tar.gz" .TagName }}
     bin: kubectl-operator
   - selector:
       matchLabels:
         os: linux
         arch: s390x
-    {{addURIAndSha "https://github.com/joelanford/kubectl-operator/releases/download/{{ .TagName }}/kubectl-operator_{{ .TagName }}_linux_s390x.tar.gz" .TagName }}
+    {{addURIAndSha "https://github.com/operator-framework/kubectl-operator/releases/download/{{ .TagName }}/kubectl-operator_{{ .TagName }}_linux_s390x.tar.gz" .TagName }}
     bin: kubectl-operator
   - selector:
       matchLabels:
         os: windows
         arch: amd64
-    {{addURIAndSha "https://github.com/joelanford/kubectl-operator/releases/download/{{ .TagName }}/kubectl-operator_{{ .TagName }}_windows_amd64.tar.gz" .TagName }}
+    {{addURIAndSha "https://github.com/operator-framework/kubectl-operator/releases/download/{{ .TagName }}/kubectl-operator_{{ .TagName }}_windows_amd64.tar.gz" .TagName }}
     bin: kubectl-operator.exe
 
