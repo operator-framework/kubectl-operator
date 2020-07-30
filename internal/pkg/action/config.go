@@ -19,6 +19,7 @@ type Configuration struct {
 	RESTConfig *rest.Config
 	Client     client.Client
 	Namespace  string
+	Scheme     *runtime.Scheme
 
 	overrides *clientcmd.ConfigOverrides
 }
@@ -77,6 +78,7 @@ func (c *Configuration) Load() error {
 		return err
 	}
 
+	c.Scheme = sch
 	c.Client = &operatorClient{cl}
 	c.Namespace = ns
 	c.RESTConfig = cc

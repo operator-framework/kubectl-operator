@@ -8,6 +8,12 @@ import (
 
 type Option func(*v1alpha1.CatalogSource)
 
+func Annotations(v map[string]string) Option {
+	return func(cs *v1alpha1.CatalogSource) {
+		cs.ObjectMeta.Annotations = v
+	}
+}
+
 func DisplayName(v string) Option {
 	return func(cs *v1alpha1.CatalogSource) {
 		cs.Spec.DisplayName = v
@@ -22,6 +28,12 @@ func Image(v string) Option {
 func Publisher(v string) Option {
 	return func(cs *v1alpha1.CatalogSource) {
 		cs.Spec.Publisher = v
+	}
+}
+
+func Address(address string) Option {
+	return func(cs *v1alpha1.CatalogSource) {
+		cs.Spec.Address = address
 	}
 }
 
