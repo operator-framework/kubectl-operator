@@ -14,21 +14,11 @@ builds:
   goarch:
   - amd64
   - arm64
-  - ppc64le
-  - s390x
   ignore:
   - goos: darwin
     goarch: arm64
-  - goos: darwin
-    goarch: ppc64le
-  - goos: darwin
-    goarch: s390x
   - goos: windows
     goarch: arm64
-  - goos: windows
-    goarch: ppc64le
-  - goos: windows
-    goarch: s390x
 
 archives:
 - builds:
