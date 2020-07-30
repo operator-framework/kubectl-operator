@@ -86,40 +86,38 @@ func (a *CatalogAdd) Run(ctx context.Context) (*v1alpha1.CatalogSource, error) {
 
 	a.setDefaults(labels)
 
-	var registryPod *corev1.Pod
-	if len(a.InjectBundles) > 0 {
-		if registryPod, err = a.createRegistryPod(ctx); err != nil {
-			return nil, err
-		}
-	}
-
 	opts := []catalog.Option{
 		catalog.DisplayName(a.DisplayName),
 		catalog.Publisher(a.Publisher),
 	}
 
-	if registryPod == nil {
+	if len(a.InjectBundles) == 0 {
 		opts = append(opts, catalog.Image(a.IndexImage))
-	} else {
-		address := fmt.Sprintf("%s:%s", registryPod.Status.PodIP, grpcPort)
-		injectedBundlesJSON, err := json.Marshal(a.InjectBundles)
-		if err != nil {
-			return nil, fmt.Errorf("json marshal injected bundles: %v", err)
-		}
-		annotations := map[string]string{
-			"operators.operatorframework.io/injected-bundles": string(injectedBundlesJSON),
-		}
-		opts = append(opts,
-			catalog.Address(address),
-			catalog.Annotations(annotations),
-		)
 	}
 
 	cs := catalog.Build(csKey, opts...)
-	if err := a.add(ctx, cs, registryPod); err != nil {
+	if err := a.createCatalogSource(ctx, cs); err != nil {
+		return nil, err
+	}
+
+	var registryPod *corev1.Pod
+	if len(a.InjectBundles) > 0 {
+		if registryPod, err = a.createRegistryPod(ctx, cs); err != nil {
+			defer a.cleanup(cs)
+			return nil, err
+		}
+
+		if err := a.updateCatalogSource(ctx, cs, registryPod); err != nil {
+			defer a.cleanup(cs)
+			return nil, err
+		}
+	}
+
+	if err := a.waitForCatalogSourceReady(ctx, cs); err != nil {
 		defer a.cleanup(cs)
 		return nil, err
 	}
+
 	return cs, nil
 }
 
@@ -155,7 +153,14 @@ func (a *CatalogAdd) setDefaults(labels map[string]string) {
 	}
 }
 
-func (a *CatalogAdd) createRegistryPod(ctx context.Context) (*corev1.Pod, error) {
+func (a *CatalogAdd) createCatalogSource(ctx context.Context, cs *v1alpha1.CatalogSource) error {
+	if err := a.config.Client.Create(ctx, cs); err != nil {
+		return fmt.Errorf("create catalogsource: %v", err)
+	}
+	return nil
+}
+
+func (a *CatalogAdd) createRegistryPod(ctx context.Context, cs *v1alpha1.CatalogSource) (*corev1.Pod, error) {
 	command := []string{
 		"/bin/sh",
 		"-c",
@@ -180,14 +185,30 @@ func (a *CatalogAdd) createRegistryPod(ctx context.Context) (*corev1.Pod, error)
 		},
 	}
 	if err := a.config.Client.Create(ctx, pod); err != nil {
+		return nil, fmt.Errorf("create registry pod: %v", err)
+	}
+
+	podKey, err := client.ObjectKeyFromObject(pod)
+	if err != nil {
+		return nil, fmt.Errorf("get registry pod key: %v", err)
+	}
+
+	if err := retry.RetryOnConflict(retry.DefaultBackoff, func() error {
+		if err := a.config.Client.Get(ctx, podKey, pod); err != nil {
+			return fmt.Errorf("get registry pod: %v", err)
+		}
+		if err := controllerutil.SetOwnerReference(cs, pod, a.config.Scheme); err != nil {
+			return fmt.Errorf("set registry pod owner reference: %v", err)
+		}
+		if err := a.config.Client.Update(ctx, pod); err != nil {
+			return fmt.Errorf("update registry pod owner reference: %v", err)
+		}
+		return nil
+	}); err != nil {
 		return nil, err
 	}
 
 	if err := wait.PollImmediateUntil(time.Millisecond*250, func() (bool, error) {
-		podKey, err := client.ObjectKeyFromObject(pod)
-		if err != nil {
-			return false, fmt.Errorf("get pod key: %v", err)
-		}
 		if err := a.config.Client.Get(ctx, podKey, pod); err != nil {
 			return false, err
 		}
@@ -201,30 +222,37 @@ func (a *CatalogAdd) createRegistryPod(ctx context.Context) (*corev1.Pod, error)
 	return pod, nil
 }
 
-func (a *CatalogAdd) add(ctx context.Context, cs *v1alpha1.CatalogSource, pod *corev1.Pod) error {
-	if err := a.config.Client.Create(ctx, cs); err != nil {
-		return fmt.Errorf("create catalogsource: %v", err)
-	}
+func (a *CatalogAdd) updateCatalogSource(ctx context.Context, cs *v1alpha1.CatalogSource, pod *corev1.Pod) error {
+	cs.Spec.Address = fmt.Sprintf("%s:%s", pod.Status.PodIP, grpcPort)
 
-	if pod != nil {
-		retry.RetryOnConflict(retry.DefaultBackoff, func() error {
-			podKey, err := client.ObjectKeyFromObject(pod)
-			if err != nil {
-				return fmt.Errorf("get pod key: %v", err)
-			}
-			if err := a.config.Client.Get(ctx, podKey, pod); err != nil {
-				return fmt.Errorf("get registry pod: %v", err)
-			}
-			if err := controllerutil.SetOwnerReference(cs, pod, a.config.Scheme); err != nil {
-				return fmt.Errorf("set registry pod owner reference: %v", err)
-			}
-			if err := a.config.Client.Update(ctx, pod); err != nil {
-				return fmt.Errorf("update registry pod owner reference: %w", err)
-			}
-			return nil
-		})
+	injectedBundlesJSON, err := json.Marshal(a.InjectBundles)
+	if err != nil {
+		return fmt.Errorf("json marshal injected bundles: %v", err)
 	}
+	cs.ObjectMeta.Annotations = map[string]string{
+		"operators.operatorframework.io/index-image":        a.IndexImage,
+		"operators.operatorframework.io/inject-bundle-mode": a.InjectBundleMode,
+		"operators.operatorframework.io/injected-bundles":   string(injectedBundlesJSON),
+	}
+	csKey, err := client.ObjectKeyFromObject(cs)
+	if err != nil {
+		return fmt.Errorf("get catalogsource key: %v", err)
+	}
+	if err := retry.RetryOnConflict(retry.DefaultBackoff, func() error {
+		if err := a.config.Client.Get(ctx, csKey, cs); err != nil {
+			return fmt.Errorf("get catalog source: %v", err)
+		}
+		if err := a.config.Client.Update(ctx, cs); err != nil {
+			return fmt.Errorf("update catalog source: %v", err)
+		}
+		return nil
+	}); err != nil {
+		return err
+	}
+	return nil
+}
 
+func (a *CatalogAdd) waitForCatalogSourceReady(ctx context.Context, cs *v1alpha1.CatalogSource) error {
 	csKey, err := client.ObjectKeyFromObject(cs)
 	if err != nil {
 		return fmt.Errorf("get catalogsource key: %v", err)
