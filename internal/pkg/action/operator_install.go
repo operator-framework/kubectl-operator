@@ -51,11 +51,6 @@ func (i *OperatorInstall) BindFlags(fs *pflag.FlagSet) {
 }
 
 func (i *OperatorInstall) Run(ctx context.Context) (*v1alpha1.ClusterServiceVersion, error) {
-	og, err := i.getOperatorGroup(ctx)
-	if err != nil {
-		return nil, err
-	}
-
 	pm, err := i.getPackageManifest(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("get package manifest: %v", err)
@@ -65,24 +60,8 @@ func (i *OperatorInstall) Run(ctx context.Context) (*v1alpha1.ClusterServiceVers
 	if err != nil {
 		return nil, fmt.Errorf("get package channel: %v", err)
 	}
-	supported := getSupportedInstallModes(pc.CurrentCSVDesc.InstallModes)
-	if !i.InstallMode.IsEmpty() {
-		supported = supported.Intersection(sets.NewString(string(i.InstallMode.InstallModeType)))
-		if supported.Len() == 0 {
-			return nil, fmt.Errorf("operator %q does not support install mode %q", pm.Name, i.InstallMode.InstallModeType)
-		}
-	}
 
-	if og == nil {
-		if i.CreateOperatorGroup {
-			if og, err = i.createOperatorGroup(ctx, supported); err != nil {
-				return nil, fmt.Errorf("create operator group: %v", err)
-			}
-			log.Printf("operatorgroup %q created", og.Name)
-		} else {
-			return nil, fmt.Errorf("namespace %q has no existing operator group; use --create-operator-group to create one automatically", i.config.Namespace)
-		}
-	} else if err := i.validateOperatorGroup(*og, supported); err != nil {
+	if _, err := i.ensureOperatorGroup(ctx, pm, pc); err != nil {
 		return nil, err
 	}
 
@@ -111,6 +90,81 @@ func (i *OperatorInstall) Run(ctx context.Context) (*v1alpha1.ClusterServiceVers
 	return csv, nil
 }
 
+func (i *OperatorInstall) getPackageManifest(ctx context.Context) (*operatorsv1.PackageManifest, error) {
+	pm := &operatorsv1.PackageManifest{}
+	key := types.NamespacedName{
+		Namespace: i.config.Namespace,
+		Name:      i.Package,
+	}
+	if err := i.config.Client.Get(ctx, key, pm); err != nil {
+		return nil, err
+	}
+	return pm, nil
+}
+
+func (i *OperatorInstall) getPackageChannel(pm *operatorsv1.PackageManifest) (*operatorsv1.PackageChannel, error) {
+	if i.Channel == "" {
+		i.Channel = pm.Status.DefaultChannel
+	}
+	var packageChannel *operatorsv1.PackageChannel
+	for _, ch := range pm.Status.Channels {
+		if ch.Name == i.Channel {
+			packageChannel = &ch
+		}
+	}
+	if packageChannel == nil {
+		return nil, fmt.Errorf("channel %q does not exist for package %q", i.Channel, i.Package)
+	}
+	return packageChannel, nil
+}
+
+func (i *OperatorInstall) ensureOperatorGroup(ctx context.Context, pm *operatorsv1.PackageManifest, pc *operatorsv1.PackageChannel) (*v1.OperatorGroup, error) {
+	og, err := i.getOperatorGroup(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	supported := getSupportedInstallModes(pc.CurrentCSVDesc.InstallModes)
+	if supported.Len() == 0 {
+		return nil, fmt.Errorf("operator %q is not installable: no supported install modes", pm.Name)
+	}
+
+	if !i.InstallMode.IsEmpty() {
+		if i.InstallMode.InstallModeType == v1alpha1.InstallModeTypeSingleNamespace || i.InstallMode.InstallModeType == v1alpha1.InstallModeTypeMultiNamespace {
+			targetNsSet := sets.NewString(i.InstallMode.TargetNamespaces...)
+			if !supported.Has(string(v1alpha1.InstallModeTypeOwnNamespace)) && targetNsSet.Has(i.config.Namespace) {
+				return nil, fmt.Errorf("cannot watch namespace %q: operator %q does not support install mode %q", i.config.Namespace, pm.Name, v1alpha1.InstallModeTypeOwnNamespace)
+			}
+		}
+		if i.InstallMode.InstallModeType == v1alpha1.InstallModeTypeSingleNamespace && i.InstallMode.TargetNamespaces[0] == i.config.Namespace {
+			return nil, fmt.Errorf("use install mode %q to watch operator's namespace %q", v1alpha1.InstallModeTypeOwnNamespace, i.config.Namespace)
+		}
+
+		supported = supported.Intersection(sets.NewString(string(i.InstallMode.InstallModeType)))
+		if supported.Len() == 0 {
+			return nil, fmt.Errorf("operator %q does not support install mode %q", pm.Name, i.InstallMode.InstallModeType)
+		}
+	}
+
+	if og == nil {
+		if i.CreateOperatorGroup {
+			targetNamespaces, err := i.getTargetNamespaces(supported)
+			if err != nil {
+				return nil, err
+			}
+			if og, err = i.createOperatorGroup(ctx, targetNamespaces); err != nil {
+				return nil, fmt.Errorf("create operator group: %v", err)
+			}
+			log.Printf("operatorgroup %q created", og.Name)
+		} else {
+			return nil, fmt.Errorf("namespace %q has no existing operator group; use --create-operator-group to create one automatically", i.config.Namespace)
+		}
+	} else if err := i.validateOperatorGroup(*og, supported); err != nil {
+		return nil, err
+	}
+	return og, nil
+}
+
 func (i OperatorInstall) getOperatorGroup(ctx context.Context) (*v1.OperatorGroup, error) {
 	ogs := &v1.OperatorGroupList{}
 	err := i.config.Client.List(ctx, ogs, client.InNamespace(i.config.Namespace))
@@ -128,34 +182,43 @@ func (i OperatorInstall) getOperatorGroup(ctx context.Context) (*v1.OperatorGrou
 	}
 }
 
-func (i *OperatorInstall) getPackageManifest(ctx context.Context) (*operatorsv1.PackageManifest, error) {
-	pm := &operatorsv1.PackageManifest{}
-	key := types.NamespacedName{
-		Namespace: i.config.Namespace,
-		Name:      i.Package,
+func getSupportedInstallModes(csvInstallModes []v1alpha1.InstallMode) sets.String {
+	supported := sets.NewString()
+	for _, im := range csvInstallModes {
+		if im.Supported {
+			supported.Insert(string(im.Type))
+		}
 	}
-	if err := i.config.Client.Get(ctx, key, pm); err != nil {
-		return nil, err
-	}
-	return pm, nil
+	return supported
 }
 
-func (i *OperatorInstall) createOperatorGroup(ctx context.Context, supported sets.String) (*v1.OperatorGroup, error) {
-	og := &v1.OperatorGroup{}
-	og.SetName(i.config.Namespace)
-	og.SetNamespace(i.config.Namespace)
-
+func (i *OperatorInstall) getTargetNamespaces(supported sets.String) ([]string, error) {
 	switch {
-	case supported.HasAny(
-		string(v1alpha1.InstallModeTypeAllNamespaces),
-		string(v1alpha1.InstallModeTypeSingleNamespace),
-		string(v1alpha1.InstallModeTypeMultiNamespace)):
-		og.Spec.TargetNamespaces = i.InstallMode.TargetNamespaces
+	case supported.Has(string(v1alpha1.InstallModeTypeAllNamespaces)):
+		return nil, nil
 	case supported.Has(string(v1alpha1.InstallModeTypeOwnNamespace)):
-		og.Spec.TargetNamespaces = []string{i.config.Namespace}
+		return []string{i.config.Namespace}, nil
+	case supported.Has(string(v1alpha1.InstallModeTypeSingleNamespace)):
+		if len(i.InstallMode.TargetNamespaces) != 1 {
+			return nil, fmt.Errorf("install mode %q requires explicit target namespace", v1alpha1.InstallModeTypeSingleNamespace)
+		}
+		return i.InstallMode.TargetNamespaces, nil
+	case supported.Has(string(v1alpha1.InstallModeTypeMultiNamespace)):
+		if len(i.InstallMode.TargetNamespaces) == 0 {
+			return nil, fmt.Errorf("install mode %q requires explicit target namespaces", v1alpha1.InstallModeTypeMultiNamespace)
+		}
+		return i.InstallMode.TargetNamespaces, nil
 	default:
 		return nil, fmt.Errorf("no supported install modes")
 	}
+}
+
+func (i *OperatorInstall) createOperatorGroup(ctx context.Context, targetNamespaces []string) (*v1.OperatorGroup, error) {
+	og := &v1.OperatorGroup{}
+	og.SetName(i.config.Namespace)
+	og.SetNamespace(i.config.Namespace)
+	og.Spec.TargetNamespaces = targetNamespaces
+
 	if err := i.config.Client.Create(ctx, og); err != nil {
 		return nil, err
 	}
@@ -182,32 +245,6 @@ func (i *OperatorInstall) validateOperatorGroup(og v1.OperatorGroup, supported s
 		return fmt.Errorf("existing operatorgroup %q is not compatible with any supported package install modes", og.Name)
 	}
 	panic(fmt.Sprintf("unknown install mode %q", i.InstallMode.InstallModeType))
-}
-
-func getSupportedInstallModes(csvInstallModes []v1alpha1.InstallMode) sets.String {
-	supported := sets.NewString()
-	for _, im := range csvInstallModes {
-		if im.Supported {
-			supported.Insert(string(im.Type))
-		}
-	}
-	return supported
-}
-
-func (i *OperatorInstall) getPackageChannel(pm *operatorsv1.PackageManifest) (*operatorsv1.PackageChannel, error) {
-	if i.Channel == "" {
-		i.Channel = pm.Status.DefaultChannel
-	}
-	var packageChannel *operatorsv1.PackageChannel
-	for _, ch := range pm.Status.Channels {
-		if ch.Name == i.Channel {
-			packageChannel = &ch
-		}
-	}
-	if packageChannel == nil {
-		return nil, fmt.Errorf("channel %q does not exist for package %q", i.Channel, i.Package)
-	}
-	return packageChannel, nil
 }
 
 func (i *OperatorInstall) createSubscription(ctx context.Context, pm *operatorsv1.PackageManifest, pc *operatorsv1.PackageChannel) (*v1alpha1.Subscription, error) {
