@@ -21,6 +21,7 @@ type OperatorUninstall struct {
 	Package             string
 	DeleteOperatorGroup bool
 	DeleteCRDs          bool
+	DeleteAll           bool
 }
 
 func NewOperatorUninstall(cfg *Configuration) *OperatorUninstall {
@@ -32,9 +33,15 @@ func NewOperatorUninstall(cfg *Configuration) *OperatorUninstall {
 func (u *OperatorUninstall) BindFlags(fs *pflag.FlagSet) {
 	fs.BoolVar(&u.DeleteOperatorGroup, "delete-operator-group", false, "delete operator group if no other operators remain")
 	fs.BoolVar(&u.DeleteCRDs, "delete-crds", false, "delete all owned CRDs and all CRs")
+	fs.BoolVarP(&u.DeleteAll, "delete-add", "X", false, "enable all delete flags")
 }
 
 func (u *OperatorUninstall) Run(ctx context.Context) error {
+	if u.DeleteAll {
+		u.DeleteCRDs = true
+		u.DeleteOperatorGroup = true
+	}
+
 	subs := v1alpha1.SubscriptionList{}
 	if err := u.config.Client.List(ctx, &subs, client.InNamespace(u.config.Namespace)); err != nil {
 		return fmt.Errorf("list subscriptions: %v", err)
