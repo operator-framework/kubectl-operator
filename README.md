@@ -13,3 +13,6 @@ cluster. See the OLM installation instructions [here](https://olm.operatorframew
 
 ![asciicast](assets/asciinema-demo.gif)
 
+## Install
+
+Official Kubectl plugin documentation includes [plugin install documentation](https://kubernetes.io/docs/tasks/extend-kubectl/kubectl-plugins/#installing-kubectl-plugins). In short, find the required release on the [releases page](https://github.com/operator-framework/kubectl-operator/releases), decompress and place the kubectl-operator binary in your path. Kubectl will figure it out from there. 
