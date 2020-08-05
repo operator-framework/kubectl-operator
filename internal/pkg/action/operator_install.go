@@ -53,7 +53,7 @@ func (i *OperatorInstall) BindFlags(fs *pflag.FlagSet) {
 	fs.VarP(&i.InstallMode, "install-mode", "i", "install mode")
 	err := fs.MarkHidden("install-mode")
 	if err != nil {
-		log.Print(`requested flag "install-mode" missing`)
+		panic(`requested flag "install-mode" missing`)
 	}
 }
 
