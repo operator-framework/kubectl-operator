@@ -55,7 +55,7 @@ func newOperatorListCmd(cfg *action.Configuration) *cobra.Command {
 				if allNamespaces {
 					ns = "\t" + sub.Namespace
 				}
-				age := time.Now().Sub(sub.CreationTimestamp.Time)
+				age := time.Since(sub.CreationTimestamp.Time)
 				_, _ = fmt.Fprintf(tw, "%s%s\t%s\t%s\t%s\t%s\t%s\n", sub.Spec.Package, ns, sub.Name, sub.Status.InstalledCSV, sub.Status.CurrentCSV, sub.Status.State, duration.HumanDuration(age))
 			}
 			_ = tw.Flush()

@@ -48,7 +48,7 @@ func newOperatorListAvailableCmd(cfg *action.Configuration) *cobra.Command {
 			tw := tabwriter.NewWriter(os.Stdout, 3, 4, 2, ' ', 0)
 			_, _ = fmt.Fprintf(tw, "NAME\tCATALOG\tCHANNEL\tLATEST CSV\tAGE\n")
 			for _, op := range operators {
-				age := time.Now().Sub(op.CreationTimestamp.Time)
+				age := time.Since(op.CreationTimestamp.Time)
 				for _, ch := range op.Status.Channels {
 					_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\n", op.Name, op.Status.CatalogSourceDisplayName, ch.Name, ch.CurrentCSV, duration.HumanDuration(age))
 				}

@@ -38,9 +38,9 @@ func (u *OperatorUpgrade) Run(ctx context.Context) (*v1alpha1.ClusterServiceVers
 	}
 
 	var sub *v1alpha1.Subscription
-	for _, s := range subs.Items {
+	for i, s := range subs.Items {
 		if u.Package == s.Spec.Package {
-			sub = &s
+			sub = &subs.Items[i]
 			break
 		}
 	}

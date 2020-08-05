@@ -51,7 +51,10 @@ func (i *OperatorInstall) BindFlags(fs *pflag.FlagSet) {
 	fs.BoolVarP(&i.CreateOperatorGroup, "create-operator-group", "C", false, "create operator group if necessary")
 
 	fs.VarP(&i.InstallMode, "install-mode", "i", "install mode")
-	fs.MarkHidden("install-mode")
+	err := fs.MarkHidden("install-mode")
+	if err != nil {
+		log.Print(`requested flag "install-mode" missing`)
+	}
 }
 
 func (i *OperatorInstall) Run(ctx context.Context) (*v1alpha1.ClusterServiceVersion, error) {
@@ -134,9 +137,9 @@ func (i *OperatorInstall) getPackageChannel(pm *operatorsv1.PackageManifest) (*o
 		i.Channel = pm.Status.DefaultChannel
 	}
 	var packageChannel *operatorsv1.PackageChannel
-	for _, ch := range pm.Status.Channels {
+	for idx, ch := range pm.Status.Channels {
 		if ch.Name == i.Channel {
-			packageChannel = &ch
+			packageChannel = &pm.Status.Channels[idx]
 		}
 	}
 	if packageChannel == nil {
@@ -308,7 +311,7 @@ func guessStartingCSV(csvNameExample, desiredVersion string) string {
 
 const (
 	operatorNameRegexp = `[a-z0-9]([-a-z0-9]*[a-z0-9])?`
-	semverRegexp       = `(?P<major>0|[1-9]\d*)\.(?P<minor>0|[1-9]\d*)\.(?P<patch>0|[1-9]\d*)(?:-(?P<prerelease>(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+(?P<buildmetadata>[0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?`
+	semverRegexp       = `(?P<major>0|[1-9]\d*)\.(?P<minor>0|[1-9]\d*)\.(?P<patch>0|[1-9]\d*)(?:-(?P<prerelease>(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+(?P<buildmetadata>[0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?` //nolint:lll
 )
 
 var csvNameRegexp = regexp.MustCompile(`^(` + operatorNameRegexp + `).(v?)(` + semverRegexp + `)$`)
