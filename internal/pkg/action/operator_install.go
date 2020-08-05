@@ -137,9 +137,10 @@ func (i *OperatorInstall) getPackageChannel(pm *operatorsv1.PackageManifest) (*o
 		i.Channel = pm.Status.DefaultChannel
 	}
 	var packageChannel *operatorsv1.PackageChannel
-	for idx, ch := range pm.Status.Channels {
+	for _, ch := range pm.Status.Channels {
+		ch := ch
 		if ch.Name == i.Channel {
-			packageChannel = &pm.Status.Channels[idx]
+			packageChannel = &ch
 		}
 	}
 	if packageChannel == nil {
