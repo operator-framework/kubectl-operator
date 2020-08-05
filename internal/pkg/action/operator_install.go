@@ -28,6 +28,7 @@ type OperatorInstall struct {
 	Channel             string
 	Version             string
 	Approval            subscription.ApprovalValue
+	WatchNamespaces     []string
 	InstallMode         operator.InstallMode
 	InstallTimeout      time.Duration
 	CleanupTimeout      time.Duration
@@ -44,13 +45,23 @@ func (i *OperatorInstall) BindFlags(fs *pflag.FlagSet) {
 	fs.StringVarP(&i.Channel, "channel", "c", "", "subscription channel")
 	fs.VarP(&i.Approval, "approval", "a", fmt.Sprintf("approval (%s or %s)", v1alpha1.ApprovalManual, v1alpha1.ApprovalAutomatic))
 	fs.StringVarP(&i.Version, "version", "v", "", "install specific version for operator (default latest)")
-	fs.VarP(&i.InstallMode, "install-mode", "i", "install mode")
+	fs.StringSliceVarP(&i.WatchNamespaces, "watch", "w", []string{}, "namespaces to watch")
 	fs.DurationVarP(&i.InstallTimeout, "timeout", "t", time.Minute, "the amount of time to wait before cancelling the install")
 	fs.DurationVar(&i.CleanupTimeout, "cleanup-timeout", time.Minute, "the amount to time to wait before cancelling cleanup")
 	fs.BoolVarP(&i.CreateOperatorGroup, "create-operator-group", "C", false, "create operator group if necessary")
+
+	fs.VarP(&i.InstallMode, "install-mode", "i", "install mode")
+	fs.MarkHidden("install-mode")
 }
 
 func (i *OperatorInstall) Run(ctx context.Context) (*v1alpha1.ClusterServiceVersion, error) {
+	if len(i.WatchNamespaces) > 0 && !i.InstallMode.IsEmpty() {
+		return nil, fmt.Errorf("WatchNamespaces and InstallMode options are mutually exclusive")
+	}
+	if i.InstallMode.IsEmpty() {
+		i.configureInstallModeFromWatch()
+	}
+
 	pm, err := i.getPackageManifest(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("get package manifest: %v", err)
@@ -88,6 +99,22 @@ func (i *OperatorInstall) Run(ctx context.Context) (*v1alpha1.ClusterServiceVers
 		return nil, fmt.Errorf("get clusterserviceversion: %v", err)
 	}
 	return csv, nil
+}
+
+func (i *OperatorInstall) configureInstallModeFromWatch() {
+	i.InstallMode.TargetNamespaces = i.WatchNamespaces
+	switch len(i.InstallMode.TargetNamespaces) {
+	case 0:
+		i.InstallMode.InstallModeType = v1alpha1.InstallModeTypeAllNamespaces
+	case 1:
+		if i.InstallMode.TargetNamespaces[0] == i.config.Namespace {
+			i.InstallMode.InstallModeType = v1alpha1.InstallModeTypeOwnNamespace
+		} else {
+			i.InstallMode.InstallModeType = v1alpha1.InstallModeTypeSingleNamespace
+		}
+	default:
+		i.InstallMode.InstallModeType = v1alpha1.InstallModeTypeMultiNamespace
+	}
 }
 
 func (i *OperatorInstall) getPackageManifest(ctx context.Context) (*operatorsv1.PackageManifest, error) {
