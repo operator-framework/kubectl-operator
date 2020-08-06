@@ -1,4 +1,4 @@
-module github.com/joelanford/kubectl-operator
+module github.com/operator-framework/kubectl-operator
 
 go 1.13
 

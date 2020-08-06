@@ -12,7 +12,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/joelanford/kubectl-operator/internal/pkg/log"
+	"github.com/operator-framework/kubectl-operator/internal/pkg/log"
 )
 
 type OperatorUninstall struct {
