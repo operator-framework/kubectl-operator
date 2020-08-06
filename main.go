@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/joelanford/kubectl-operator/internal/cmd"
-	"github.com/joelanford/kubectl-operator/internal/pkg/log"
+	"github.com/operator-framework/kubectl-operator/internal/cmd"
+	"github.com/operator-framework/kubectl-operator/internal/pkg/log"
 )
 
 func main() {

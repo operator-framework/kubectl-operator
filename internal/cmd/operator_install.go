@@ -5,8 +5,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/joelanford/kubectl-operator/internal/pkg/action"
-	"github.com/joelanford/kubectl-operator/internal/pkg/log"
+	"github.com/operator-framework/kubectl-operator/internal/pkg/action"
+	"github.com/operator-framework/kubectl-operator/internal/pkg/log"
 )
 
 func newOperatorInstallCmd(cfg *action.Configuration) *cobra.Command {

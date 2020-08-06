@@ -12,8 +12,8 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/duration"
 
-	"github.com/joelanford/kubectl-operator/internal/pkg/action"
-	"github.com/joelanford/kubectl-operator/internal/pkg/log"
+	"github.com/operator-framework/kubectl-operator/internal/pkg/action"
+	"github.com/operator-framework/kubectl-operator/internal/pkg/log"
 )
 
 func newOperatorListAvailableCmd(cfg *action.Configuration) *cobra.Command {

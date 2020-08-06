@@ -3,7 +3,7 @@ package cmd
 import (
 	"github.com/spf13/cobra"
 
-	"github.com/joelanford/kubectl-operator/internal/pkg/action"
+	"github.com/operator-framework/kubectl-operator/internal/pkg/action"
 )
 
 func newCatalogCmd(cfg *action.Configuration) *cobra.Command {

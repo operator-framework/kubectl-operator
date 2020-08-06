@@ -21,8 +21,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
-	"github.com/joelanford/kubectl-operator/internal/pkg/catalog"
-	"github.com/joelanford/kubectl-operator/internal/pkg/log"
+	"github.com/operator-framework/kubectl-operator/internal/pkg/catalog"
+	"github.com/operator-framework/kubectl-operator/internal/pkg/log"
 )
 
 const grpcPort = "50051"

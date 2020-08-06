@@ -16,9 +16,9 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/joelanford/kubectl-operator/internal/pkg/log"
-	"github.com/joelanford/kubectl-operator/internal/pkg/operator"
-	"github.com/joelanford/kubectl-operator/internal/pkg/subscription"
+	"github.com/operator-framework/kubectl-operator/internal/pkg/log"
+	"github.com/operator-framework/kubectl-operator/internal/pkg/operator"
+	"github.com/operator-framework/kubectl-operator/internal/pkg/subscription"
 )
 
 type OperatorInstall struct {
