@@ -20,6 +20,9 @@ builds:
   - goos: windows
     goarch: arm64
 
+checksum:
+  name_template: "{{ .ProjectName }}_v{{ .Version }}_checksums.txt"
+
 archives:
 - builds:
   - kubectl-operator
