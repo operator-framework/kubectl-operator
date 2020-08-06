@@ -49,6 +49,7 @@ func (u *OperatorUninstall) Run(ctx context.Context) error {
 
 	var sub *v1alpha1.Subscription
 	for _, s := range subs.Items {
+		s := s
 		if u.Package == s.Spec.Package {
 			sub = &s
 			break
@@ -85,6 +86,7 @@ func (u *OperatorUninstall) Run(ctx context.Context) error {
 				return fmt.Errorf("list operatorgroups: %v", err)
 			}
 			for _, og := range ogs.Items {
+				og := og
 				if err := u.config.Client.Delete(ctx, &og); err != nil {
 					return fmt.Errorf("delete operatorgroup %q: %v", og.Name, err)
 				}

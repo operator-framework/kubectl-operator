@@ -49,7 +49,7 @@ func newCatalogListCmd(cfg *action.Configuration) *cobra.Command {
 				if allNamespaces {
 					ns = "\t" + cs.Namespace
 				}
-				age := time.Now().Sub(cs.CreationTimestamp.Time)
+				age := time.Since(cs.CreationTimestamp.Time)
 				_, _ = fmt.Fprintf(tw, "%s%s\t%s\t%s\t%s\t%s\n", cs.Name, ns, cs.Spec.DisplayName, cs.Spec.SourceType, cs.Spec.Publisher, duration.HumanDuration(age))
 			}
 			_ = tw.Flush()

@@ -1,0 +1,25 @@
+linters:
+  auto-fix: false
+  enable:
+    - errcheck
+    - goimports
+    - golint
+    - gosec
+    - misspell
+    - scopelint
+    - unconvert
+    - unparam
+    - interfacer
+    - nakedret
+    - gocyclo
+    - dupl
+    - goconst
+    - lll
+run:
+linters-settings:
+  errcheck:
+    check-type-assertions: true
+  lll:
+    line-length: 250
+  dupl:
+    threshold: 400
