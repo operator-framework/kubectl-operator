@@ -113,7 +113,7 @@ func (u *OperatorUpgrade) getCSV(ctx context.Context, ip *v1alpha1.InstallPlan) 
 		Namespace: u.config.Namespace,
 	}
 	for _, s := range ip.Status.Plan {
-		if s.Resource.Kind == "ClusterServiceVersion" {
+		if s.Resource.Kind == csvKind {
 			csvKey.Name = s.Resource.Name
 		}
 	}
