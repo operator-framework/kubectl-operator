@@ -3,12 +3,14 @@ package cmd
 import (
 	"github.com/spf13/cobra"
 
+	"github.com/operator-framework/kubectl-operator/internal/cmd/internal/log"
 	"github.com/operator-framework/kubectl-operator/internal/pkg/action"
-	"github.com/operator-framework/kubectl-operator/internal/pkg/log"
 )
 
 func newOperatorUninstallCmd(cfg *action.Configuration) *cobra.Command {
 	u := action.NewOperatorUninstall(cfg)
+	u.Logf = log.Printf
+
 	cmd := &cobra.Command{
 		Use:   "uninstall <operator>",
 		Short: "Uninstall an operator",

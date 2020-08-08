@@ -17,8 +17,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/yaml"
-
-	"github.com/operator-framework/kubectl-operator/internal/pkg/log"
 )
 
 type OperatorUninstall struct {
@@ -28,11 +26,14 @@ type OperatorUninstall struct {
 	DeleteOperatorGroup bool
 	DeleteCRDs          bool
 	DeleteAll           bool
+
+	Logf func(string, ...interface{})
 }
 
 func NewOperatorUninstall(cfg *Configuration) *OperatorUninstall {
 	return &OperatorUninstall{
 		config: cfg,
+		Logf:   func(string, ...interface{}) {},
 	}
 }
 
@@ -81,7 +82,7 @@ func (u *OperatorUninstall) Run(ctx context.Context) error {
 	if err := u.config.Client.Delete(ctx, sub); err != nil {
 		return fmt.Errorf("delete subscription %q: %v", sub.Name, err)
 	}
-	log.Printf("subscription %q deleted", sub.Name)
+	u.Logf("subscription %q deleted", sub.Name)
 
 	if u.DeleteCRDs {
 		if err := u.deleteCRDs(ctx, crds); err != nil {
@@ -112,7 +113,7 @@ func (u *OperatorUninstall) Run(ctx context.Context) error {
 				if err := u.config.Client.Delete(ctx, &og); err != nil {
 					return fmt.Errorf("delete operatorgroup %q: %v", og.Name, err)
 				}
-				log.Printf("operatorgroup %q deleted", og.Name)
+				u.Logf("operatorgroup %q deleted", og.Name)
 			}
 		}
 	}
@@ -134,7 +135,7 @@ func (u *OperatorUninstall) deleteObjects(ctx context.Context, waitForDelete boo
 		if err := u.config.Client.Delete(ctx, obj); err != nil && !apierrors.IsNotFound(err) {
 			return fmt.Errorf("delete %s %q: %v", lowerKind, obj.GetName(), err)
 		} else if err == nil {
-			log.Printf("%s %q deleted", lowerKind, obj.GetName())
+			u.Logf("%s %q deleted", lowerKind, obj.GetName())
 		}
 		if waitForDelete {
 			key, err := client.ObjectKeyFromObject(obj)

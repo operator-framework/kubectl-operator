@@ -22,7 +22,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"github.com/operator-framework/kubectl-operator/internal/pkg/catalog"
-	"github.com/operator-framework/kubectl-operator/internal/pkg/log"
 )
 
 const grpcPort = "50051"
@@ -39,6 +38,7 @@ type CatalogAdd struct {
 	AddTimeout        time.Duration
 	CleanupTimeout    time.Duration
 
+	Logf            func(string, ...interface{})
 	RegistryOptions []containerdregistry.RegistryOption
 
 	registry *containerdregistry.Registry
@@ -47,6 +47,7 @@ type CatalogAdd struct {
 func NewCatalogAdd(cfg *Configuration) *CatalogAdd {
 	return &CatalogAdd{
 		config: cfg,
+		Logf:   func(string, ...interface{}) {},
 	}
 }
 
@@ -70,7 +71,7 @@ func (a *CatalogAdd) Run(ctx context.Context) (*v1alpha1.CatalogSource, error) {
 
 	defer func() {
 		if err := a.registry.Destroy(); err != nil {
-			log.Printf("registry cleanup: %v", err)
+			a.Logf("registry cleanup: %v", err)
 		}
 	}()
 
@@ -277,6 +278,6 @@ func (a *CatalogAdd) cleanup(cs *v1alpha1.CatalogSource) {
 	ctx, cancel := context.WithTimeout(context.Background(), a.CleanupTimeout)
 	defer cancel()
 	if err := a.config.Client.Delete(ctx, cs); err != nil && !apierrors.IsNotFound(err) {
-		log.Printf("delete catalogsource %q: %v", cs.Name, err)
+		a.Logf("delete catalogsource %q: %v", cs.Name, err)
 	}
 }
