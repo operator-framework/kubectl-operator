@@ -26,5 +26,5 @@ func (r *CatalogRemove) Run(ctx context.Context) error {
 	if err := r.config.Client.Delete(ctx, &cs); err != nil {
 		return fmt.Errorf("delete catalogsource %q: %v", cs.Name, err)
 	}
-	return nil
+	return waitForDeletion(ctx, r.config.Client, &cs)
 }

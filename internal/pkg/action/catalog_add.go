@@ -18,7 +18,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/util/retry"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"github.com/operator-framework/kubectl-operator/internal/pkg/catalog"
@@ -189,11 +188,7 @@ func (a *CatalogAdd) createRegistryPod(ctx context.Context, cs *v1alpha1.Catalog
 		return nil, fmt.Errorf("create registry pod: %v", err)
 	}
 
-	podKey, err := client.ObjectKeyFromObject(pod)
-	if err != nil {
-		return nil, fmt.Errorf("get registry pod key: %v", err)
-	}
-
+	podKey := objectKeyForObject(pod)
 	if err := retry.RetryOnConflict(retry.DefaultBackoff, func() error {
 		if err := a.config.Client.Get(ctx, podKey, pod); err != nil {
 			return fmt.Errorf("get registry pod: %v", err)
@@ -235,10 +230,7 @@ func (a *CatalogAdd) updateCatalogSource(ctx context.Context, cs *v1alpha1.Catal
 		"operators.operatorframework.io/inject-bundle-mode": a.InjectBundleMode,
 		"operators.operatorframework.io/injected-bundles":   string(injectedBundlesJSON),
 	}
-	csKey, err := client.ObjectKeyFromObject(cs)
-	if err != nil {
-		return fmt.Errorf("get catalogsource key: %v", err)
-	}
+	csKey := objectKeyForObject(cs)
 	if err := retry.RetryOnConflict(retry.DefaultBackoff, func() error {
 		if err := a.config.Client.Get(ctx, csKey, cs); err != nil {
 			return fmt.Errorf("get catalog source: %v", err)
@@ -254,10 +246,7 @@ func (a *CatalogAdd) updateCatalogSource(ctx context.Context, cs *v1alpha1.Catal
 }
 
 func (a *CatalogAdd) waitForCatalogSourceReady(ctx context.Context, cs *v1alpha1.CatalogSource) error {
-	csKey, err := client.ObjectKeyFromObject(cs)
-	if err != nil {
-		return fmt.Errorf("get catalogsource key: %v", err)
-	}
+	csKey := objectKeyForObject(cs)
 	if err := wait.PollImmediateUntil(time.Millisecond*250, func() (bool, error) {
 		if err := a.config.Client.Get(ctx, csKey, cs); err != nil {
 			return false, err

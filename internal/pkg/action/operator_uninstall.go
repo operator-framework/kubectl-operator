@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"time"
 
 	v1 "github.com/operator-framework/api/pkg/operators/v1"
 	"github.com/operator-framework/api/pkg/operators/v1alpha1"
@@ -13,7 +12,6 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/apimachinery/pkg/util/wait"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/yaml"
@@ -22,10 +20,11 @@ import (
 type OperatorUninstall struct {
 	config *Configuration
 
-	Package             string
-	DeleteOperatorGroup bool
-	DeleteCRDs          bool
-	DeleteAll           bool
+	Package                  string
+	DeleteAll                bool
+	DeleteCRDs               bool
+	DeleteOperatorGroups     bool
+	DeleteOperatorGroupNames []string
 
 	Logf func(string, ...interface{})
 }
@@ -38,15 +37,16 @@ func NewOperatorUninstall(cfg *Configuration) *OperatorUninstall {
 }
 
 func (u *OperatorUninstall) BindFlags(fs *pflag.FlagSet) {
-	fs.BoolVar(&u.DeleteOperatorGroup, "delete-operator-group", false, "delete operator group if no other operators remain")
+	fs.BoolVarP(&u.DeleteAll, "delete-all", "X", false, "enable all delete flags")
 	fs.BoolVar(&u.DeleteCRDs, "delete-crds", false, "delete all owned CRDs and all CRs")
-	fs.BoolVarP(&u.DeleteAll, "delete-add", "X", false, "enable all delete flags")
+	fs.BoolVar(&u.DeleteOperatorGroups, "delete-operator-groups", false, "delete operator group if no other operators remain")
+	fs.StringSliceVar(&u.DeleteOperatorGroupNames, "delete-operator-group-names", nil, "delete operator group if no other operators remain")
 }
 
 func (u *OperatorUninstall) Run(ctx context.Context) error {
 	if u.DeleteAll {
 		u.DeleteCRDs = true
-		u.DeleteOperatorGroup = true
+		u.DeleteOperatorGroups = true
 	}
 
 	subs := v1alpha1.SubscriptionList{}
@@ -66,6 +66,9 @@ func (u *OperatorUninstall) Run(ctx context.Context) error {
 		return fmt.Errorf("operator package %q not found", u.Package)
 	}
 
+	// Since the install plan is owned by the subscription, we need to
+	// read all of the resource references from the install plan before
+	// deleting the subscription.
 	var crds, csvs, others []controllerutil.Object
 	if sub.Status.InstallPlanRef != nil {
 		ipKey := types.NamespacedName{
@@ -79,30 +82,32 @@ func (u *OperatorUninstall) Run(ctx context.Context) error {
 		}
 	}
 
-	if err := u.config.Client.Delete(ctx, sub); err != nil {
-		return fmt.Errorf("delete subscription %q: %v", sub.Name, err)
+	// Delete the subscription first, so that no further installs or upgrades
+	// of the operator occur while we're cleaning up.
+	if err := u.deleteObjects(ctx, sub); err != nil {
+		return err
 	}
-	u.Logf("subscription %q deleted", sub.Name)
 
 	if u.DeleteCRDs {
-		if err := u.deleteCRDs(ctx, crds); err != nil {
+		// Ensure CustomResourceDefinitions are deleted next, so that the operator
+		// has a chance to handle CRs that have finalizers.
+		if err := u.deleteObjects(ctx, crds...); err != nil {
 			return err
 		}
 	}
 
-	if err := u.deleteObjects(ctx, false, csvs); err != nil {
+	// Delete CSVs and all other objects created by the install plan.
+	objects := append(csvs, others...)
+	if err := u.deleteObjects(ctx, objects...); err != nil {
 		return err
 	}
 
-	if err := u.deleteObjects(ctx, false, others); err != nil {
-		return err
-	}
-
-	if u.DeleteOperatorGroup {
+	if u.DeleteOperatorGroups {
 		subs := v1alpha1.SubscriptionList{}
 		if err := u.config.Client.List(ctx, &subs, client.InNamespace(u.config.Namespace)); err != nil {
-			return fmt.Errorf("list clusterserviceversions: %v", err)
+			return fmt.Errorf("list subscriptions: %v", err)
 		}
+		// If there are no subscriptions left, delete the operator group(s).
 		if len(subs.Items) == 0 {
 			ogs := v1.OperatorGroupList{}
 			if err := u.config.Client.List(ctx, &ogs, client.InNamespace(u.config.Namespace)); err != nil {
@@ -110,10 +115,11 @@ func (u *OperatorUninstall) Run(ctx context.Context) error {
 			}
 			for _, og := range ogs.Items {
 				og := og
-				if err := u.config.Client.Delete(ctx, &og); err != nil {
-					return fmt.Errorf("delete operatorgroup %q: %v", og.Name, err)
+				if len(u.DeleteOperatorGroupNames) == 0 || contains(u.DeleteOperatorGroupNames, og.GetName()) {
+					if err := u.deleteObjects(ctx, &og); err != nil {
+						return err
+					}
 				}
-				u.Logf("operatorgroup %q deleted", og.Name)
 			}
 		}
 	}
@@ -121,14 +127,7 @@ func (u *OperatorUninstall) Run(ctx context.Context) error {
 	return nil
 }
 
-func (u *OperatorUninstall) deleteCRDs(ctx context.Context, crds []controllerutil.Object) error {
-	if err := u.deleteObjects(ctx, true, crds); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (u *OperatorUninstall) deleteObjects(ctx context.Context, waitForDelete bool, objs []controllerutil.Object) error {
+func (u *OperatorUninstall) deleteObjects(ctx context.Context, objs ...controllerutil.Object) error {
 	for _, obj := range objs {
 		obj := obj
 		lowerKind := strings.ToLower(obj.GetObjectKind().GroupVersionKind().Kind)
@@ -137,24 +136,8 @@ func (u *OperatorUninstall) deleteObjects(ctx context.Context, waitForDelete boo
 		} else if err == nil {
 			u.Logf("%s %q deleted", lowerKind, obj.GetName())
 		}
-		if waitForDelete {
-			key, err := client.ObjectKeyFromObject(obj)
-			if err != nil {
-				return fmt.Errorf("get %s key: %v", lowerKind, err)
-			}
-			if err := wait.PollImmediateUntil(250*time.Millisecond, func() (bool, error) {
-				if err := u.config.Client.Get(ctx, key, obj); apierrors.IsNotFound(err) {
-					return true, nil
-				} else if err != nil {
-					return false, err
-				}
-				return false, nil
-			}, ctx.Done()); err != nil {
-				return fmt.Errorf("wait for %s deleted: %v", lowerKind, err)
-			}
-		}
 	}
-	return nil
+	return waitForDeletion(ctx, u.config.Client, objs...)
 }
 
 func (u *OperatorUninstall) getInstallPlanResources(ctx context.Context, installPlanKey types.NamespacedName) (crds, csvs, others []controllerutil.Object, err error) {
@@ -164,11 +147,8 @@ func (u *OperatorUninstall) getInstallPlanResources(ctx context.Context, install
 	}
 
 	for _, step := range installPlan.Status.Plan {
-		if step.Status != v1alpha1.StepStatusCreated {
-			continue
-		}
-		obj := &unstructured.Unstructured{Object: map[string]interface{}{}}
 		lowerKind := strings.ToLower(step.Resource.Kind)
+		obj := &unstructured.Unstructured{Object: map[string]interface{}{}}
 		if err := yaml.Unmarshal([]byte(step.Resource.Manifest), &obj.Object); err != nil {
 			return nil, nil, nil, fmt.Errorf("parse %s manifest %q: %v", lowerKind, step.Resource.Name, err)
 		}
@@ -191,8 +171,22 @@ func (u *OperatorUninstall) getInstallPlanResources(ctx context.Context, install
 		case csvKind:
 			csvs = append(csvs, obj)
 		default:
+			// Skip non-CRD/non-CSV resources in the install plan that were not created by the install plan.
+			// This means we avoid deleting things like the default service account.
+			if step.Status != v1alpha1.StepStatusCreated {
+				continue
+			}
 			others = append(others, obj)
 		}
 	}
 	return crds, csvs, others, nil
+}
+
+func contains(haystack []string, needle string) bool {
+	for _, n := range haystack {
+		if n == needle {
+			return true
+		}
+	}
+	return false
 }
