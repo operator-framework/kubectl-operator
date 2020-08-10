@@ -3,8 +3,8 @@ package cmd
 import (
 	"github.com/spf13/cobra"
 
+	"github.com/operator-framework/kubectl-operator/internal/cmd/internal/log"
 	"github.com/operator-framework/kubectl-operator/internal/pkg/action"
-	"github.com/operator-framework/kubectl-operator/internal/pkg/log"
 )
 
 func newCatalogRemoveCmd(cfg *action.Configuration) *cobra.Command {

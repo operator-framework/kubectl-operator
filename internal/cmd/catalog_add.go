@@ -8,12 +8,13 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
+	"github.com/operator-framework/kubectl-operator/internal/cmd/internal/log"
 	"github.com/operator-framework/kubectl-operator/internal/pkg/action"
-	"github.com/operator-framework/kubectl-operator/internal/pkg/log"
 )
 
 func newCatalogAddCmd(cfg *action.Configuration) *cobra.Command {
 	a := action.NewCatalogAdd(cfg)
+	a.Logf = log.Printf
 
 	cmd := &cobra.Command{
 		Use:   "add <name> <index_image>",

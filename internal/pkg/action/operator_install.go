@@ -16,7 +16,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/operator-framework/kubectl-operator/internal/pkg/log"
 	"github.com/operator-framework/kubectl-operator/internal/pkg/operator"
 	"github.com/operator-framework/kubectl-operator/internal/pkg/subscription"
 )
@@ -33,11 +32,14 @@ type OperatorInstall struct {
 	InstallTimeout      time.Duration
 	CleanupTimeout      time.Duration
 	CreateOperatorGroup bool
+
+	Logf func(string, ...interface{})
 }
 
 func NewOperatorInstall(cfg *Configuration) *OperatorInstall {
 	return &OperatorInstall{
 		config: cfg,
+		Logf:   func(string, ...interface{}) {},
 	}
 }
 
@@ -83,7 +85,7 @@ func (i *OperatorInstall) Run(ctx context.Context) (*v1alpha1.ClusterServiceVers
 	if err != nil {
 		return nil, err
 	}
-	log.Printf("subscription %q created", sub.Name)
+	i.Logf("subscription %q created", sub.Name)
 
 	ip, err := i.getInstallPlan(ctx, sub)
 	if err != nil {
@@ -186,7 +188,7 @@ func (i *OperatorInstall) ensureOperatorGroup(ctx context.Context, pm *operators
 			if og, err = i.createOperatorGroup(ctx, targetNamespaces); err != nil {
 				return nil, fmt.Errorf("create operator group: %v", err)
 			}
-			log.Printf("operatorgroup %q created", og.Name)
+			i.Logf("operatorgroup %q created", og.Name)
 		} else {
 			return nil, fmt.Errorf("namespace %q has no existing operator group; use --create-operator-group to create one automatically", i.config.Namespace)
 		}

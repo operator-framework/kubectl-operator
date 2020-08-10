@@ -3,10 +3,16 @@ package cmd
 import (
 	"github.com/spf13/cobra"
 
+	"github.com/operator-framework/kubectl-operator/internal/cmd/internal/log"
 	"github.com/operator-framework/kubectl-operator/internal/pkg/action"
 )
 
-func New() *cobra.Command {
+func Execute() {
+	if err := newCmd().Execute(); err != nil {
+		log.Fatal(err)
+	}
+}
+func newCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "operator",
 		Short: "Manage operators in a cluster from the command line",
