@@ -13,3 +13,9 @@ cluster. See the OLM installation instructions [here](https://olm.operatorframew
 
 ![asciicast](assets/asciinema-demo.gif)
 
+## Install
+
+The `kubectl operator` plugin is distributed via [`krew`](https://krew.sigs.k8s.io/). To install it, run the following:
+```console
+kubectl krew install operator
+```
