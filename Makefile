@@ -1,4 +1,4 @@
-.PHONY: all build lint
+.PHONY: all build gen-demo lint
 all: build
 
 build:
@@ -6,6 +6,9 @@ build:
 
 install: build
 	install bin/kubectl-operator $(shell go env GOPATH)/bin
+
+gen-demo:
+	./assets/demo/gen-demo.sh
 
 GOLANGCI_LINT_VER = "1.29.0"
 lint:
