@@ -11,7 +11,7 @@ cluster. See the OLM installation instructions [here](https://olm.operatorframew
 
 ## Demo
 
-![asciicast](assets/asciinema-demo.gif)
+![asciicast](assets/demo/demo.gif)
 
 ## Install
 
