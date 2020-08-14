@@ -1,20 +1,43 @@
-.PHONY: all build gen-demo lint
-all: build
+SHELL:=/bin/bash
 
+export GIT_VERSION = $(shell git describe --tags --always)
+export GIT_COMMIT = $(shell git rev-parse HEAD)
+export GIT_COMMIT_TIME = $(shell TZ=UTC git show -s --format=%cd --date=format-local:%Y-%m-%dT%TZ)
+export GIT_TREE_STATE = $(shell sh -c '(test -n "$(shell git status -s)" && echo "dirty") || echo "clean"')
+
+REPO = $(shell go list -m)
+GO_BUILD_ARGS = \
+  -gcflags "all=-trimpath=$(shell dirname $(shell pwd))" \
+  -asmflags "all=-trimpath=$(shell dirname $(shell pwd))" \
+  -ldflags " \
+    -s \
+    -w \
+    -X '$(REPO)/internal/version.GitVersion=$(GIT_VERSION)' \
+    -X '$(REPO)/internal/version.GitCommit=$(GIT_COMMIT)' \
+    -X '$(REPO)/internal/version.GitCommitTime=$(GIT_COMMIT_TIME)' \
+    -X '$(REPO)/internal/version.GitTreeState=$(GIT_TREE_STATE)' \
+  " \
+
+.PHONY: all
+all: install
+
+.PHONY: build
 build:
-	go build -o bin/kubectl-operator
+	go build $(GO_BUILD_ARGS) -o bin/kubectl-operator
 
+.PHONY: install
 install: build
 	install bin/kubectl-operator $(shell go env GOPATH)/bin
 
+.PHONY: gen-demo
 gen-demo:
 	./assets/demo/gen-demo.sh
 
-GOLANGCI_LINT_VER = "1.29.0"
+.PHONY: lint
 lint:
-#	scripts/golangci-lint-check.sh
-ifneq (${GOLANGCI_LINT_VER}, "$(shell ./bin/golangci-lint --version 2>/dev/null | cut -b 27-32)")
-	@echo "golangci-lint missing or not version '${GOLANGCI_LINT_VER}', downloading..."
-	curl -sSfL "https://raw.githubusercontent.com/golangci/golangci-lint/v${GOLANGCI_LINT_VER}/install.sh" | sh -s -- -b ./bin "v${GOLANGCI_LINT_VER}"
-endif
-	./bin/golangci-lint --timeout 3m run
+	source ./scripts/fetch.sh; fetch golangci-lint 1.29.0 && ./bin/golangci-lint --timeout 3m run
+
+.PHONY: release
+RELEASE_ARGS?=release --rm-dist --snapshot
+release:
+	source ./scripts/fetch.sh; fetch goreleaser 0.141.0 && ./bin/goreleaser $(RELEASE_ARGS)
