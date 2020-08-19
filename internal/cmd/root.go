@@ -41,6 +41,7 @@ operators from the installed catalogs.`,
 		newOperatorListCmd(&cfg),
 		newOperatorListAvailableCmd(&cfg),
 		newVersionCmd(),
+		newOperatorShowCmd(&cfg),
 	)
 
 	return cmd
