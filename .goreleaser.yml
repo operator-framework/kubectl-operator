@@ -7,6 +7,17 @@ builds:
   binary: kubectl-operator
   env:
   - CGO_ENABLED=0
+  asmflags:
+  - all=-trimpath={{ dir .Env.PWD }}
+  gcflags:
+  - all=-trimpath={{ dir .Env.PWD }}
+  ldflags:
+  - -s
+  - -w
+  - -X github.com/operator-framework/kubectl-operator/internal/version.GitVersion={{.Env.GIT_VERSION}}
+  - -X github.com/operator-framework/kubectl-operator/internal/version.GitCommit={{.Env.GIT_COMMIT}}
+  - -X github.com/operator-framework/kubectl-operator/internal/version.GitCommitTime={{.Env.GIT_COMMIT_TIME}}
+  - -X github.com/operator-framework/kubectl-operator/internal/version.GitTreeState={{.Env.GIT_TREE_STATE}}
   goos:
   - linux
   - darwin
