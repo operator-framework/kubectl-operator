@@ -3,6 +3,8 @@ module github.com/operator-framework/kubectl-operator
 go 1.13
 
 require (
+	github.com/containerd/containerd v1.3.2
+	github.com/opencontainers/image-spec v1.0.2-0.20190823105129-775207bd45b6
 	github.com/operator-framework/api v0.3.7
 	github.com/operator-framework/operator-lifecycle-manager v0.0.0-20200521062108-408ca95d458f
 	github.com/operator-framework/operator-registry v1.12.5
