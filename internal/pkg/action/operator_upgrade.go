@@ -8,6 +8,7 @@ import (
 	"github.com/operator-framework/api/pkg/operators/v1alpha1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/util/retry"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -78,11 +79,17 @@ func (u *OperatorUpgrade) getInstallPlan(ctx context.Context, sub *v1alpha1.Subs
 }
 
 func (u *OperatorUpgrade) approveInstallPlan(ctx context.Context, ip *v1alpha1.InstallPlan) error {
-	ip.Spec.Approved = true
-	if err := u.config.Client.Update(ctx, ip); err != nil {
-		return fmt.Errorf("approve install plan: %v", err)
+	ipKey := types.NamespacedName{
+		Namespace: ip.GetNamespace(),
+		Name:      ip.GetName(),
 	}
-	return nil
+	return retry.RetryOnConflict(retry.DefaultBackoff, func() error {
+		if err := u.config.Client.Get(ctx, ipKey, ip); err != nil {
+			return err
+		}
+		ip.Spec.Approved = true
+		return u.config.Client.Update(ctx, ip)
+	})
 }
 
 func (u *OperatorUpgrade) getCSV(ctx context.Context, ip *v1alpha1.InstallPlan) (*v1alpha1.ClusterServiceVersion, error) {

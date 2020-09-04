@@ -13,6 +13,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/util/retry"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/operator-framework/kubectl-operator/internal/pkg/operator"
@@ -77,7 +78,7 @@ func (i *OperatorInstall) Run(ctx context.Context) (*v1alpha1.ClusterServiceVers
 	// We need to approve the initial install plan
 	if i.Approval.Approval == v1alpha1.ApprovalManual {
 		if err := i.approveInstallPlan(ctx, ip); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("approve install plan: %v", err)
 		}
 	}
 
@@ -335,11 +336,17 @@ func (i *OperatorInstall) getInstallPlan(ctx context.Context, sub *v1alpha1.Subs
 }
 
 func (i *OperatorInstall) approveInstallPlan(ctx context.Context, ip *v1alpha1.InstallPlan) error {
-	ip.Spec.Approved = true
-	if err := i.config.Client.Update(ctx, ip); err != nil {
-		return fmt.Errorf("approve install plan: %v", err)
+	ipKey := types.NamespacedName{
+		Namespace: ip.GetNamespace(),
+		Name:      ip.GetName(),
 	}
-	return nil
+	return retry.RetryOnConflict(retry.DefaultBackoff, func() error {
+		if err := i.config.Client.Get(ctx, ipKey, ip); err != nil {
+			return err
+		}
+		ip.Spec.Approved = true
+		return i.config.Client.Update(ctx, ip)
+	})
 }
 
 func (i *OperatorInstall) getCSV(ctx context.Context, ip *v1alpha1.InstallPlan) (*v1alpha1.ClusterServiceVersion, error) {
