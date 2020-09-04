@@ -26,7 +26,7 @@ import (
 	"k8s.io/client-go/util/retry"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
-	"github.com/operator-framework/kubectl-operator/internal/pkg/catalog"
+	"github.com/operator-framework/kubectl-operator/internal/pkg/catalogsource"
 )
 
 const (
@@ -86,16 +86,16 @@ func (a *CatalogAdd) Run(ctx context.Context) (*v1alpha1.CatalogSource, error) {
 
 	a.setDefaults(labels)
 
-	opts := []catalog.Option{
-		catalog.DisplayName(a.DisplayName),
-		catalog.Publisher(a.Publisher),
+	opts := []catalogsource.Option{
+		catalogsource.DisplayName(a.DisplayName),
+		catalogsource.Publisher(a.Publisher),
 	}
 
 	if len(a.InjectBundles) == 0 {
-		opts = append(opts, catalog.Image(a.IndexImage))
+		opts = append(opts, catalogsource.Image(a.IndexImage))
 	}
 
-	cs := catalog.Build(csKey, opts...)
+	cs := catalogsource.Build(csKey, opts...)
 	if err := a.config.Client.Create(ctx, cs); err != nil {
 		return nil, fmt.Errorf("create catalogsource: %v", err)
 	}
