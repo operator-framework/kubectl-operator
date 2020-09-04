@@ -6,9 +6,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/operator-framework/api/pkg/operators/v1alpha1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/util/retry"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
@@ -37,4 +39,15 @@ func waitForDeletion(ctx context.Context, cl client.Client, objs ...controllerut
 		}
 	}
 	return nil
+}
+
+func approveInstallPlan(ctx context.Context, cl client.Client, ip *v1alpha1.InstallPlan) error {
+	ipKey := objectKeyForObject(ip)
+	return retry.RetryOnConflict(retry.DefaultBackoff, func() error {
+		if err := cl.Get(ctx, ipKey, ip); err != nil {
+			return err
+		}
+		ip.Spec.Approved = true
+		return cl.Update(ctx, ip)
+	})
 }
