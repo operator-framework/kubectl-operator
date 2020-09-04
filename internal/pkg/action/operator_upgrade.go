@@ -79,10 +79,7 @@ func (u *OperatorUpgrade) getInstallPlan(ctx context.Context, sub *v1alpha1.Subs
 }
 
 func (u *OperatorUpgrade) approveInstallPlan(ctx context.Context, ip *v1alpha1.InstallPlan) error {
-	ipKey := types.NamespacedName{
-		Namespace: ip.GetNamespace(),
-		Name:      ip.GetName(),
-	}
+	ipKey := objectKeyForObject(ip)
 	return retry.RetryOnConflict(retry.DefaultBackoff, func() error {
 		if err := u.config.Client.Get(ctx, ipKey, ip); err != nil {
 			return err
@@ -93,10 +90,7 @@ func (u *OperatorUpgrade) approveInstallPlan(ctx context.Context, ip *v1alpha1.I
 }
 
 func (u *OperatorUpgrade) getCSV(ctx context.Context, ip *v1alpha1.InstallPlan) (*v1alpha1.ClusterServiceVersion, error) {
-	ipKey := types.NamespacedName{
-		Namespace: ip.GetNamespace(),
-		Name:      ip.GetName(),
-	}
+	ipKey := objectKeyForObject(ip)
 	if err := wait.PollImmediateUntil(time.Millisecond*250, func() (bool, error) {
 		if err := u.config.Client.Get(ctx, ipKey, ip); err != nil {
 			return false, err

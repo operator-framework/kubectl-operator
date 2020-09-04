@@ -308,10 +308,7 @@ func parseCSVName(csvName string) (string, string, string) {
 }
 
 func (i *OperatorInstall) getInstallPlan(ctx context.Context, sub *v1alpha1.Subscription) (*v1alpha1.InstallPlan, error) {
-	subKey := types.NamespacedName{
-		Namespace: sub.GetNamespace(),
-		Name:      sub.GetName(),
-	}
+	subKey := objectKeyForObject(sub)
 	if err := wait.PollImmediateUntil(time.Millisecond*250, func() (bool, error) {
 		if err := i.config.Client.Get(ctx, subKey, sub); err != nil {
 			return false, err
@@ -336,10 +333,7 @@ func (i *OperatorInstall) getInstallPlan(ctx context.Context, sub *v1alpha1.Subs
 }
 
 func (i *OperatorInstall) approveInstallPlan(ctx context.Context, ip *v1alpha1.InstallPlan) error {
-	ipKey := types.NamespacedName{
-		Namespace: ip.GetNamespace(),
-		Name:      ip.GetName(),
-	}
+	ipKey := objectKeyForObject(ip)
 	return retry.RetryOnConflict(retry.DefaultBackoff, func() error {
 		if err := i.config.Client.Get(ctx, ipKey, ip); err != nil {
 			return err
@@ -350,10 +344,7 @@ func (i *OperatorInstall) approveInstallPlan(ctx context.Context, ip *v1alpha1.I
 }
 
 func (i *OperatorInstall) getCSV(ctx context.Context, ip *v1alpha1.InstallPlan) (*v1alpha1.ClusterServiceVersion, error) {
-	ipKey := types.NamespacedName{
-		Namespace: ip.GetNamespace(),
-		Name:      ip.GetName(),
-	}
+	ipKey := objectKeyForObject(ip)
 	if err := wait.PollImmediateUntil(time.Millisecond*250, func() (bool, error) {
 		if err := i.config.Client.Get(ctx, ipKey, ip); err != nil {
 			return false, err
