@@ -10,7 +10,6 @@ import (
 	v1 "github.com/operator-framework/api/pkg/operators/v1"
 	"github.com/operator-framework/api/pkg/operators/v1alpha1"
 	operatorsv1 "github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/apis/operators/v1"
-	"github.com/spf13/pflag"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -29,7 +28,6 @@ type OperatorInstall struct {
 	Approval            subscription.ApprovalValue
 	WatchNamespaces     []string
 	InstallMode         operator.InstallMode
-	InstallTimeout      time.Duration
 	CleanupTimeout      time.Duration
 	CreateOperatorGroup bool
 
@@ -40,22 +38,6 @@ func NewOperatorInstall(cfg *Configuration) *OperatorInstall {
 	return &OperatorInstall{
 		config: cfg,
 		Logf:   func(string, ...interface{}) {},
-	}
-}
-
-func (i *OperatorInstall) BindFlags(fs *pflag.FlagSet) {
-	fs.StringVarP(&i.Channel, "channel", "c", "", "subscription channel")
-	fs.VarP(&i.Approval, "approval", "a", fmt.Sprintf("approval (%s or %s)", v1alpha1.ApprovalManual, v1alpha1.ApprovalAutomatic))
-	fs.StringVarP(&i.Version, "version", "v", "", "install specific version for operator (default latest)")
-	fs.StringSliceVarP(&i.WatchNamespaces, "watch", "w", []string{}, "namespaces to watch")
-	fs.DurationVarP(&i.InstallTimeout, "timeout", "t", time.Minute, "the amount of time to wait before cancelling the install")
-	fs.DurationVar(&i.CleanupTimeout, "cleanup-timeout", time.Minute, "the amount to time to wait before cancelling cleanup")
-	fs.BoolVarP(&i.CreateOperatorGroup, "create-operator-group", "C", false, "create operator group if necessary")
-
-	fs.VarP(&i.InstallMode, "install-mode", "i", "install mode")
-	err := fs.MarkHidden("install-mode")
-	if err != nil {
-		panic(`requested flag "install-mode" missing`)
 	}
 }
 

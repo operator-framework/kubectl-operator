@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	v1 "github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/apis/operators/v1"
-	"github.com/spf13/pflag"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -61,10 +60,6 @@ func (l *OperatorListAvailable) getAllPackageManifests(ctx context.Context) ([]v
 		return nil, err
 	}
 	return pms.Items, nil
-}
-
-func (l *OperatorListAvailable) BindFlags(fs *pflag.FlagSet) {
-	fs.VarP(&l.Catalog, "catalog", "c", "catalog to query (default: search all cluster catalogs)")
 }
 
 type NamespacedName struct {

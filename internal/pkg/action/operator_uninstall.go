@@ -7,7 +7,6 @@ import (
 
 	v1 "github.com/operator-framework/api/pkg/operators/v1"
 	"github.com/operator-framework/api/pkg/operators/v1alpha1"
-	"github.com/spf13/pflag"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -34,13 +33,6 @@ func NewOperatorUninstall(cfg *Configuration) *OperatorUninstall {
 		config: cfg,
 		Logf:   func(string, ...interface{}) {},
 	}
-}
-
-func (u *OperatorUninstall) BindFlags(fs *pflag.FlagSet) {
-	fs.BoolVarP(&u.DeleteAll, "delete-all", "X", false, "enable all delete flags")
-	fs.BoolVar(&u.DeleteCRDs, "delete-crds", false, "delete all owned CRDs and all CRs")
-	fs.BoolVar(&u.DeleteOperatorGroups, "delete-operator-groups", false, "delete operator group if no other operators remain")
-	fs.StringSliceVar(&u.DeleteOperatorGroupNames, "delete-operator-group-names", nil, "delete operator group if no other operators remain")
 }
 
 func (u *OperatorUninstall) Run(ctx context.Context) error {

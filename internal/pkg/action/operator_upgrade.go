@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/operator-framework/api/pkg/operators/v1alpha1"
-	"github.com/spf13/pflag"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -15,20 +14,14 @@ import (
 type OperatorUpgrade struct {
 	config *Configuration
 
-	Package        string
-	Channel        string
-	UpgradeTimeout time.Duration
+	Package string
+	Channel string
 }
 
 func NewOperatorUpgrade(cfg *Configuration) *OperatorUpgrade {
 	return &OperatorUpgrade{
 		config: cfg,
 	}
-}
-
-func (u *OperatorUpgrade) BindFlags(fs *pflag.FlagSet) {
-	fs.StringVarP(&u.Channel, "channel", "c", "", "subscription channel")
-	fs.DurationVarP(&u.UpgradeTimeout, "timeout", "t", time.Minute, "the amount of time to wait before cancelling the upgrade")
 }
 
 func (u *OperatorUpgrade) Run(ctx context.Context) (*v1alpha1.ClusterServiceVersion, error) {
