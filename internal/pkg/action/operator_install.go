@@ -81,7 +81,7 @@ func (i *OperatorInstall) Run(ctx context.Context) (*v1alpha1.ClusterServiceVers
 		}
 	}
 
-	csv, err := i.getCSV(ctx, ip)
+	csv, err := getCSV(ctx, i.config.Client, ip)
 	if err != nil {
 		return nil, fmt.Errorf("get clusterserviceversion: %v", err)
 	}
@@ -329,36 +329,4 @@ func (i *OperatorInstall) getInstallPlan(ctx context.Context, sub *v1alpha1.Subs
 		return nil, fmt.Errorf("get install plan: %v", err)
 	}
 	return &ip, nil
-}
-
-func (i *OperatorInstall) getCSV(ctx context.Context, ip *v1alpha1.InstallPlan) (*v1alpha1.ClusterServiceVersion, error) {
-	ipKey := objectKeyForObject(ip)
-	if err := wait.PollImmediateUntil(time.Millisecond*250, func() (bool, error) {
-		if err := i.config.Client.Get(ctx, ipKey, ip); err != nil {
-			return false, err
-		}
-		if ip.Status.Phase == v1alpha1.InstallPlanPhaseComplete {
-			return true, nil
-		}
-		return false, nil
-	}, ctx.Done()); err != nil {
-		return nil, fmt.Errorf("waiting for operator installation to complete: %v", err)
-	}
-
-	csvKey := types.NamespacedName{
-		Namespace: i.config.Namespace,
-	}
-	for _, s := range ip.Status.Plan {
-		if s.Resource.Kind == csvKind {
-			csvKey.Name = s.Resource.Name
-		}
-	}
-	if csvKey.Name == "" {
-		return nil, fmt.Errorf("could not find installed CSV in install plan")
-	}
-	csv := &v1alpha1.ClusterServiceVersion{}
-	if err := i.config.Client.Get(ctx, csvKey, csv); err != nil {
-		return nil, fmt.Errorf("get clusterserviceversion: %v", err)
-	}
-	return csv, nil
 }
