@@ -40,8 +40,8 @@ operators from the installed catalogs.`,
 		newOperatorUninstallCmd(&cfg),
 		newOperatorListCmd(&cfg),
 		newOperatorListAvailableCmd(&cfg),
+		newOperatorDescribeCmd(&cfg),
 		newVersionCmd(),
-		newOperatorShowCmd(&cfg),
 	)
 
 	return cmd

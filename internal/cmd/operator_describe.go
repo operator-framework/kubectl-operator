@@ -10,13 +10,13 @@ import (
 	"github.com/operator-framework/kubectl-operator/internal/pkg/action"
 )
 
-func newOperatorShowCmd(cfg *action.Configuration) *cobra.Command {
-	i := action.NewOperatorShow(cfg)
+func newOperatorDescribeCmd(cfg *action.Configuration) *cobra.Command {
+	i := action.NewOperatorDescribe(cfg)
 	i.Logf = log.Printf
 
 	cmd := &cobra.Command{
-		Use:   "show <operator>",
-		Short: "Show details about an operator",
+		Use:   "describe <operator>",
+		Short: "Describe an operator",
 		Args:  cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			i.Package = args[0]

@@ -10,7 +10,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 )
 
-type OperatorShow struct {
+type OperatorDescribe struct {
 	config *Configuration
 
 	Package         string
@@ -21,17 +21,17 @@ type OperatorShow struct {
 	Logf func(string, ...interface{})
 }
 
-func NewOperatorShow(cfg *Configuration) *OperatorShow {
-	return &OperatorShow{
+func NewOperatorDescribe(cfg *Configuration) *OperatorDescribe {
+	return &OperatorDescribe{
 		config: cfg,
 		Logf:   func(string, ...interface{}) {},
 	}
 }
 
-func (s *OperatorShow) BindFlags(fs *pflag.FlagSet) {
-	fs.StringVarP(&s.Channel, "channel", "c", "", "channel")
-	fs.BoolVarP(&s.LongDescription, "with-long-description", "L", false, "long description")
-	fs.DurationVarP(&s.ShowTimeout, "timeout", "t", time.Minute, "the amount of time to wait before cancelling the show request")
+func (d *OperatorDescribe) BindFlags(fs *pflag.FlagSet) {
+	fs.StringVarP(&d.Channel, "channel", "c", "", "channel")
+	fs.BoolVarP(&d.LongDescription, "with-long-description", "L", false, "long description")
+	fs.DurationVarP(&d.ShowTimeout, "timeout", "t", time.Minute, "the amount of time to wait before cancelling the show request")
 
 }
 
@@ -48,17 +48,17 @@ var (
 	descAnnot = "description"
 )
 
-func (s *OperatorShow) Run(ctx context.Context) ([]string, error) {
+func (d *OperatorDescribe) Run(ctx context.Context) ([]string, error) {
 	out := make([]string, 0)
 
 	// get packagemanifest for provided package name
-	pm, err := s.getPackageManifest(ctx)
+	pm, err := d.getPackageManifest(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("get package manifest: %v", err)
 	}
 
 	// determine channel from flag or default
-	pc, err := s.getPackageChannel(pm)
+	pc, err := d.getPackageChannel(pm)
 	if err != nil {
 		return nil, fmt.Errorf("get package channel: %v", err)
 	}
@@ -77,16 +77,16 @@ func (s *OperatorShow) Run(ctx context.Context) ([]string, error) {
 		catHdr+fmt.Sprintf("%s\n\n", pm.Status.CatalogSourceDisplayName),
 		// available channels
 		chHdr+fmt.Sprintf("%s\n\n",
-			asNewlineDelimString(s.getAvailableChannels(pm))),
+			asNewlineDelimString(d.getAvailableChannels(pm))),
 		// install modes
 		imHdr+fmt.Sprintf("%s\n\n",
-			asNewlineDelimString(s.getSupportedInstallModes(pc))),
+			asNewlineDelimString(d.getSupportedInstallModes(pc))),
 		// description
 		sdHdr+fmt.Sprintf("%s\n",
 			pc.CurrentCSVDesc.Annotations[descAnnot]),
 	)
 
-	if s.LongDescription {
+	if d.LongDescription {
 		out = append(out,
 			"\n"+ldHdr+pm.Status.Channels[0].CurrentCSVDesc.LongDescription)
 	}
@@ -97,13 +97,13 @@ func (s *OperatorShow) Run(ctx context.Context) ([]string, error) {
 // getPackageManifest returns the packagemanifest that matches the namespace and package arguments
 // from the API server.
 // TODO(): This is pretty much identical to OperatorInstall's getPackageChannel. Might be worth consolidating.
-func (s *OperatorShow) getPackageManifest(ctx context.Context) (*operatorsv1.PackageManifest, error) {
+func (d *OperatorDescribe) getPackageManifest(ctx context.Context) (*operatorsv1.PackageManifest, error) {
 	pm := &operatorsv1.PackageManifest{}
 	key := types.NamespacedName{
-		Namespace: s.config.Namespace,
-		Name:      s.Package,
+		Namespace: d.config.Namespace,
+		Name:      d.Package,
 	}
-	if err := s.config.Client.Get(ctx, key, pm); err != nil {
+	if err := d.config.Client.Get(ctx, key, pm); err != nil {
 		return nil, err
 	}
 	return pm, nil
@@ -111,32 +111,32 @@ func (s *OperatorShow) getPackageManifest(ctx context.Context) (*operatorsv1.Pac
 
 // getPackageChannel returns the package channel specified, or the default if none was specified.
 // TODO(): This is pretty much identical to OperatorInstall's getPackageChannel. Might be worth consolidating.
-func (s *OperatorShow) getPackageChannel(pm *operatorsv1.PackageManifest) (*operatorsv1.PackageChannel, error) {
-	if s.Channel == "" {
-		s.Channel = pm.Status.DefaultChannel
+func (d *OperatorDescribe) getPackageChannel(pm *operatorsv1.PackageManifest) (*operatorsv1.PackageChannel, error) {
+	if d.Channel == "" {
+		d.Channel = pm.Status.DefaultChannel
 	}
 	var packageChannel *operatorsv1.PackageChannel
 	for _, ch := range pm.Status.Channels {
 		ch := ch
-		if ch.Name == s.Channel {
+		if ch.Name == d.Channel {
 			packageChannel = &ch
 		}
 	}
 	if packageChannel == nil {
-		return nil, fmt.Errorf("channel %q does not exist for package %q", s.Channel, s.Package)
+		return nil, fmt.Errorf("channel %q does not exist for package %q", d.Channel, d.Package)
 	}
 	return packageChannel, nil
 }
 
 // getAvailableChannels lists all available package channels for the operator.
-func (s *OperatorShow) getAvailableChannels(pm *operatorsv1.PackageManifest) []string {
+func (d *OperatorDescribe) getAvailableChannels(pm *operatorsv1.PackageManifest) []string {
 	channels := make([]string, len(pm.Status.Channels))
 	for i, channel := range pm.Status.Channels {
 		n := channel.Name
 		if channel.IsDefaultChannel(*pm) {
 			n += " (default)"
 		}
-		if s.Channel == channel.Name {
+		if d.Channel == channel.Name {
 			n += " (shown)"
 		}
 		channels[i] = n
@@ -147,7 +147,7 @@ func (s *OperatorShow) getAvailableChannels(pm *operatorsv1.PackageManifest) []s
 
 // getSupportedInstallModes returns a string slice representation of install mode
 // objects the operator supports.
-func (s *OperatorShow) getSupportedInstallModes(pc *operatorsv1.PackageChannel) []string {
+func (d *OperatorDescribe) getSupportedInstallModes(pc *operatorsv1.PackageChannel) []string {
 	supportedInstallModes := make([]string, 1)
 	for _, imode := range pc.CurrentCSVDesc.InstallModes {
 		if imode.Supported {
