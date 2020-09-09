@@ -35,63 +35,20 @@ func (d *OperatorDescribe) BindFlags(fs *pflag.FlagSet) {
 
 }
 
-var (
-	pkgHdr  = asHeader("Package")
-	repoHdr = asHeader("Repository")
-	catHdr  = asHeader("Catalog")
-	chHdr   = asHeader("Channels")
-	imHdr   = asHeader("Install Modes")
-	sdHdr   = asHeader("Description")
-	ldHdr   = asHeader("Long Description")
-
-	repoAnnot = "repository"
-	descAnnot = "description"
-)
-
-func (d *OperatorDescribe) Run(ctx context.Context) ([]string, error) {
-	out := make([]string, 0)
-
+func (d *OperatorDescribe) Run(ctx context.Context) (*operatorsv1.PackageManifest, *operatorsv1.PackageChannel, error) {
 	// get packagemanifest for provided package name
 	pm, err := d.getPackageManifest(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("get package manifest: %v", err)
+		return nil, nil, fmt.Errorf("get package manifest: %v", err)
 	}
 
 	// determine channel from flag or default
 	pc, err := d.getPackageChannel(pm)
 	if err != nil {
-		return nil, fmt.Errorf("get package channel: %v", err)
+		return nil, nil, fmt.Errorf("get package channel: %v", err)
 	}
 
-	// prepare output to return
-	out = append(out,
-		// package
-		pkgHdr+fmt.Sprintf("%s %s (by %s)\n\n",
-			pc.CurrentCSVDesc.DisplayName,
-			pc.CurrentCSVDesc.Version,
-			pc.CurrentCSVDesc.Provider.Name),
-		// repo
-		repoHdr+fmt.Sprintf("%s\n\n",
-			pc.CurrentCSVDesc.Annotations[repoAnnot]),
-		// catalog
-		catHdr+fmt.Sprintf("%s\n\n", pm.Status.CatalogSourceDisplayName),
-		// available channels
-		chHdr+fmt.Sprintf("%s\n\n",
-			asNewlineDelimString(d.getAvailableChannels(pm))),
-		// install modes
-		imHdr+fmt.Sprintf("%s\n\n",
-			asNewlineDelimString(d.getSupportedInstallModes(pc))),
-		// description
-		sdHdr+fmt.Sprintf("%s\n",
-			pc.CurrentCSVDesc.Annotations[descAnnot]),
-	)
-
-	if d.LongDescription {
-		out = append(out,
-			"\n"+ldHdr+pm.Status.Channels[0].CurrentCSVDesc.LongDescription)
-	}
-
-	return out, nil
+	return pm, pc, nil
 }
 
 // getPackageManifest returns the packagemanifest that matches the namespace and package arguments
@@ -128,8 +85,8 @@ func (d *OperatorDescribe) getPackageChannel(pm *operatorsv1.PackageManifest) (*
 	return packageChannel, nil
 }
 
-// getAvailableChannels lists all available package channels for the operator.
-func (d *OperatorDescribe) getAvailableChannels(pm *operatorsv1.PackageManifest) []string {
+// GetAvailableChannels lists all available package channels for the operator.
+func (d *OperatorDescribe) GetAvailableChannels(pm *operatorsv1.PackageManifest) []string {
 	channels := make([]string, len(pm.Status.Channels))
 	for i, channel := range pm.Status.Channels {
 		n := channel.Name
@@ -145,9 +102,9 @@ func (d *OperatorDescribe) getAvailableChannels(pm *operatorsv1.PackageManifest)
 	return channels
 }
 
-// getSupportedInstallModes returns a string slice representation of install mode
+// GetSupportedInstallModes returns a string slice representation of install mode
 // objects the operator supports.
-func (d *OperatorDescribe) getSupportedInstallModes(pc *operatorsv1.PackageChannel) []string {
+func (d *OperatorDescribe) GetSupportedInstallModes(pc *operatorsv1.PackageChannel) []string {
 	supportedInstallModes := make([]string, 1)
 	for _, imode := range pc.CurrentCSVDesc.InstallModes {
 		if imode.Supported {
@@ -156,25 +113,4 @@ func (d *OperatorDescribe) getSupportedInstallModes(pc *operatorsv1.PackageChann
 	}
 
 	return supportedInstallModes
-}
-
-// asNewlineDelimString returns a string slice as a single string
-// separated by newlines
-func asNewlineDelimString(stringItems []string) string {
-	var res string
-	for _, v := range stringItems {
-		if res != "" {
-			res = fmt.Sprintf("%s\n%s", res, v)
-			continue
-		}
-
-		res = v
-	}
-	return res
-}
-
-// asHeader returns the string with "header bars" for displaying in
-// plain text cases.
-func asHeader(s string) string {
-	return fmt.Sprintf("== %s ==\n", s)
 }
