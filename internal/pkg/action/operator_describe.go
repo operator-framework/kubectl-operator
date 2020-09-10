@@ -6,7 +6,6 @@ import (
 	"time"
 
 	operatorsv1 "github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/apis/operators/v1"
-	"github.com/spf13/pflag"
 	"k8s.io/apimachinery/pkg/types"
 )
 
@@ -26,13 +25,6 @@ func NewOperatorDescribe(cfg *Configuration) *OperatorDescribe {
 		config: cfg,
 		Logf:   func(string, ...interface{}) {},
 	}
-}
-
-func (d *OperatorDescribe) BindFlags(fs *pflag.FlagSet) {
-	fs.StringVarP(&d.Channel, "channel", "c", "", "channel")
-	fs.BoolVarP(&d.LongDescription, "with-long-description", "L", false, "long description")
-	fs.DurationVarP(&d.ShowTimeout, "timeout", "t", time.Minute, "the amount of time to wait before cancelling the show request")
-
 }
 
 func (d *OperatorDescribe) Run(ctx context.Context) (*operatorsv1.PackageManifest, *operatorsv1.PackageChannel, error) {
