@@ -31,6 +31,6 @@ func newOperatorUninstallCmd(cfg *action.Configuration) *cobra.Command {
 func bindOperatorUninstallFlags(fs *pflag.FlagSet, u *action.OperatorUninstall) {
 	fs.BoolVarP(&u.DeleteAll, "delete-all", "X", false, "enable all delete flags")
 	fs.BoolVar(&u.DeleteCRDs, "delete-crds", false, "delete all owned CRDs and all CRs")
-	fs.BoolVar(&u.DeleteOperatorGroups, "delete-operator-groups", false, "delete operator group if no other operators remain")
-	fs.StringSliceVar(&u.DeleteOperatorGroupNames, "delete-operator-group-names", nil, "delete operator group if no other operators remain")
+	fs.BoolVar(&u.DeleteOperatorGroups, "delete-operator-groups", false, "delete operator groups if no other operators remain")
+	fs.StringSliceVar(&u.DeleteOperatorGroupNames, "delete-operator-group-names", nil, "specific operator group names to delete (only effective with --delete-operator-groups)")
 }
