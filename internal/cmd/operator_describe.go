@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -77,10 +78,10 @@ func newOperatorDescribeCmd(cfg *action.Configuration) *cobra.Command {
 				catHdr+fmt.Sprintf("%s\n\n", pm.Status.CatalogSourceDisplayName),
 				// available channels
 				chHdr+fmt.Sprintf("%s\n\n",
-					asNewlineDelimString(getAvailableChannelsWithMarkers(channel, pm))),
+					strings.Join(getAvailableChannelsWithMarkers(channel, pm), "\n")),
 				// install modes
 				imHdr+fmt.Sprintf("%s\n\n",
-					asNewlineDelimString(getSupportedInstallModes(pc))),
+					strings.Join(getSupportedInstallModes(pc), "\n")),
 				// description
 				sdHdr+fmt.Sprintf("%s\n",
 					pc.CurrentCSVDesc.Annotations[descAnnot]),
@@ -105,21 +106,6 @@ func newOperatorDescribeCmd(cfg *action.Configuration) *cobra.Command {
 	cmd.Flags().BoolVarP(&longDescription, "with-long-description", "L", false, "long description")
 
 	return cmd
-}
-
-// asNewlineDelimString returns a string slice as a single string
-// separated by newlines
-func asNewlineDelimString(stringItems []string) string {
-	var res string
-	for _, v := range stringItems {
-		if res != "" {
-			res = fmt.Sprintf("%s\n%s", res, v)
-			continue
-		}
-
-		res = v
-	}
-	return res
 }
 
 // asHeader returns the string with "header bars" for displaying in
