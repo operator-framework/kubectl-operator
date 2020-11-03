@@ -7,6 +7,7 @@ import (
 
 	v1 "github.com/operator-framework/api/pkg/operators/v1"
 	"github.com/operator-framework/api/pkg/operators/v1alpha1"
+	"github.com/operator-framework/operator-registry/pkg/lib/bundle"
 	"github.com/spf13/pflag"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -14,7 +15,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	"sigs.k8s.io/yaml"
 )
 
 type OperatorUninstall struct {
@@ -147,24 +147,21 @@ func (u *OperatorUninstall) getInstallPlanResources(ctx context.Context, install
 	}
 
 	for _, step := range installPlan.Status.Plan {
-		lowerKind := strings.ToLower(step.Resource.Kind)
-		obj := &unstructured.Unstructured{Object: map[string]interface{}{}}
-		if err := yaml.Unmarshal([]byte(step.Resource.Manifest), &obj.Object); err != nil {
-			return nil, nil, nil, fmt.Errorf("parse %s manifest %q: %v", lowerKind, step.Resource.Name, err)
-		}
+		obj := &unstructured.Unstructured{}
+
 		obj.SetGroupVersionKind(schema.GroupVersionKind{
 			Group:   step.Resource.Group,
 			Version: step.Resource.Version,
 			Kind:    step.Resource.Kind,
 		})
+		obj.SetName(step.Resource.Name)
 
-		// TODO(joelanford): This seems necessary for service accounts tied to
-		//    cluster roles and cluster role bindings because the SA namespace
-		//    is not set in the manifest in this case.
-		//    See: https://github.com/operator-framework/operator-lifecycle-manager/blob/c9405d035bc50d9aa290220cb8d75b0402e72707/pkg/controller/registry/resolver/rbac.go#L133
-		if step.Resource.Kind == "ServiceAccount" && obj.GetNamespace() == "" {
+		// TODO: Use RESTMapper interface to identify if the object is namespaced or not.
+		// Reference: https://github.com/kubernetes-sigs/controller-runtime/blob/master/pkg/client/namespaced_client.go
+		if supported, namespaced := bundle.IsSupported(step.Resource.Kind); supported && bool(namespaced) {
 			obj.SetNamespace(installPlanKey.Namespace)
 		}
+
 		switch step.Resource.Kind {
 		case crdKind:
 			crds = append(crds, obj)
