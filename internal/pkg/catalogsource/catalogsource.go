@@ -1,4 +1,4 @@
-package catalog
+package catalogsource
 
 import (
 	"github.com/operator-framework/api/pkg/operators/v1alpha1"
@@ -7,12 +7,6 @@ import (
 )
 
 type Option func(*v1alpha1.CatalogSource)
-
-func Annotations(v map[string]string) Option {
-	return func(cs *v1alpha1.CatalogSource) {
-		cs.ObjectMeta.Annotations = v
-	}
-}
 
 func DisplayName(v string) Option {
 	return func(cs *v1alpha1.CatalogSource) {
@@ -28,12 +22,6 @@ func Image(v string) Option {
 func Publisher(v string) Option {
 	return func(cs *v1alpha1.CatalogSource) {
 		cs.Spec.Publisher = v
-	}
-}
-
-func Address(address string) Option {
-	return func(cs *v1alpha1.CatalogSource) {
-		cs.Spec.Address = address
 	}
 }
 

@@ -6,9 +6,10 @@ import (
 	"strings"
 
 	v1 "github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/apis/operators/v1"
-	"github.com/spf13/pflag"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/operator-framework/kubectl-operator/internal/pkg/operator"
 )
 
 type OperatorListAvailable struct {
@@ -24,18 +25,18 @@ func NewOperatorListAvailable(cfg *Configuration) *OperatorListAvailable {
 	}
 }
 
-func (l *OperatorListAvailable) Run(ctx context.Context) ([]v1.PackageManifest, error) {
+func (l *OperatorListAvailable) Run(ctx context.Context) ([]operator.PackageManifest, error) {
 	if l.Package != "" {
 		pm, err := l.getPackageManifestByName(ctx, l.Package)
 		if err != nil {
 			return nil, err
 		}
-		return []v1.PackageManifest{*pm}, nil
+		return []operator.PackageManifest{*pm}, nil
 	}
 	return l.getAllPackageManifests(ctx)
 }
 
-func (l *OperatorListAvailable) getPackageManifestByName(ctx context.Context, packageName string) (*v1.PackageManifest, error) {
+func (l *OperatorListAvailable) getPackageManifestByName(ctx context.Context, packageName string) (*operator.PackageManifest, error) {
 	pm := v1.PackageManifest{}
 	pmKey := types.NamespacedName{
 		Namespace: l.config.Namespace,
@@ -44,10 +45,10 @@ func (l *OperatorListAvailable) getPackageManifestByName(ctx context.Context, pa
 	if err := l.config.Client.Get(ctx, pmKey, &pm); err != nil {
 		return nil, err
 	}
-	return &pm, nil
+	return &operator.PackageManifest{PackageManifest: pm}, nil
 }
 
-func (l *OperatorListAvailable) getAllPackageManifests(ctx context.Context) ([]v1.PackageManifest, error) {
+func (l *OperatorListAvailable) getAllPackageManifests(ctx context.Context) ([]operator.PackageManifest, error) {
 	labelSelector := client.MatchingLabels{}
 	if l.Catalog.Name != "" {
 		labelSelector["catalog"] = l.Catalog.Name
@@ -60,11 +61,11 @@ func (l *OperatorListAvailable) getAllPackageManifests(ctx context.Context) ([]v
 	if err := l.config.Client.List(ctx, &pms, labelSelector); err != nil {
 		return nil, err
 	}
-	return pms.Items, nil
-}
-
-func (l *OperatorListAvailable) BindFlags(fs *pflag.FlagSet) {
-	fs.VarP(&l.Catalog, "catalog", "c", "catalog to query (default: search all cluster catalogs)")
+	pkgs := make([]operator.PackageManifest, len(pms.Items))
+	for i := range pms.Items {
+		pkgs[i] = operator.PackageManifest{PackageManifest: pms.Items[i]}
+	}
+	return pkgs, nil
 }
 
 type NamespacedName struct {

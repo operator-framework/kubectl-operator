@@ -6,10 +6,9 @@ import (
 
 	"github.com/spf13/cobra"
 
-	operatorsv1 "github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/apis/operators/v1"
-
 	"github.com/operator-framework/kubectl-operator/internal/cmd/internal/log"
 	"github.com/operator-framework/kubectl-operator/internal/pkg/action"
+	"github.com/operator-framework/kubectl-operator/internal/pkg/operator"
 )
 
 var (
@@ -43,22 +42,17 @@ func newOperatorDescribeCmd(cfg *action.Configuration) *cobra.Command {
 			// Find the package manifest and package channel for the operator
 			pms, err := l.Run(cmd.Context())
 			if err != nil {
-				log.Fatalf("failed to find operator: %v", err)
+				log.Fatal(err)
 			}
 
 			// we only expect one item because describe always searches
 			// for a specific operator by name
-			pm := &pms[0]
+			pm := pms[0]
 
-			// If the user asked for a channel, look for that
-			if channel == "" {
-				channel = pm.Status.DefaultChannel
-			}
-
-			pc, err := getPackageChannel(channel, pm)
+			pc, err := pm.GetChannel(channel)
 			if err != nil {
 				// the requested channel doesn't exist
-				log.Fatalf("failed to find channel for operator: %v", err)
+				log.Fatal(err)
 			}
 
 			// prepare what we want to print to the console
@@ -78,10 +72,10 @@ func newOperatorDescribeCmd(cfg *action.Configuration) *cobra.Command {
 				catHdr+fmt.Sprintf("%s\n\n", pm.Status.CatalogSourceDisplayName),
 				// available channels
 				chHdr+fmt.Sprintf("%s\n\n",
-					strings.Join(getAvailableChannelsWithMarkers(channel, pm), "\n")),
+					strings.Join(getAvailableChannelsWithMarkers(*pc, pm), "\n")),
 				// install modes
 				imHdr+fmt.Sprintf("%s\n\n",
-					strings.Join(getSupportedInstallModes(pc), "\n")),
+					strings.Join(pc.GetSupportedInstallModes().List(), "\n")),
 				// description
 				sdHdr+fmt.Sprintf("%s\n",
 					pc.CurrentCSVDesc.Annotations[descAnnot]),
@@ -102,8 +96,9 @@ func newOperatorDescribeCmd(cfg *action.Configuration) *cobra.Command {
 	}
 
 	// add flags to the flagset for this command.
-	cmd.Flags().StringVarP(&channel, "channel", "c", "", "channel")
-	cmd.Flags().BoolVarP(&longDescription, "with-long-description", "L", false, "long description")
+	bindOperatorListAvailableFlags(cmd.Flags(), l)
+	cmd.Flags().StringVarP(&channel, "channel", "C", "", "package channel to describe")
+	cmd.Flags().BoolVarP(&longDescription, "with-long-description", "L", false, "include long description")
 
 	return cmd
 }
@@ -114,45 +109,17 @@ func asHeader(s string) string {
 	return fmt.Sprintf("== %s ==\n", s)
 }
 
-// getPackageChannel returns the package channel specified, or the default if none was specified.
-func getPackageChannel(channel string, pm *operatorsv1.PackageManifest) (*operatorsv1.PackageChannel, error) {
-	var packageChannel *operatorsv1.PackageChannel
-	for _, ch := range pm.Status.Channels {
-		ch := ch
-		if ch.Name == channel {
-			packageChannel = &ch
-		}
-	}
-	if packageChannel == nil {
-		return nil, fmt.Errorf("channel %q does not exist for package %q", channel, pm.GetName())
-	}
-	return packageChannel, nil
-}
-
-// GetSupportedInstallModes returns a string slice representation of install mode
-// objects the operator supports.
-func getSupportedInstallModes(pc *operatorsv1.PackageChannel) []string {
-	supportedInstallModes := make([]string, 1)
-	for _, imode := range pc.CurrentCSVDesc.InstallModes {
-		if imode.Supported {
-			supportedInstallModes = append(supportedInstallModes, string(imode.Type))
-		}
-	}
-
-	return supportedInstallModes
-}
-
 // getAvailableChannelsWithMarkers parses all available package channels for a package manifest
 // and returns those channel names with indicators for pretty-printing whether they are shown
 // or the default channel
-func getAvailableChannelsWithMarkers(channel string, pm *operatorsv1.PackageManifest) []string {
+func getAvailableChannelsWithMarkers(channel operator.PackageChannel, pm operator.PackageManifest) []string {
 	channels := make([]string, len(pm.Status.Channels))
 	for i, ch := range pm.Status.Channels {
 		n := ch.Name
-		if ch.IsDefaultChannel(*pm) {
+		if ch.IsDefaultChannel(pm.PackageManifest) {
 			n += " (default)"
 		}
-		if channel == ch.Name {
+		if channel.Name == ch.Name {
 			n += " (shown)"
 		}
 		channels[i] = n

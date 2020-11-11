@@ -6,9 +6,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/operator-framework/api/pkg/operators/v1alpha1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/util/retry"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
@@ -37,4 +39,47 @@ func waitForDeletion(ctx context.Context, cl client.Client, objs ...controllerut
 		}
 	}
 	return nil
+}
+
+func approveInstallPlan(ctx context.Context, cl client.Client, ip *v1alpha1.InstallPlan) error {
+	ipKey := objectKeyForObject(ip)
+	return retry.RetryOnConflict(retry.DefaultBackoff, func() error {
+		if err := cl.Get(ctx, ipKey, ip); err != nil {
+			return err
+		}
+		ip.Spec.Approved = true
+		return cl.Update(ctx, ip)
+	})
+}
+
+func getCSV(ctx context.Context, cl client.Client, ip *v1alpha1.InstallPlan) (*v1alpha1.ClusterServiceVersion, error) {
+	ipKey := objectKeyForObject(ip)
+	if err := wait.PollImmediateUntil(time.Millisecond*250, func() (bool, error) {
+		if err := cl.Get(ctx, ipKey, ip); err != nil {
+			return false, err
+		}
+		if ip.Status.Phase == v1alpha1.InstallPlanPhaseComplete {
+			return true, nil
+		}
+		return false, nil
+	}, ctx.Done()); err != nil {
+		return nil, fmt.Errorf("waiting for operator installation to complete: %v", err)
+	}
+
+	csvKey := types.NamespacedName{
+		Namespace: ipKey.Namespace,
+	}
+	for _, s := range ip.Status.Plan {
+		if s.Resource.Kind == csvKind {
+			csvKey.Name = s.Resource.Name
+		}
+	}
+	if csvKey.Name == "" {
+		return nil, fmt.Errorf("could not find installed CSV in install plan")
+	}
+	csv := &v1alpha1.ClusterServiceVersion{}
+	if err := cl.Get(ctx, csvKey, csv); err != nil {
+		return nil, fmt.Errorf("get clusterserviceversion: %v", err)
+	}
+	return csv, nil
 }

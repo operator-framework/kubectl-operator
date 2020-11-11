@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/duration"
 
@@ -56,6 +57,10 @@ func newOperatorListAvailableCmd(cfg *action.Configuration) *cobra.Command {
 			_ = tw.Flush()
 		},
 	}
-	l.BindFlags(cmd.Flags())
+	bindOperatorListAvailableFlags(cmd.Flags(), l)
 	return cmd
+}
+
+func bindOperatorListAvailableFlags(fs *pflag.FlagSet, l *action.OperatorListAvailable) {
+	fs.VarP(&l.Catalog, "catalog", "c", "catalog to query (default: search all cluster catalogs)")
 }

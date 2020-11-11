@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 
 	"github.com/operator-framework/kubectl-operator/internal/cmd/internal/log"
 	"github.com/operator-framework/kubectl-operator/internal/pkg/action"
@@ -23,6 +24,13 @@ func newOperatorUninstallCmd(cfg *action.Configuration) *cobra.Command {
 			log.Printf("operator %q uninstalled", u.Package)
 		},
 	}
-	u.BindFlags(cmd.Flags())
+	bindOperatorUninstallFlags(cmd.Flags(), u)
 	return cmd
+}
+
+func bindOperatorUninstallFlags(fs *pflag.FlagSet, u *action.OperatorUninstall) {
+	fs.BoolVarP(&u.DeleteAll, "delete-all", "X", false, "enable all delete flags")
+	fs.BoolVar(&u.DeleteCRDs, "delete-crds", false, "delete all owned CRDs and all CRs")
+	fs.BoolVar(&u.DeleteOperatorGroups, "delete-operator-groups", false, "delete operator groups if no other operators remain")
+	fs.StringSliceVar(&u.DeleteOperatorGroupNames, "delete-operator-group-names", nil, "specific operator group names to delete (only effective with --delete-operator-groups)")
 }

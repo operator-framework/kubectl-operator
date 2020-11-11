@@ -17,7 +17,6 @@ import (
 	"github.com/operator-framework/api/pkg/operators/v1alpha1"
 	"github.com/operator-framework/operator-registry/pkg/image"
 	"github.com/operator-framework/operator-registry/pkg/image/containerdregistry"
-	"github.com/spf13/pflag"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -27,7 +26,7 @@ import (
 	"k8s.io/client-go/util/retry"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
-	"github.com/operator-framework/kubectl-operator/internal/pkg/catalog"
+	"github.com/operator-framework/kubectl-operator/internal/pkg/catalogsource"
 )
 
 const (
@@ -47,7 +46,6 @@ type CatalogAdd struct {
 	InjectBundleMode  string
 	DisplayName       string
 	Publisher         string
-	AddTimeout        time.Duration
 	CleanupTimeout    time.Duration
 
 	Logf            func(string, ...interface{})
@@ -61,17 +59,6 @@ func NewCatalogAdd(cfg *Configuration) *CatalogAdd {
 		config: cfg,
 		Logf:   func(string, ...interface{}) {},
 	}
-}
-
-func (a *CatalogAdd) BindFlags(fs *pflag.FlagSet) {
-	fs.StringVarP(&a.DisplayName, "display-name", "d", "", "display name of the index")
-	fs.StringVarP(&a.Publisher, "publisher", "p", "", "publisher of the index")
-	fs.DurationVarP(&a.AddTimeout, "timeout", "t", time.Minute, "the amount of time to wait before cancelling the catalog addition")
-	fs.DurationVar(&a.CleanupTimeout, "cleanup-timeout", time.Minute, "the amount to time to wait before cancelling cleanup")
-
-	fs.StringArrayVarP(&a.InjectBundles, "inject-bundles", "b", nil, "inject extra bundles into the index at runtime")
-	fs.StringVarP(&a.InjectBundleMode, "inject-bundle-mode", "m", "", "mode to use to inject bundles")
-	_ = fs.MarkHidden("inject-bundle-mode")
 }
 
 func (a *CatalogAdd) Run(ctx context.Context) (*v1alpha1.CatalogSource, error) {
@@ -99,16 +86,16 @@ func (a *CatalogAdd) Run(ctx context.Context) (*v1alpha1.CatalogSource, error) {
 
 	a.setDefaults(labels)
 
-	opts := []catalog.Option{
-		catalog.DisplayName(a.DisplayName),
-		catalog.Publisher(a.Publisher),
+	opts := []catalogsource.Option{
+		catalogsource.DisplayName(a.DisplayName),
+		catalogsource.Publisher(a.Publisher),
 	}
 
 	if len(a.InjectBundles) == 0 {
-		opts = append(opts, catalog.Image(a.IndexImage))
+		opts = append(opts, catalogsource.Image(a.IndexImage))
 	}
 
-	cs := catalog.Build(csKey, opts...)
+	cs := catalogsource.Build(csKey, opts...)
 	if err := a.config.Client.Create(ctx, cs); err != nil {
 		return nil, fmt.Errorf("create catalogsource: %v", err)
 	}
