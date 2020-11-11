@@ -5,7 +5,7 @@ INTERACTIVE=${INTERACTIVE:-"1"}
 run() {
 	type "kubectl operator catalog list -A"
 	type "kubectl operator list-available cockroachdb"
-	type "kubectl operator install cockroachdb --create-operator-group -v 2.1.1"
+	type "kubectl operator install cockroachdb --create-operator-group -v 2.1.1 -c stable"
 	type "kubectl operator list"
 	type "kubectl operator upgrade cockroachdb"
 	type "kubectl operator list"
