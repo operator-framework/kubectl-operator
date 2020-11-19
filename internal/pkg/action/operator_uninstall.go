@@ -123,6 +123,7 @@ func (u *OperatorUninstall) deleteObjects(ctx context.Context, objs ...controlle
 	return waitForDeletion(ctx, u.config.Client, objs...)
 }
 
+// getInstalledCSV looks up the installed CSV name from the provided subscription and fetches it.
 func (u *OperatorUninstall) getInstalledCSV(ctx context.Context, subscription *v1alpha1.Subscription) (*v1alpha1.ClusterServiceVersion, error) {
 	key := types.NamespacedName{
 		Name:      subscription.Status.InstalledCSV,
@@ -134,14 +135,11 @@ func (u *OperatorUninstall) getInstalledCSV(ctx context.Context, subscription *v
 		return nil, err
 	}
 
-	installedCSV.SetGroupVersionKind(schema.GroupVersionKind{
-		Kind:    csvKind,
-		Version: installedCSV.GroupVersionKind().Version,
-		Group:   installedCSV.GroupVersionKind().Group,
-	})
+	installedCSV.SetGroupVersionKind(v1alpha1.SchemeGroupVersion.WithKind(csvKind))
 	return installedCSV, nil
 }
 
+// getCRDs returns the list of CRDs required by a CSV.
 func getCRDs(csv *v1alpha1.ClusterServiceVersion) (crds []controllerutil.Object) {
 	for _, resource := range csv.Status.RequirementStatus {
 		if resource.Kind == crdKind {
@@ -152,8 +150,6 @@ func getCRDs(csv *v1alpha1.ClusterServiceVersion) (crds []controllerutil.Object)
 				Kind:    resource.Kind,
 			})
 			obj.SetName(resource.Name)
-			obj.SetNamespace(csv.GetNamespace())
-
 			crds = append(crds, obj)
 		}
 	}
