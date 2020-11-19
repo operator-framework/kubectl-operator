@@ -4,12 +4,12 @@ INTERACTIVE=${INTERACTIVE:-"1"}
 
 run() {
 	type "kubectl operator catalog list -A"
-	type "kubectl operator list-available cockroachdb"
-	type "kubectl operator install cockroachdb --create-operator-group -v 2.1.1 -c stable"
+	type "kubectl operator list-available prometheus"
+	type "kubectl operator install prometheus --create-operator-group -v 0.32.0 -c beta"
 	type "kubectl operator list"
-	type "kubectl operator upgrade cockroachdb"
+	type "kubectl operator upgrade prometheus"
 	type "kubectl operator list"
-	type "kubectl operator uninstall cockroachdb --delete-crds --delete-operator-groups"
+	type "kubectl operator uninstall prometheus --delete-crds --delete-operator-groups"
 }
 
 prompt() {
