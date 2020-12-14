@@ -34,6 +34,14 @@ func NewOperatorUninstall(cfg *Configuration) *OperatorUninstall {
 	}
 }
 
+type ErrPackageNotFound struct {
+	PackageName string
+}
+
+func (e ErrPackageNotFound) Error() string {
+	return fmt.Sprintf("package %q not found", e.PackageName)
+}
+
 func (u *OperatorUninstall) Run(ctx context.Context) error {
 	if u.DeleteAll {
 		u.DeleteCRDs = true
@@ -57,16 +65,41 @@ func (u *OperatorUninstall) Run(ctx context.Context) error {
 		return fmt.Errorf("operator package %q not found", u.Package)
 	}
 
-	csv, err := u.getInstalledCSV(ctx, sub)
-	if err != nil {
-		return fmt.Errorf("get installed CSV %q: %v", sub.Status.InstalledCSV, err)
+	var subObj, csvObj controllerutil.Object
+	var crds []controllerutil.Object
+	if sub != nil {
+		subObj = sub
+		// CSV name may either be the installed or current name in a subscription's status,
+		// depending on installation state.
+		csvKey := types.NamespacedName{
+			Name:      sub.Status.InstalledCSV,
+			Namespace: u.config.Namespace,
+		}
+		if csvKey.Name == "" {
+			csvKey.Name = sub.Status.CurrentCSV
+		}
+
+		// This value can be empty which will cause errors.
+		if csvKey.Name != "" {
+			csv := &v1alpha1.ClusterServiceVersion{}
+			if err := u.config.Client.Get(ctx, csvKey, csv); err != nil && !apierrors.IsNotFound(err) {
+				return fmt.Errorf("error getting installed CSV %q: %v", csvKey.Name, err)
+			} else if err == nil {
+				crds = getCRDs(csv)
+			}
+			csvObj = csv
+		}
 	}
 
-	crds := getCRDs(csv)
+	// Deletion order:
+	//
+	// 1. Subscription to prevent further installs or upgrades of the operator while cleaning up.
+	// 2. CustomResourceDefinitions so the operator has a chance to handle CRs that have finalizers.
+	// 3. ClusterServiceVersion. OLM puts an ownerref on every namespaced resource to the CSV,
+	//    and an owner label on every cluster scoped resource so they get gc'd on deletion.
 
-	// Delete the subscription first, so that no further installs or upgrades
-	// of the operator occur while we're cleaning up.
-	if err := u.deleteObjects(ctx, sub); err != nil {
+	// Subscriptions can be deleted asynchronously.
+	if err := u.deleteObjects(ctx, subObj); err != nil {
 		return err
 	}
 
@@ -81,7 +114,7 @@ func (u *OperatorUninstall) Run(ctx context.Context) error {
 	// OLM puts an ownerref on every namespaced resource to the CSV,
 	// and an owner label on every cluster scoped resource. When CSV is deleted
 	// kube and olm gc will remove all the referenced resources.
-	if err := u.deleteObjects(ctx, csv); err != nil {
+	if err := u.deleteObjects(ctx, csvObj); err != nil {
 		return err
 	}
 
@@ -107,6 +140,11 @@ func (u *OperatorUninstall) Run(ctx context.Context) error {
 		}
 	}
 
+	// If no objects were cleaned up, it means the package was not found
+	if subObj == nil && csvObj == nil && len(crds) == 0 {
+		return &ErrPackageNotFound{u.Package}
+	}
+
 	return nil
 }
 
@@ -121,22 +159,6 @@ func (u *OperatorUninstall) deleteObjects(ctx context.Context, objs ...controlle
 		}
 	}
 	return waitForDeletion(ctx, u.config.Client, objs...)
-}
-
-// getInstalledCSV looks up the installed CSV name from the provided subscription and fetches it.
-func (u *OperatorUninstall) getInstalledCSV(ctx context.Context, subscription *v1alpha1.Subscription) (*v1alpha1.ClusterServiceVersion, error) {
-	key := types.NamespacedName{
-		Name:      subscription.Status.InstalledCSV,
-		Namespace: subscription.GetNamespace(),
-	}
-
-	installedCSV := &v1alpha1.ClusterServiceVersion{}
-	if err := u.config.Client.Get(ctx, key, installedCSV); err != nil {
-		return nil, err
-	}
-
-	installedCSV.SetGroupVersionKind(v1alpha1.SchemeGroupVersion.WithKind(csvKind))
-	return installedCSV, nil
 }
 
 // getCRDs returns the list of CRDs required by a CSV.
