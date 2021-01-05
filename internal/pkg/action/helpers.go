@@ -12,17 +12,16 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/util/retry"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
-func objectKeyForObject(obj controllerutil.Object) types.NamespacedName {
+func objectKeyForObject(obj client.Object) types.NamespacedName {
 	return types.NamespacedName{
 		Namespace: obj.GetNamespace(),
 		Name:      obj.GetName(),
 	}
 }
 
-func waitForDeletion(ctx context.Context, cl client.Client, objs ...controllerutil.Object) error {
+func waitForDeletion(ctx context.Context, cl client.Client, objs ...client.Object) error {
 	for _, obj := range objs {
 		obj := obj
 		lowerKind := strings.ToLower(obj.GetObjectKind().GroupVersionKind().Kind)

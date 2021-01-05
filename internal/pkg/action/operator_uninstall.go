@@ -12,7 +12,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
 type OperatorUninstall struct {
@@ -65,8 +64,8 @@ func (u *OperatorUninstall) Run(ctx context.Context) error {
 		return fmt.Errorf("operator package %q not found", u.Package)
 	}
 
-	var subObj, csvObj controllerutil.Object
-	var crds []controllerutil.Object
+	var subObj, csvObj client.Object
+	var crds []client.Object
 	if sub != nil {
 		subObj = sub
 		// CSV name may either be the installed or current name in a subscription's status,
@@ -148,7 +147,7 @@ func (u *OperatorUninstall) Run(ctx context.Context) error {
 	return nil
 }
 
-func (u *OperatorUninstall) deleteObjects(ctx context.Context, objs ...controllerutil.Object) error {
+func (u *OperatorUninstall) deleteObjects(ctx context.Context, objs ...client.Object) error {
 	for _, obj := range objs {
 		obj := obj
 		lowerKind := strings.ToLower(obj.GetObjectKind().GroupVersionKind().Kind)
@@ -162,7 +161,7 @@ func (u *OperatorUninstall) deleteObjects(ctx context.Context, objs ...controlle
 }
 
 // getCRDs returns the list of CRDs required by a CSV.
-func getCRDs(csv *v1alpha1.ClusterServiceVersion) (crds []controllerutil.Object) {
+func getCRDs(csv *v1alpha1.ClusterServiceVersion) (crds []client.Object) {
 	for _, resource := range csv.Status.RequirementStatus {
 		if resource.Kind == crdKind {
 			obj := &unstructured.Unstructured{}
