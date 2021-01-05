@@ -61,33 +61,15 @@ func (u *OperatorUninstall) Run(ctx context.Context) error {
 		}
 	}
 	if sub == nil {
-		return fmt.Errorf("operator package %q not found", u.Package)
+		return &ErrPackageNotFound{u.Package}
 	}
 
-	var subObj, csvObj client.Object
-	var crds []client.Object
-	if sub != nil {
-		subObj = sub
-		// CSV name may either be the installed or current name in a subscription's status,
-		// depending on installation state.
-		csvKey := types.NamespacedName{
-			Name:      sub.Status.InstalledCSV,
-			Namespace: u.config.Namespace,
+	csv, csvName, err := u.getSubscriptionCSV(ctx, sub)
+	if err != nil && !apierrors.IsNotFound(err) {
+		if csvName == "" {
+			return fmt.Errorf("get subscription CSV: %v", err)
 		}
-		if csvKey.Name == "" {
-			csvKey.Name = sub.Status.CurrentCSV
-		}
-
-		// This value can be empty which will cause errors.
-		if csvKey.Name != "" {
-			csv := &v1alpha1.ClusterServiceVersion{}
-			if err := u.config.Client.Get(ctx, csvKey, csv); err != nil && !apierrors.IsNotFound(err) {
-				return fmt.Errorf("error getting installed CSV %q: %v", csvKey.Name, err)
-			} else if err == nil {
-				crds = getCRDs(csv)
-			}
-			csvObj = csv
-		}
+		return fmt.Errorf("get subscription CSV %q: %v", csvName, err)
 	}
 
 	// Deletion order:
@@ -98,23 +80,26 @@ func (u *OperatorUninstall) Run(ctx context.Context) error {
 	//    and an owner label on every cluster scoped resource so they get gc'd on deletion.
 
 	// Subscriptions can be deleted asynchronously.
-	if err := u.deleteObjects(ctx, subObj); err != nil {
+	if err := u.deleteObjects(ctx, sub); err != nil {
 		return err
 	}
 
-	if u.DeleteCRDs {
+	if csv != nil {
 		// Ensure CustomResourceDefinitions are deleted next, so that the operator
 		// has a chance to handle CRs that have finalizers.
-		if err := u.deleteObjects(ctx, crds...); err != nil {
+		if u.DeleteCRDs {
+			crds := getCRDs(csv)
+			if err := u.deleteObjects(ctx, crds...); err != nil {
+				return err
+			}
+		}
+
+		// OLM puts an ownerref on every namespaced resource to the CSV,
+		// and an owner label on every cluster scoped resource. When CSV is deleted
+		// kube and olm gc will remove all the referenced resources.
+		if err := u.deleteObjects(ctx, csv); err != nil {
 			return err
 		}
-	}
-
-	// OLM puts an ownerref on every namespaced resource to the CSV,
-	// and an owner label on every cluster scoped resource. When CSV is deleted
-	// kube and olm gc will remove all the referenced resources.
-	if err := u.deleteObjects(ctx, csvObj); err != nil {
-		return err
 	}
 
 	if u.DeleteOperatorGroups {
@@ -138,12 +123,6 @@ func (u *OperatorUninstall) Run(ctx context.Context) error {
 			}
 		}
 	}
-
-	// If no objects were cleaned up, it means the package was not found
-	if subObj == nil && csvObj == nil && len(crds) == 0 {
-		return &ErrPackageNotFound{u.Package}
-	}
-
 	return nil
 }
 
@@ -158,6 +137,37 @@ func (u *OperatorUninstall) deleteObjects(ctx context.Context, objs ...client.Ob
 		}
 	}
 	return waitForDeletion(ctx, u.config.Client, objs...)
+}
+
+// getSubscriptionCSV looks up the installed CSV name from the provided subscription and fetches it.
+func (u *OperatorUninstall) getSubscriptionCSV(ctx context.Context, subscription *v1alpha1.Subscription) (*v1alpha1.ClusterServiceVersion, string, error) {
+	name := csvNameFromSubscription(subscription)
+
+	// If we could not find a name in the subscription, that likely
+	// means there is no CSV associated with it yet. This should
+	// not be treated as an error, so return a nil CSV with a nil error.
+	if name == "" {
+		return nil, "", nil
+	}
+
+	key := types.NamespacedName{
+		Name:      name,
+		Namespace: subscription.GetNamespace(),
+	}
+
+	csv := &v1alpha1.ClusterServiceVersion{}
+	if err := u.config.Client.Get(ctx, key, csv); err != nil {
+		return nil, name, err
+	}
+	csv.SetGroupVersionKind(v1alpha1.SchemeGroupVersion.WithKind(csvKind))
+	return csv, name, nil
+}
+
+func csvNameFromSubscription(subscription *v1alpha1.Subscription) string {
+	if subscription.Status.InstalledCSV != "" {
+		return subscription.Status.InstalledCSV
+	}
+	return subscription.Status.CurrentCSV
 }
 
 // getCRDs returns the list of CRDs required by a CSV.
