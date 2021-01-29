@@ -4,6 +4,7 @@ export GIT_VERSION = $(shell git describe --tags --always)
 export GIT_COMMIT = $(shell git rev-parse HEAD)
 export GIT_COMMIT_TIME = $(shell TZ=UTC git show -s --format=%cd --date=format-local:%Y-%m-%dT%TZ)
 export GIT_TREE_STATE = $(shell sh -c '(test -n "$(shell git status -s)" && echo "dirty") || echo "clean"')
+export CGO_ENABLED = 1
 
 REPO = $(shell go list -m)
 GO_BUILD_ARGS = \
@@ -40,4 +41,4 @@ lint:
 .PHONY: release
 RELEASE_ARGS?=release --rm-dist --snapshot
 release:
-	source ./scripts/fetch.sh; fetch goreleaser 0.141.0 && ./bin/goreleaser $(RELEASE_ARGS)
+	source ./scripts/fetch.sh; fetch goreleaser 0.156.1 && ./bin/goreleaser $(RELEASE_ARGS)
