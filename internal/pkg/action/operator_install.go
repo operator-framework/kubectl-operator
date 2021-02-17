@@ -241,7 +241,12 @@ func (i *OperatorInstall) createSubscription(ctx context.Context, pm *operator.P
 	}
 
 	if i.Version != "" {
-		guessedStartingCSV := guessStartingCSV(pc.CurrentCSV, i.Version)
+		// Use the CSV name of the channel head as a template to guess the CSV name based on
+		// the desired version.
+		guessedStartingCSV, err := guessStartingCSV(pc.CurrentCSV, i.Version)
+		if err != nil {
+			return nil, fmt.Errorf("could not guess startingCSV: %v", err)
+		}
 		opts = append(opts, subscription.StartingCSV(guessedStartingCSV))
 	}
 
@@ -261,23 +266,20 @@ func (i *OperatorInstall) createSubscription(ctx context.Context, pm *operator.P
 	return sub, nil
 }
 
-func guessStartingCSV(csvNameExample, desiredVersion string) string {
-	csvBaseName, vChar, _ := parseCSVName(csvNameExample)
-	version := strings.TrimPrefix(desiredVersion, "v")
-	return fmt.Sprintf("%s.%s%s", csvBaseName, vChar, version)
+// guessStartingCSV finds the first semver version string in csvNameExample, and replaces all
+// occurrences with desiredVersion, trimming any "v" prefix from desiredVersion prior to making the
+// replacements. If csvNameExample does not contain a semver version string, guessStartingCSV
+// returns an error.
+func guessStartingCSV(csvNameExample, desiredVersion string) (string, error) {
+	exampleVersion := semverRegexp.FindString(csvNameExample)
+	if exampleVersion == "" {
+		return "", fmt.Errorf("could not locate semver version in channel head CSV name %q", csvNameExample)
+	}
+	desiredVersion = strings.TrimPrefix(desiredVersion, "v")
+	return strings.ReplaceAll(csvNameExample, exampleVersion, desiredVersion), nil
 }
 
-const (
-	operatorNameRegexp = `[a-z0-9]([-a-z0-9]*[a-z0-9])?`
-	semverRegexp       = `(?P<major>0|[1-9]\d*)\.(?P<minor>0|[1-9]\d*)\.(?P<patch>0|[1-9]\d*)(?:-(?P<prerelease>(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+(?P<buildmetadata>[0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?` //nolint:lll
-)
-
-var csvNameRegexp = regexp.MustCompile(`^(` + operatorNameRegexp + `).(v?)(` + semverRegexp + `)$`)
-
-func parseCSVName(csvName string) (string, string, string) {
-	matches := csvNameRegexp.FindAllStringSubmatch(csvName, -1)
-	return matches[0][1], matches[0][3], matches[0][4]
-}
+var semverRegexp = regexp.MustCompile(`(?P<major>0|[1-9]\d*)\.(?P<minor>0|[1-9]\d*)\.(?P<patch>0|[1-9]\d*)(?:-(?P<prerelease>(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+(?P<buildmetadata>[0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?`) //nolint:lll
 
 func (i *OperatorInstall) getInstallPlan(ctx context.Context, sub *v1alpha1.Subscription) (*v1alpha1.InstallPlan, error) {
 	subKey := objectKeyForObject(sub)
