@@ -27,6 +27,12 @@ spec:
     bin: kubectl-operator
   - selector:
       matchLabels:
+        os: darwin
+        arch: arm64
+    {{addURIAndSha "https://github.com/operator-framework/kubectl-operator/releases/download/{{ .TagName }}/kubectl-operator_{{ .TagName }}_darwin_arm64.tar.gz" .TagName }}
+    bin: kubectl-operator
+  - selector:
+      matchLabels:
         os: linux
         arch: amd64
     {{addURIAndSha "https://github.com/operator-framework/kubectl-operator/releases/download/{{ .TagName }}/kubectl-operator_{{ .TagName }}_linux_amd64.tar.gz" .TagName }}
