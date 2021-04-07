@@ -17,7 +17,6 @@ import (
 func newOperatorListCustomResourcesCmd(cfg *action.Configuration) *cobra.Command {
 	crLister := action.NewOperatorListCustomResources(cfg)
 	output := new(string)
-	allNamespaces := new(bool)
 
 	cmd := &cobra.Command{
 		Use:     "list-custom-resources <operator>",
@@ -34,21 +33,8 @@ func newOperatorListCustomResourcesCmd(cfg *action.Configuration) *cobra.Command
 			}
 
 			crLister.PackageName = args[0]
-			crLister.AllNamespaces = *allNamespaces
 
-			op, err := crLister.FindOperator(cmd.Context())
-			if err != nil {
-				log.Fatal(err)
-			}
-			log.Printf("found operator %s", op.Name)
-
-			crds, err := crLister.Unzip(cmd.Context(), op)
-			if err != nil {
-				log.Fatal(err)
-			}
-			log.Printf("found owned crds #%v", crds)
-
-			list, err := crLister.List(cmd.Context(), crds)
+			list, err := crLister.Run(cmd.Context())
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -58,13 +44,14 @@ func newOperatorListCustomResourcesCmd(cfg *action.Configuration) *cobra.Command
 				tw := tabwriter.NewWriter(os.Stdout, 3, 4, 2, ' ', 0)
 				_, _ = fmt.Fprintf(tw, "NAME\tNAMESPACE\tKIND\tAPIVERSION\tAGE\n")
 				for _, cr := range list.Items {
-					age := time.Since(cr.CreationTimestamp.Time)
-					_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s", cr.Name, cr.Namespace, cr.Kind, cr.APIVersion, duration.HumanDuration(age))
+					age := time.Since(cr.GetCreationTimestamp().Time)
+					_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s", cr.GetName(), cr.GetNamespace(), cr.GetKind(), cr.GetAPIVersion(), duration.HumanDuration(age))
 				}
 				_ = tw.Flush()
 			} else if *output == "json" {
 				for _, cr := range list.Items {
-					fmt.Printf("#%v", cr.String())
+					j, _ := cr.MarshalJSON()
+					fmt.Printf("#%v", string(j))
 				}
 			} else if *output == "yaml" {
 				//TODO
@@ -72,19 +59,17 @@ func newOperatorListCustomResourcesCmd(cfg *action.Configuration) *cobra.Command
 		},
 	}
 
-
-	bindOperatorListCustomResourcesFlags(cmd.Flags(), allNamespaces, output)
+	bindOperatorListCustomResourcesFlags(cmd.Flags(), output)
 	return cmd
 }
 
-func bindOperatorListCustomResourcesFlags(fs *pflag.FlagSet, allNamespaces *bool, output *string) {
-	fs.BoolVarP(allNamespaces, "all-namespaces", "A", false, "list operators in all namespaces")
+func bindOperatorListCustomResourcesFlags(fs *pflag.FlagSet, output *string) {
 	fs.StringVarP(output, "output", "o", "", "Determines format for list output. One of json or yaml.")
 }
 
 func notValid(output *string) bool {
 	a := *output
-	if  a == "" || a == "json" || a == "yaml" {
+	if a == "" || a == "json" || a == "yaml" {
 		return true
 	}
 	return false
