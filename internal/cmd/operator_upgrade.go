@@ -8,12 +8,13 @@ import (
 	"github.com/spf13/pflag"
 
 	"github.com/operator-framework/kubectl-operator/internal/cmd/internal/log"
-	"github.com/operator-framework/kubectl-operator/internal/pkg/action"
+	internalaction "github.com/operator-framework/kubectl-operator/internal/pkg/action"
+	"github.com/operator-framework/kubectl-operator/pkg/action"
 )
 
 func newOperatorUpgradeCmd(cfg *action.Configuration) *cobra.Command {
 	var timeout time.Duration
-	u := action.NewOperatorUpgrade(cfg)
+	u := internalaction.NewOperatorUpgrade(cfg)
 	cmd := &cobra.Command{
 		Use:   "upgrade <operator>",
 		Short: "Upgrade an operator",
@@ -34,6 +35,6 @@ func newOperatorUpgradeCmd(cfg *action.Configuration) *cobra.Command {
 	return cmd
 }
 
-func bindOperatorUpgradeFlags(fs *pflag.FlagSet, u *action.OperatorUpgrade) {
+func bindOperatorUpgradeFlags(fs *pflag.FlagSet, u *internalaction.OperatorUpgrade) {
 	fs.StringVarP(&u.Channel, "channel", "c", "", "subscription channel")
 }

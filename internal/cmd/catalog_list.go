@@ -11,12 +11,13 @@ import (
 	"k8s.io/apimachinery/pkg/util/duration"
 
 	"github.com/operator-framework/kubectl-operator/internal/cmd/internal/log"
-	"github.com/operator-framework/kubectl-operator/internal/pkg/action"
+	internalaction "github.com/operator-framework/kubectl-operator/internal/pkg/action"
+	"github.com/operator-framework/kubectl-operator/pkg/action"
 )
 
 func newCatalogListCmd(cfg *action.Configuration) *cobra.Command {
 	var allNamespaces bool
-	l := action.NewCatalogList(cfg)
+	l := internalaction.NewCatalogList(cfg)
 	cmd := &cobra.Command{
 		Use:   "list",
 		Short: "List installed operator catalogs",

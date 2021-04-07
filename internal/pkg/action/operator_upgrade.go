@@ -7,16 +7,18 @@ import (
 	"github.com/operator-framework/api/pkg/operators/v1alpha1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/operator-framework/kubectl-operator/pkg/action"
 )
 
 type OperatorUpgrade struct {
-	config *Configuration
+	config *action.Configuration
 
 	Package string
 	Channel string
 }
 
-func NewOperatorUpgrade(cfg *Configuration) *OperatorUpgrade {
+func NewOperatorUpgrade(cfg *action.Configuration) *OperatorUpgrade {
 	return &OperatorUpgrade{
 		config: cfg,
 	}

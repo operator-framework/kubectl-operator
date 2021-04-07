@@ -14,11 +14,12 @@ import (
 	"k8s.io/apimachinery/pkg/util/duration"
 
 	"github.com/operator-framework/kubectl-operator/internal/cmd/internal/log"
-	"github.com/operator-framework/kubectl-operator/internal/pkg/action"
+	internalaction "github.com/operator-framework/kubectl-operator/internal/pkg/action"
+	"github.com/operator-framework/kubectl-operator/pkg/action"
 )
 
 func newOperatorListAvailableCmd(cfg *action.Configuration) *cobra.Command {
-	l := action.NewOperatorListAvailable(cfg)
+	l := internalaction.NewOperatorListAvailable(cfg)
 	cmd := &cobra.Command{
 		Use:   "list-available",
 		Short: "List operators available to be installed",
@@ -61,6 +62,6 @@ func newOperatorListAvailableCmd(cfg *action.Configuration) *cobra.Command {
 	return cmd
 }
 
-func bindOperatorListAvailableFlags(fs *pflag.FlagSet, l *action.OperatorListAvailable) {
+func bindOperatorListAvailableFlags(fs *pflag.FlagSet, l *internalaction.OperatorListAvailable) {
 	fs.VarP(&l.Catalog, "catalog", "c", "catalog to query (default: search all cluster catalogs)")
 }

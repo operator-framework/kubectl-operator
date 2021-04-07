@@ -10,16 +10,17 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/operator-framework/kubectl-operator/internal/pkg/operator"
+	"github.com/operator-framework/kubectl-operator/pkg/action"
 )
 
 type OperatorListAvailable struct {
-	config *Configuration
+	config *action.Configuration
 
 	Catalog NamespacedName
 	Package string
 }
 
-func NewOperatorListAvailable(cfg *Configuration) *OperatorListAvailable {
+func NewOperatorListAvailable(cfg *action.Configuration) *OperatorListAvailable {
 	return &OperatorListAvailable{
 		config: cfg,
 	}

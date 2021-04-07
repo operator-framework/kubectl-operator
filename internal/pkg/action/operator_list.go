@@ -4,13 +4,15 @@ import (
 	"context"
 
 	"github.com/operator-framework/api/pkg/operators/v1alpha1"
+
+	"github.com/operator-framework/kubectl-operator/pkg/action"
 )
 
 type OperatorList struct {
-	config *Configuration
+	config *action.Configuration
 }
 
-func NewOperatorList(cfg *Configuration) *OperatorList {
+func NewOperatorList(cfg *action.Configuration) *OperatorList {
 	return &OperatorList{cfg}
 }
 

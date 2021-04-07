@@ -5,7 +5,7 @@ go 1.16
 require (
 	github.com/containerd/containerd v1.4.3
 	github.com/opencontainers/image-spec v1.0.2-0.20190823105129-775207bd45b6
-	github.com/operator-framework/api v0.3.7
+	github.com/operator-framework/api v0.7.1
 	github.com/operator-framework/operator-lifecycle-manager v0.0.0-20200521062108-408ca95d458f
 	github.com/operator-framework/operator-registry v1.12.5
 	github.com/sirupsen/logrus v1.6.0

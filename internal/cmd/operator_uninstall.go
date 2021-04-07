@@ -5,11 +5,12 @@ import (
 	"github.com/spf13/pflag"
 
 	"github.com/operator-framework/kubectl-operator/internal/cmd/internal/log"
-	"github.com/operator-framework/kubectl-operator/internal/pkg/action"
+	internalaction "github.com/operator-framework/kubectl-operator/internal/pkg/action"
+	"github.com/operator-framework/kubectl-operator/pkg/action"
 )
 
 func newOperatorUninstallCmd(cfg *action.Configuration) *cobra.Command {
-	u := action.NewOperatorUninstall(cfg)
+	u := internalaction.NewOperatorUninstall(cfg)
 	u.Logf = log.Printf
 
 	cmd := &cobra.Command{
@@ -28,7 +29,7 @@ func newOperatorUninstallCmd(cfg *action.Configuration) *cobra.Command {
 	return cmd
 }
 
-func bindOperatorUninstallFlags(fs *pflag.FlagSet, u *action.OperatorUninstall) {
+func bindOperatorUninstallFlags(fs *pflag.FlagSet, u *internalaction.OperatorUninstall) {
 	fs.BoolVarP(&u.DeleteAll, "delete-all", "X", false, "enable all delete flags")
 	fs.BoolVar(&u.DeleteCRDs, "delete-crds", false, "delete all owned CRDs and all CRs")
 	fs.BoolVar(&u.DeleteOperatorGroups, "delete-operator-groups", false, "delete operator groups if no other operators remain")

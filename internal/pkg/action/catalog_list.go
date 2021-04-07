@@ -5,13 +5,15 @@ import (
 
 	"github.com/operator-framework/api/pkg/operators/v1alpha1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/operator-framework/kubectl-operator/pkg/action"
 )
 
 type CatalogList struct {
-	config *Configuration
+	config *action.Configuration
 }
 
-func NewCatalogList(cfg *Configuration) *CatalogList {
+func NewCatalogList(cfg *action.Configuration) *CatalogList {
 	return &CatalogList{cfg}
 }
 
