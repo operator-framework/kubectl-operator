@@ -10,12 +10,13 @@ import (
 	"github.com/spf13/pflag"
 
 	"github.com/operator-framework/kubectl-operator/internal/cmd/internal/log"
-	"github.com/operator-framework/kubectl-operator/internal/pkg/action"
+	internalaction "github.com/operator-framework/kubectl-operator/internal/pkg/action"
+	"github.com/operator-framework/kubectl-operator/pkg/action"
 )
 
 func newOperatorInstallCmd(cfg *action.Configuration) *cobra.Command {
 	var timeout time.Duration
-	i := action.NewOperatorInstall(cfg)
+	i := internalaction.NewOperatorInstall(cfg)
 	i.Logf = log.Printf
 
 	cmd := &cobra.Command{
@@ -39,7 +40,7 @@ func newOperatorInstallCmd(cfg *action.Configuration) *cobra.Command {
 	return cmd
 }
 
-func bindOperatorInstallFlags(fs *pflag.FlagSet, i *action.OperatorInstall) {
+func bindOperatorInstallFlags(fs *pflag.FlagSet, i *internalaction.OperatorInstall) {
 	fs.StringVarP(&i.Channel, "channel", "c", "", "subscription channel")
 	fs.VarP(&i.Approval, "approval", "a", fmt.Sprintf("approval (%s or %s)", v1alpha1.ApprovalManual, v1alpha1.ApprovalAutomatic))
 	fs.StringVarP(&i.Version, "version", "v", "", "install specific version for operator (default latest)")

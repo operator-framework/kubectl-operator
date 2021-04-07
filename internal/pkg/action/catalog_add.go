@@ -27,6 +27,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"github.com/operator-framework/kubectl-operator/internal/pkg/catalogsource"
+	"github.com/operator-framework/kubectl-operator/pkg/action"
 )
 
 const (
@@ -38,7 +39,7 @@ const (
 )
 
 type CatalogAdd struct {
-	config *Configuration
+	config *action.Configuration
 
 	CatalogSourceName string
 	IndexImage        string
@@ -54,7 +55,7 @@ type CatalogAdd struct {
 	registry *containerdregistry.Registry
 }
 
-func NewCatalogAdd(cfg *Configuration) *CatalogAdd {
+func NewCatalogAdd(cfg *action.Configuration) *CatalogAdd {
 	return &CatalogAdd{
 		config: cfg,
 		Logf:   func(string, ...interface{}) {},

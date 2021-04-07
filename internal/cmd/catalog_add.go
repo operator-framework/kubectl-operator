@@ -11,12 +11,13 @@ import (
 	"github.com/spf13/pflag"
 
 	"github.com/operator-framework/kubectl-operator/internal/cmd/internal/log"
-	"github.com/operator-framework/kubectl-operator/internal/pkg/action"
+	internalaction "github.com/operator-framework/kubectl-operator/internal/pkg/action"
+	"github.com/operator-framework/kubectl-operator/pkg/action"
 )
 
 func newCatalogAddCmd(cfg *action.Configuration) *cobra.Command {
 	var timeout time.Duration
-	a := action.NewCatalogAdd(cfg)
+	a := internalaction.NewCatalogAdd(cfg)
 	a.Logf = log.Printf
 
 	cmd := &cobra.Command{
@@ -50,7 +51,7 @@ func newCatalogAddCmd(cfg *action.Configuration) *cobra.Command {
 	return cmd
 }
 
-func bindCatalogAddFlags(fs *pflag.FlagSet, a *action.CatalogAdd) {
+func bindCatalogAddFlags(fs *pflag.FlagSet, a *internalaction.CatalogAdd) {
 	fs.StringVarP(&a.DisplayName, "display-name", "d", "", "display name of the index")
 	fs.StringVarP(&a.Publisher, "publisher", "p", "", "publisher of the index")
 	fs.DurationVar(&a.CleanupTimeout, "cleanup-timeout", time.Minute, "the amount to time to wait before cancelling cleanup")

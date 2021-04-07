@@ -12,10 +12,12 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/operator-framework/kubectl-operator/pkg/action"
 )
 
 type OperatorUninstall struct {
-	config *Configuration
+	config *action.Configuration
 
 	Package                  string
 	DeleteAll                bool
@@ -26,7 +28,7 @@ type OperatorUninstall struct {
 	Logf func(string, ...interface{})
 }
 
-func NewOperatorUninstall(cfg *Configuration) *OperatorUninstall {
+func NewOperatorUninstall(cfg *action.Configuration) *OperatorUninstall {
 	return &OperatorUninstall{
 		config: cfg,
 		Logf:   func(string, ...interface{}) {},

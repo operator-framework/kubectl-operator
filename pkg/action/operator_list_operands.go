@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	internal "github.com/operator-framework/kubectl-operator/internal/pkg/action" // TODO move this file here
-
 	v1 "github.com/operator-framework/api/pkg/operators/v1"
 	"github.com/operator-framework/api/pkg/operators/v1alpha1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -18,11 +16,11 @@ import (
 
 // OperatorListOperands knows how to find and list custom resources given a package name and namespace.
 type OperatorListOperands struct {
-	config      *internal.Configuration
+	config      *Configuration
 	PackageName string
 }
 
-func NewOperatorListOperands(cfg *internal.Configuration) *OperatorListOperands {
+func NewOperatorListOperands(cfg *Configuration) *OperatorListOperands {
 	return &OperatorListOperands{
 		config: cfg,
 	}

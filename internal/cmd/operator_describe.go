@@ -7,8 +7,9 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/operator-framework/kubectl-operator/internal/cmd/internal/log"
-	"github.com/operator-framework/kubectl-operator/internal/pkg/action"
+	internalaction "github.com/operator-framework/kubectl-operator/internal/pkg/action"
 	"github.com/operator-framework/kubectl-operator/internal/pkg/operator"
+	"github.com/operator-framework/kubectl-operator/pkg/action"
 )
 
 var (
@@ -26,7 +27,7 @@ var (
 )
 
 func newOperatorDescribeCmd(cfg *action.Configuration) *cobra.Command {
-	l := action.NewOperatorListAvailable(cfg)
+	l := internalaction.NewOperatorListAvailable(cfg)
 	// receivers for cmdline flags
 	var channel string
 	var longDescription bool

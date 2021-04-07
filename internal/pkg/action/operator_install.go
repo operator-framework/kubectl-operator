@@ -17,10 +17,11 @@ import (
 
 	"github.com/operator-framework/kubectl-operator/internal/pkg/operator"
 	"github.com/operator-framework/kubectl-operator/internal/pkg/subscription"
+	"github.com/operator-framework/kubectl-operator/pkg/action"
 )
 
 type OperatorInstall struct {
-	config *Configuration
+	config *action.Configuration
 
 	Package             string
 	Channel             string
@@ -34,7 +35,7 @@ type OperatorInstall struct {
 	Logf func(string, ...interface{})
 }
 
-func NewOperatorInstall(cfg *Configuration) *OperatorInstall {
+func NewOperatorInstall(cfg *action.Configuration) *OperatorInstall {
 	return &OperatorInstall{
 		config: cfg,
 		Logf:   func(string, ...interface{}) {},

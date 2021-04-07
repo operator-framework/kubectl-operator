@@ -5,15 +5,17 @@ import (
 	"fmt"
 
 	"github.com/operator-framework/api/pkg/operators/v1alpha1"
+
+	"github.com/operator-framework/kubectl-operator/pkg/action"
 )
 
 type CatalogRemove struct {
-	config *Configuration
+	config *action.Configuration
 
 	CatalogName string
 }
 
-func NewCatalogRemove(cfg *Configuration) *CatalogRemove {
+func NewCatalogRemove(cfg *action.Configuration) *CatalogRemove {
 	return &CatalogRemove{
 		config: cfg,
 	}
