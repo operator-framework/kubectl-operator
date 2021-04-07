@@ -9,17 +9,29 @@ import (
 	"github.com/spf13/pflag"
 	apiextv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+func NewScheme() (*runtime.Scheme, error) {
+	sch := runtime.NewScheme()
+	for _, f := range []func(*runtime.Scheme) error{
+		v1alpha1.AddToScheme,
+		operatorsv1.AddToScheme,
+		v1.AddToScheme,
+		apiextv1.AddToScheme,
+	} {
+		if err := f(sch); err != nil {
+			return nil, err
+		}
+	}
+	return sch, nil
+}
+
 type Configuration struct {
-	RESTConfig *rest.Config
-	Client     client.Client
-	Namespace  string
-	Scheme     *runtime.Scheme
+	Client    client.Client
+	Namespace string
+	Scheme    *runtime.Scheme
 
 	overrides *clientcmd.ConfigOverrides
 }
@@ -60,16 +72,9 @@ func (c *Configuration) Load() error {
 		return err
 	}
 
-	sch := scheme.Scheme
-	for _, f := range []func(*runtime.Scheme) error{
-		v1alpha1.AddToScheme,
-		operatorsv1.AddToScheme,
-		v1.AddToScheme,
-		apiextv1.AddToScheme,
-	} {
-		if err := f(sch); err != nil {
-			return err
-		}
+	sch, err := NewScheme()
+	if err != nil {
+		return err
 	}
 	cl, err := client.New(cc, client.Options{
 		Scheme: sch,
@@ -81,7 +86,6 @@ func (c *Configuration) Load() error {
 	c.Scheme = sch
 	c.Client = &operatorClient{cl}
 	c.Namespace = ns
-	c.RESTConfig = cc
 
 	return nil
 }
