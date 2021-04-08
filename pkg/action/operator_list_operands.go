@@ -105,13 +105,12 @@ func (o *OperatorListOperands) list(ctx context.Context, crdDesc v1alpha1.CRDDes
 	if err != nil {
 		return nil, fmt.Errorf("get crd %q: %v", crdKey.String(), err)
 	}
-	group := crd.Spec.Group
 
 	list := unstructured.UnstructuredList{}
 	gvk := schema.GroupVersionKind{
-		Group:   group,
+		Group:   crd.Spec.Group,
 		Version: crdDesc.Version,
-		Kind:    crdDesc.Kind,
+		Kind:    crd.Spec.Names.ListKind,
 	}
 	list.SetGroupVersionKind(gvk)
 	if err := o.config.Client.List(ctx, &list); err != nil {
