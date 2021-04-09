@@ -42,8 +42,6 @@ Operand kinds are determined from the owned CustomResourceDefinitions listed in
 the operator's ClusterServiceVersion.`,
 		Args: cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
-			l.PackageName = args[0]
-
 			writeOutput := func(io.Writer, *unstructured.UnstructuredList) error { panic("writeOutput was not set") }
 			switch output {
 			case "json":
@@ -56,7 +54,7 @@ the operator's ClusterServiceVersion.`,
 				log.Fatalf("invalid value for flag output %q, expected one of %s", output, strings.Join(validOutputs, "|"))
 			}
 
-			operands, err := l.Run(cmd.Context())
+			operands, err := l.Run(cmd.Context(), args[0])
 			if err != nil {
 				log.Fatalf("list operands: %v", err)
 			}

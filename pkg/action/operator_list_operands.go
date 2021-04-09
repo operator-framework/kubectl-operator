@@ -16,8 +16,7 @@ import (
 
 // OperatorListOperands knows how to find and list custom resources given a package name and namespace.
 type OperatorListOperands struct {
-	config      *Configuration
-	PackageName string
+	config *Configuration
 }
 
 func NewOperatorListOperands(cfg *Configuration) *OperatorListOperands {
@@ -26,9 +25,9 @@ func NewOperatorListOperands(cfg *Configuration) *OperatorListOperands {
 	}
 }
 
-func (o *OperatorListOperands) Run(ctx context.Context) (*unstructured.UnstructuredList, error) {
+func (o *OperatorListOperands) Run(ctx context.Context, packageName string) (*unstructured.UnstructuredList, error) {
 	opKey := types.NamespacedName{
-		Name: fmt.Sprintf("%s.%s", o.PackageName, o.config.Namespace),
+		Name: fmt.Sprintf("%s.%s", packageName, o.config.Namespace),
 	}
 
 	result, err := o.listAll(ctx, opKey)
