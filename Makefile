@@ -26,6 +26,10 @@ all: install
 build:
 	go build $(GO_BUILD_ARGS) -o bin/kubectl-operator
 
+.PHONY: test
+test:
+	go test ./...
+
 .PHONY: install
 install: build
 	install bin/kubectl-operator $(shell go env GOPATH)/bin
