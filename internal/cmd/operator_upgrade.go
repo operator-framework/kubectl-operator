@@ -1,9 +1,6 @@
 package cmd
 
 import (
-	"context"
-	"time"
-
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
@@ -13,7 +10,6 @@ import (
 )
 
 func newOperatorUpgradeCmd(cfg *action.Configuration) *cobra.Command {
-	var timeout time.Duration
 	u := internalaction.NewOperatorUpgrade(cfg)
 	cmd := &cobra.Command{
 		Use:   "upgrade <operator>",
@@ -21,9 +17,7 @@ func newOperatorUpgradeCmd(cfg *action.Configuration) *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			u.Package = args[0]
-			ctx, cancel := context.WithTimeout(cmd.Context(), timeout)
-			defer cancel()
-			csv, err := u.Run(ctx)
+			csv, err := u.Run(cmd.Context())
 			if err != nil {
 				log.Fatalf("failed to upgrade operator: %v", err)
 			}
@@ -31,7 +25,6 @@ func newOperatorUpgradeCmd(cfg *action.Configuration) *cobra.Command {
 		},
 	}
 	bindOperatorUpgradeFlags(cmd.Flags(), u)
-	cmd.Flags().DurationVarP(&timeout, "timeout", "t", time.Minute, "the amount of time to wait before cancelling the upgrade")
 	return cmd
 }
 
