@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"context"
 	"fmt"
 	"time"
 
@@ -15,7 +14,6 @@ import (
 )
 
 func newOperatorInstallCmd(cfg *action.Configuration) *cobra.Command {
-	var timeout time.Duration
 	i := internalaction.NewOperatorInstall(cfg)
 	i.Logf = log.Printf
 
@@ -25,9 +23,7 @@ func newOperatorInstallCmd(cfg *action.Configuration) *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			i.Package = args[0]
-			ctx, cancel := context.WithTimeout(cmd.Context(), timeout)
-			defer cancel()
-			csv, err := i.Run(ctx)
+			csv, err := i.Run(cmd.Context())
 			if err != nil {
 				log.Fatalf("failed to install operator: %v", err)
 			}
@@ -35,7 +31,6 @@ func newOperatorInstallCmd(cfg *action.Configuration) *cobra.Command {
 		},
 	}
 	bindOperatorInstallFlags(cmd.Flags(), i)
-	cmd.Flags().DurationVarP(&timeout, "timeout", "t", time.Minute, "the amount of time to wait before cancelling the install")
 
 	return cmd
 }
@@ -45,7 +40,7 @@ func bindOperatorInstallFlags(fs *pflag.FlagSet, i *internalaction.OperatorInsta
 	fs.VarP(&i.Approval, "approval", "a", fmt.Sprintf("approval (%s or %s)", v1alpha1.ApprovalManual, v1alpha1.ApprovalAutomatic))
 	fs.StringVarP(&i.Version, "version", "v", "", "install specific version for operator (default latest)")
 	fs.StringSliceVarP(&i.WatchNamespaces, "watch", "w", []string{}, "namespaces to watch")
-	fs.DurationVar(&i.CleanupTimeout, "cleanup-timeout", time.Minute, "the amount to time to wait before cancelling cleanup")
+	fs.DurationVar(&i.CleanupTimeout, "cleanup-timeout", time.Minute, "the amount of time to wait before cancelling cleanup")
 	fs.BoolVarP(&i.CreateOperatorGroup, "create-operator-group", "C", false, "create operator group if necessary")
 
 	fs.VarP(&i.InstallMode, "install-mode", "i", "install mode")
