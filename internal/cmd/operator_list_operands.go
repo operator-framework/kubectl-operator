@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"sort"
 	"strings"
 	"text/tabwriter"
 	"time"
@@ -64,18 +63,6 @@ the operator's ClusterServiceVersion.`,
 				return
 			}
 
-			sort.Slice(operands.Items, func(i, j int) bool {
-				if operands.Items[i].GetAPIVersion() != operands.Items[j].GetAPIVersion() {
-					return operands.Items[i].GetAPIVersion() < operands.Items[j].GetAPIVersion()
-				}
-				if operands.Items[i].GetKind() != operands.Items[j].GetKind() {
-					return operands.Items[i].GetKind() < operands.Items[j].GetKind()
-				}
-				if operands.Items[i].GetNamespace() != operands.Items[j].GetNamespace() {
-					return operands.Items[i].GetNamespace() < operands.Items[j].GetNamespace()
-				}
-				return operands.Items[i].GetName() < operands.Items[j].GetName()
-			})
 			if err := writeOutput(os.Stdout, operands); err != nil {
 				log.Fatal(err)
 			}
