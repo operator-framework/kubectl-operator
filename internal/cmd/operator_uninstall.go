@@ -34,6 +34,9 @@ uninstall without deleting anything.
 The "ignore" strategy keeps the operands on cluster and deletes the subscription and the operator.
 The "delete" strategy deletes the subscription, operands, and after they have finished finalizing, the operator itself.
 
+To see which operands are on-cluster and would potentially be removed during uninstall, use the kubectl operator 
+list-operands <operator> command.
+
 Setting --delete-operator-groups to true will delete the operatorgroup in the provided namespace if no other active 
 subscriptions are currently in that namespace, after removing the operator. The subscription and operatorgroup will be 
 removed even if the operator is not found.`,
