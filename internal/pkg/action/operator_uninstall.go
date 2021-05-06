@@ -127,9 +127,9 @@ func (u *OperatorUninstall) deleteObjects(ctx context.Context, objs ...client.Ob
 		obj := obj
 		lowerKind := strings.ToLower(obj.GetObjectKind().GroupVersionKind().Kind)
 		if err := u.config.Client.Delete(ctx, obj); err != nil && !apierrors.IsNotFound(err) {
-			return fmt.Errorf("delete %s %q: %v", lowerKind, obj.GetName(), err)
+			return fmt.Errorf("delete %s %q: %v", lowerKind, prettyPrint(obj), err)
 		} else if err == nil {
-			u.Logf("%s %q deleted", lowerKind, obj.GetName())
+			u.Logf("%s %q deleted", lowerKind, prettyPrint(obj))
 		}
 	}
 	return waitForDeletion(ctx, u.config.Client, objs...)
@@ -208,7 +208,7 @@ func (u *OperatorUninstall) deleteCSVRelatedResources(ctx context.Context, csv *
 			break
 		}
 		for _, op := range operands.Items {
-			u.Logf("%s %q orphaned", strings.ToLower(op.GetKind()), prettyPrint(op))
+			u.Logf("%s %q orphaned", strings.ToLower(op.GetKind()), prettyPrint(&op))
 		}
 	case operand.Delete:
 		if operands == nil {
@@ -250,7 +250,7 @@ func contains(haystack []string, needle string) bool {
 	return false
 }
 
-func prettyPrint(op unstructured.Unstructured) string {
+func prettyPrint(op client.Object) string {
 	namespaced := op.GetNamespace() != ""
 	if namespaced {
 		return fmt.Sprint(op.GetName() + "/" + op.GetNamespace())
