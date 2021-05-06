@@ -20,6 +20,16 @@ type OperatorListOperands struct {
 	config *Configuration
 }
 
+// OperandListError describes an error that is terminal for the list-operands command but not for other callers,
+// such as the uninstall command. It occurs when the referenced CSV has no owned APIs, or is not in a succeeded state.
+type OperandListError struct {
+	msg string
+}
+
+func (e OperandListError) Error() string {
+	return e.msg
+}
+
 func NewOperatorListOperands(cfg *Configuration) *OperatorListOperands {
 	return &OperatorListOperands{
 		config: cfg,
@@ -81,12 +91,12 @@ func (o *OperatorListOperands) unzip(ctx context.Context, operator *v1.Operator)
 
 	// check if owned CRDs are defined on the csv
 	if len(csv.Spec.CustomResourceDefinitions.Owned) == 0 {
-		return nil, fmt.Errorf("no owned CustomResourceDefinitions specified on CSV %s, no custom resources to display", csvKey.String())
+		return nil, OperandListError{fmt.Sprintf("no owned CustomResourceDefinitions specified on CSV %s, no custom resources to list", csvKey.String())}
 	}
 
 	// check CSV is not in a failed state (to ensure some OLM multitenancy rules are not violated)
 	if csv.Status.Phase != v1alpha1.CSVPhaseSucceeded {
-		return nil, fmt.Errorf("CSV underlying operator is not in a succeeded state: custom resource list may not be accurate")
+		return nil, OperandListError{fmt.Sprintf("CSV underlying operator is not in a succeeded state: custom resource list may not be accurate")}
 	}
 
 	return csv.Spec.CustomResourceDefinitions.Owned, nil

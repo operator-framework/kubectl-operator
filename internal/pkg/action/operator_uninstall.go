@@ -2,6 +2,7 @@ package action
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -71,7 +72,13 @@ func (u *OperatorUninstall) Run(ctx context.Context) error {
 	lister := action.NewOperatorListOperands(u.config)
 	operands, err := lister.Run(ctx, u.Package)
 	if err != nil {
-		return fmt.Errorf("list operands for operator %q: %v", u.Package, err)
+		listError := action.OperandListError{}
+		if errors.As(err, &listError) {
+			// operands are not part of the operator uninstall
+			u.Logf("list operands for operator %q: %v", u.Package, err)
+		} else {
+			return fmt.Errorf("list operands for operator %q: %v", u.Package, err)
+		}
 	}
 	// validate the provided deletion strategy before proceeding to deletion
 	if err := u.validStrategy(operands); err != nil {
@@ -179,6 +186,9 @@ func (u *OperatorUninstall) deleteOperatorGroup(ctx context.Context) error {
 // validStrategy validates the deletion strategy against the operands on-cluster
 // TODO define and use an OperandStrategyError that the cmd can use errors.As() on to provide external callers a more generic error
 func (u *OperatorUninstall) validStrategy(operands *unstructured.UnstructuredList) error {
+	if operands == nil {
+		return nil
+	}
 	if len(operands.Items) > 0 && u.OperandStrategy.Kind == operand.Cancel {
 		return fmt.Errorf("%d operands exist and operand strategy %q is in use: "+
 			"delete operands manually or re-run uninstall with a different operand deletion strategy."+
@@ -189,11 +199,21 @@ func (u *OperatorUninstall) validStrategy(operands *unstructured.UnstructuredLis
 
 func (u *OperatorUninstall) deleteCSVRelatedResources(ctx context.Context, csv *v1alpha1.ClusterServiceVersion, operands *unstructured.UnstructuredList) error {
 	switch u.OperandStrategy.Kind {
+	case operand.Cancel:
+		// At this point no operands were found with the cancel strategy in place
+		// Safe to proceed to CSV deletion
+		break
 	case operand.Ignore:
+		if operands == nil {
+			break
+		}
 		for _, op := range operands.Items {
 			u.Logf("%s %q orphaned", strings.ToLower(op.GetKind()), prettyPrint(op))
 		}
 	case operand.Delete:
+		if operands == nil {
+			break
+		}
 		for _, op := range operands.Items {
 			op := op
 			if err := u.deleteObjects(ctx, &op); err != nil {

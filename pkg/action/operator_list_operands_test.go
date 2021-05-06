@@ -2,7 +2,6 @@ package action_test
 
 import (
 	"context"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	v1 "github.com/operator-framework/api/pkg/operators/v1"
@@ -176,6 +175,8 @@ var _ = Describe("OperatorListOperands", func() {
 		lister := action.NewOperatorListOperands(&cfg)
 		_, err := lister.Run(context.TODO(), "etcd")
 		Expect(err.Error()).To(ContainSubstring("CSV underlying operator is not in a succeeded state"))
+		_, ok := err.(action.OperandListError)
+		Expect(ok).To(BeTrue())
 	})
 
 	It("should fail if there is not exactly 1 operator group", func() {

@@ -236,6 +236,7 @@ var _ = Describe("OperatorUninstall", func() {
 		etcd3Key := types.NamespacedName{Name: "cluster3"}
 		Expect(cfg.Client.Get(context.TODO(), etcd3Key, etcdcluster3)).To(WithTransform(apierrors.IsNotFound, BeTrue()))
 	})
+
 	It("should delete sub and operatorgroup when no CSV is found", func() {
 		uninstaller := internalaction.NewOperatorUninstall(&cfg)
 		uninstaller.Package = etcd
@@ -254,5 +255,65 @@ var _ = Describe("OperatorUninstall", func() {
 		ogKey := types.NamespacedName{Name: "etcd", Namespace: "etcd-namespace"}
 		og := &v1.OperatorGroup{}
 		Expect(cfg.Client.Get(context.TODO(), ogKey, og)).To(WithTransform(apierrors.IsNotFound, BeTrue()))
+	})
+
+	It("should not fail when no owned APIs are on the CSV", func() {
+		uninstaller := internalaction.NewOperatorUninstall(&cfg)
+		uninstaller.Package = etcd
+		uninstaller.DeleteOperatorGroups = true
+		uninstaller.OperandStrategy.Kind = operand.Delete
+
+		csv.Spec.CustomResourceDefinitions.Owned = nil
+		Expect(cfg.Client.Update(context.TODO(), csv)).To(Succeed())
+
+		err := uninstaller.Run(context.TODO())
+		Expect(err).To(BeNil())
+
+		csvKey := types.NamespacedName{Name: "etcdoperator.v0.9.4-clusterwide", Namespace: "etcd-namespace"}
+		csv := &v1alpha1.ClusterServiceVersion{}
+		Expect(cfg.Client.Get(context.TODO(), csvKey, csv)).To(WithTransform(apierrors.IsNotFound, BeTrue()))
+
+		subKey := types.NamespacedName{Name: "etcd-sub", Namespace: "etcd-namespace"}
+		s := &v1alpha1.Subscription{}
+		Expect(cfg.Client.Get(context.TODO(), subKey, s)).To(WithTransform(apierrors.IsNotFound, BeTrue()))
+
+		ogKey := types.NamespacedName{Name: "etcd", Namespace: "etcd-namespace"}
+		og := &v1.OperatorGroup{}
+		Expect(cfg.Client.Get(context.TODO(), ogKey, og)).To(WithTransform(apierrors.IsNotFound, BeTrue()))
+	})
+
+	It("should not fail or delete the operands when the CSV is in a bad state", func() {
+		uninstaller := internalaction.NewOperatorUninstall(&cfg)
+		uninstaller.Package = etcd
+		uninstaller.DeleteOperatorGroups = true
+		uninstaller.OperandStrategy.Kind = operand.Delete
+
+		csv.Status.Phase = v1alpha1.CSVPhaseFailed
+		Expect(cfg.Client.Update(context.TODO(), csv)).To(Succeed())
+
+		err := uninstaller.Run(context.TODO())
+		Expect(err).To(BeNil())
+
+		csvKey := types.NamespacedName{Name: "etcdoperator.v0.9.4-clusterwide", Namespace: "etcd-namespace"}
+		csv := &v1alpha1.ClusterServiceVersion{}
+		Expect(cfg.Client.Get(context.TODO(), csvKey, csv)).To(WithTransform(apierrors.IsNotFound, BeTrue()))
+
+		subKey := types.NamespacedName{Name: "etcd-sub", Namespace: "etcd-namespace"}
+		s := &v1alpha1.Subscription{}
+		Expect(cfg.Client.Get(context.TODO(), subKey, s)).To(WithTransform(apierrors.IsNotFound, BeTrue()))
+
+		ogKey := types.NamespacedName{Name: "etcd", Namespace: "etcd-namespace"}
+		og := &v1.OperatorGroup{}
+		Expect(cfg.Client.Get(context.TODO(), ogKey, og)).To(WithTransform(apierrors.IsNotFound, BeTrue()))
+
+		//check operands are still around
+		etcd1Key := types.NamespacedName{Name: "cluster1", Namespace: "ns1"}
+		Expect(cfg.Client.Get(context.TODO(), etcd1Key, etcdcluster1)).To(Succeed())
+
+		etcd2Key := types.NamespacedName{Name: "cluster2", Namespace: "ns2"}
+		Expect(cfg.Client.Get(context.TODO(), etcd2Key, etcdcluster2)).To(Succeed())
+
+		etcd3Key := types.NamespacedName{Name: "cluster3"}
+		Expect(cfg.Client.Get(context.TODO(), etcd3Key, etcdcluster3)).To(Succeed())
 	})
 })
