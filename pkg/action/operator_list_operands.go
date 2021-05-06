@@ -96,7 +96,7 @@ func (o *OperatorListOperands) unzip(ctx context.Context, operator *v1.Operator)
 
 	// check CSV is not in a failed state (to ensure some OLM multitenancy rules are not violated)
 	if csv.Status.Phase != v1alpha1.CSVPhaseSucceeded {
-		return nil, OperandListError{fmt.Sprintf("CSV underlying operator is not in a succeeded state: custom resource list may not be accurate")}
+		return nil, OperandListError{"CSV underlying operator is not in a succeeded state: custom resource list may not be accurate"}
 	}
 
 	return csv.Spec.CustomResourceDefinitions.Owned, nil

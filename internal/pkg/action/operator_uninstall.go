@@ -208,6 +208,7 @@ func (u *OperatorUninstall) deleteCSVRelatedResources(ctx context.Context, csv *
 			break
 		}
 		for _, op := range operands.Items {
+			op := op
 			u.Logf("%s %q orphaned", strings.ToLower(op.GetKind()), prettyPrint(&op))
 		}
 	case operand.Delete:
@@ -250,6 +251,7 @@ func contains(haystack []string, needle string) bool {
 	return false
 }
 
+//nolint:interfacer // Skipped as all callers implement client.Object but linter complains about k8s.io/klog/v2.KMetadata
 func prettyPrint(op client.Object) string {
 	namespaced := op.GetNamespace() != ""
 	if namespaced {
