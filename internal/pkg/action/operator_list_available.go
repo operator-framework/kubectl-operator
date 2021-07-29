@@ -27,29 +27,6 @@ func NewOperatorListAvailable(cfg *action.Configuration) *OperatorListAvailable 
 }
 
 func (l *OperatorListAvailable) Run(ctx context.Context) ([]operator.PackageManifest, error) {
-	if l.Package != "" {
-		pm, err := l.getPackageManifestByName(ctx, l.Package)
-		if err != nil {
-			return nil, err
-		}
-		return []operator.PackageManifest{*pm}, nil
-	}
-	return l.getAllPackageManifests(ctx)
-}
-
-func (l *OperatorListAvailable) getPackageManifestByName(ctx context.Context, packageName string) (*operator.PackageManifest, error) {
-	pm := v1.PackageManifest{}
-	pmKey := types.NamespacedName{
-		Namespace: l.config.Namespace,
-		Name:      packageName,
-	}
-	if err := l.config.Client.Get(ctx, pmKey, &pm); err != nil {
-		return nil, err
-	}
-	return &operator.PackageManifest{PackageManifest: pm}, nil
-}
-
-func (l *OperatorListAvailable) getAllPackageManifests(ctx context.Context) ([]operator.PackageManifest, error) {
 	labelSelector := client.MatchingLabels{}
 	if l.Catalog.Name != "" {
 		labelSelector["catalog"] = l.Catalog.Name
@@ -64,7 +41,9 @@ func (l *OperatorListAvailable) getAllPackageManifests(ctx context.Context) ([]o
 	}
 	pkgs := make([]operator.PackageManifest, len(pms.Items))
 	for i := range pms.Items {
-		pkgs[i] = operator.PackageManifest{PackageManifest: pms.Items[i]}
+		if l.Package == "" || l.Package == pms.Items[i].GetName() {
+			pkgs[i] = operator.PackageManifest{PackageManifest: pms.Items[i]}
+		}
 	}
 	return pkgs, nil
 }
