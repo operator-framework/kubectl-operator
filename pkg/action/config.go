@@ -7,6 +7,7 @@ import (
 	"github.com/operator-framework/api/pkg/operators/v1alpha1"
 	operatorsv1 "github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/apis/operators/v1"
 	"github.com/spf13/pflag"
+	corev1 "k8s.io/api/core/v1"
 	apiextv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/clientcmd"
@@ -16,6 +17,7 @@ import (
 func NewScheme() (*runtime.Scheme, error) {
 	sch := runtime.NewScheme()
 	for _, f := range []func(*runtime.Scheme) error{
+		corev1.AddToScheme,
 		v1alpha1.AddToScheme,
 		operatorsv1.AddToScheme,
 		v1.AddToScheme,
