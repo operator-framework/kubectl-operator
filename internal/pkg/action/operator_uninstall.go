@@ -4,12 +4,14 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	v1 "github.com/operator-framework/api/pkg/operators/v1"
 	"github.com/operator-framework/api/pkg/operators/v1alpha1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/operator-framework/kubectl-operator/internal/pkg/operand"
@@ -21,6 +23,8 @@ type OperatorUninstall struct {
 
 	Package                  string
 	OperandStrategy          operand.DeletionStrategy
+	DeleteAll                bool
+	DeleteOperator           bool
 	DeleteOperatorGroups     bool
 	DeleteOperatorGroupNames []string
 	Logf                     func(string, ...interface{})
@@ -28,8 +32,9 @@ type OperatorUninstall struct {
 
 func NewOperatorUninstall(cfg *action.Configuration) *OperatorUninstall {
 	return &OperatorUninstall{
-		config: cfg,
-		Logf:   func(string, ...interface{}) {},
+		config:          cfg,
+		OperandStrategy: operand.Cancel,
+		Logf:            func(string, ...interface{}) {},
 	}
 }
 
@@ -42,6 +47,18 @@ func (e ErrPackageNotFound) Error() string {
 }
 
 func (u *OperatorUninstall) Run(ctx context.Context) error {
+	if u.DeleteAll {
+		u.DeleteOperator = true
+		u.DeleteOperatorGroups = true
+	}
+	if u.DeleteOperator {
+		u.OperandStrategy = operand.Delete
+	}
+
+	if err := u.OperandStrategy.Valid(); err != nil {
+		return err
+	}
+
 	subs := v1alpha1.SubscriptionList{}
 	if err := u.config.Client.List(ctx, &subs, client.InNamespace(u.config.Namespace)); err != nil {
 		return fmt.Errorf("list subscriptions: %v", err)
@@ -75,20 +92,23 @@ func (u *OperatorUninstall) Run(ctx context.Context) error {
 	}
 	// validate the provided deletion strategy before proceeding to deletion
 	if err := u.validStrategy(operands); err != nil {
-		return fmt.Errorf("could not proceed with deletion of %q: %s", u.Package, err)
+		return fmt.Errorf("could not proceed with deletion of %q: %w", u.Package, err)
 	}
 
 	/*
 		Deletion order:
-		1. Subscription to prevent further installs or upgrades of the operator while cleaning up.
+			1. Subscription to prevent further installs or upgrades of the operator while cleaning up.
 
-		If the CSV exists:
-		  2. Operands so the operator has a chance to handle CRs that have finalizers.
-		  Note: the correct strategy must be chosen in order to process an opertor delete with operand on-cluster.
-		  3. ClusterServiceVersion. OLM puts an ownerref on every namespaced resource to the CSV,
-		   and an owner label on every cluster scoped resource so they get gc'd on deletion.
+			If the CSV exists:
+				2. Operands so the operator has a chance to handle CRs that have finalizers.
+				   Note: the correct strategy must be chosen in order to process an opertor delete with operand
+				   on-cluster.
+				3. ClusterServiceVersion. OLM puts an ownerref on every namespaced resource to the CSV,
+				   and an owner label on every cluster scoped resource so they get gc'd on deletion.
 
-		4. OperatorGroup in the namespace if no other subscriptions are in that namespace and OperatorGroup deletion is specified
+			4. The Operator and all objects referenced by it if Operator deletion is specified
+			5. OperatorGroup in the namespace if no other subscriptions are in that namespace and OperatorGroup deletion
+			   is specified
 	*/
 
 	// Subscriptions can be deleted asynchronously.
@@ -106,6 +126,12 @@ func (u *OperatorUninstall) Run(ctx context.Context) error {
 		}
 	}
 
+	if u.DeleteOperator {
+		if err := u.deleteOperator(ctx); err != nil {
+			return fmt.Errorf("delete operator: %v", err)
+		}
+	}
+
 	if u.DeleteOperatorGroups {
 		if err := u.deleteOperatorGroup(ctx); err != nil {
 			return fmt.Errorf("delete operatorgroup: %v", err)
@@ -113,6 +139,10 @@ func (u *OperatorUninstall) Run(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+func (u *OperatorUninstall) operatorName() string {
+	return fmt.Sprintf("%s.%s", u.Package, u.config.Namespace)
 }
 
 func (u *OperatorUninstall) deleteObjects(ctx context.Context, objs ...client.Object) error {
@@ -152,6 +182,64 @@ func (u *OperatorUninstall) getSubscriptionCSV(ctx context.Context, subscription
 	return csv, name, nil
 }
 
+// deleteOperator deletes the operator and everything it references. It:
+//   - gets the operator object so that we can look up its references
+//   - deletes the references
+//   - waits until the operator object references are all deleted (this step is
+//     necessary because OLM recreates the operator object until no other
+//     referenced objects exist)
+//   - deletes the operator
+func (u *OperatorUninstall) deleteOperator(ctx context.Context) error {
+	// get the operator
+	var op v1.Operator
+	key := types.NamespacedName{Name: u.operatorName()}
+	if err := u.config.Client.Get(ctx, key, &op); err != nil {
+		if apierrors.IsNotFound(err) {
+			return nil
+		}
+		return fmt.Errorf("get operator: %w", err)
+	}
+
+	// build objects for each of the references and then delete them
+	objs := []client.Object{}
+	for _, ref := range op.Status.Components.Refs {
+		obj := unstructured.Unstructured{}
+		obj.SetName(ref.Name)
+		obj.SetNamespace(ref.Namespace)
+		obj.SetGroupVersionKind(ref.GroupVersionKind())
+		objs = append(objs, &obj)
+	}
+	if err := u.deleteObjects(ctx, objs...); err != nil {
+		return fmt.Errorf("delete operator references: %v", err)
+	}
+
+	// wait until all of the objects we just deleted disappear from the
+	// operator's references.
+	if err := wait.PollImmediateUntil(time.Millisecond*100, func() (bool, error) {
+		var check v1.Operator
+		if err := u.config.Client.Get(ctx, key, &check); err != nil {
+			if apierrors.IsNotFound(err) {
+				return true, nil
+			}
+			return false, fmt.Errorf("get operator: %w", err)
+		}
+		if check.Status.Components == nil || len(check.Status.Components.Refs) == 0 {
+			return true, nil
+		}
+		return false, nil
+	}, ctx.Done()); err != nil {
+		return err
+	}
+
+	// delete the operator
+	op.SetGroupVersionKind(v1.GroupVersion.WithKind("Operator"))
+	if err := u.deleteObjects(ctx, &op); err != nil {
+		return fmt.Errorf("delete operator: %v", err)
+	}
+
+	return nil
+}
+
 func (u *OperatorUninstall) deleteOperatorGroup(ctx context.Context) error {
 	subs := v1alpha1.SubscriptionList{}
 	if err := u.config.Client.List(ctx, &subs, client.InNamespace(u.config.Namespace)); err != nil {
@@ -177,18 +265,15 @@ func (u *OperatorUninstall) deleteOperatorGroup(ctx context.Context) error {
 }
 
 // validStrategy validates the deletion strategy against the operands on-cluster
-// TODO define and use an OperandStrategyError that the cmd can use errors.As() on to provide external callers a more generic error
 func (u *OperatorUninstall) validStrategy(operands *unstructured.UnstructuredList) error {
-	if len(operands.Items) > 0 && u.OperandStrategy.Kind == operand.Cancel {
-		return fmt.Errorf("%d operands exist and operand strategy %q is in use: "+
-			"delete operands manually or re-run uninstall with a different operand deletion strategy."+
-			"\n\nSee kubectl operator uninstall --help for more information on operand deletion strategies.", len(operands.Items), operand.Cancel)
+	if len(operands.Items) > 0 && u.OperandStrategy == operand.Cancel {
+		return operand.ErrCancelStrategy
 	}
 	return nil
 }
 
 func (u *OperatorUninstall) deleteCSVRelatedResources(ctx context.Context, csv *v1alpha1.ClusterServiceVersion, operands *unstructured.UnstructuredList) error {
-	switch u.OperandStrategy.Kind {
+	switch u.OperandStrategy {
 	case operand.Ignore:
 		for _, op := range operands.Items {
 			u.Logf("%s %q orphaned", strings.ToLower(op.GetKind()), prettyPrint(op))
@@ -197,18 +282,16 @@ func (u *OperatorUninstall) deleteCSVRelatedResources(ctx context.Context, csv *
 		for _, op := range operands.Items {
 			op := op
 			if err := u.deleteObjects(ctx, &op); err != nil {
-				return err
+				return fmt.Errorf("delete operand: %v", err)
 			}
 		}
-	default:
-		return fmt.Errorf("unknown operand deletion strategy %q", u.OperandStrategy)
 	}
 
 	// OLM puts an ownerref on every namespaced resource to the CSV,
 	// and an owner label on every cluster scoped resource. When CSV is deleted
 	// kube and olm gc will remove all the referenced resources.
 	if err := u.deleteObjects(ctx, csv); err != nil {
-		return err
+		return fmt.Errorf("delete csv: %v", err)
 	}
 
 	return nil

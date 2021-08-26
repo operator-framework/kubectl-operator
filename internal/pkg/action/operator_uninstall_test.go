@@ -162,6 +162,7 @@ var _ = Describe("OperatorUninstall", func() {
 
 		uninstaller := internalaction.NewOperatorUninstall(&cfg)
 		uninstaller.Package = etcd
+		uninstaller.OperandStrategy = operand.Ignore
 		err := uninstaller.Run(context.TODO())
 		Expect(err).To(BeNil())
 
@@ -173,7 +174,7 @@ var _ = Describe("OperatorUninstall", func() {
 	It("should fail due to invalid operand deletion strategy", func() {
 		uninstaller := internalaction.NewOperatorUninstall(&cfg)
 		uninstaller.Package = etcd
-		uninstaller.OperandStrategy.Kind = "foo"
+		uninstaller.OperandStrategy = "foo"
 		err := uninstaller.Run(context.TODO())
 		Expect(err.Error()).To(ContainSubstring("unknown operand deletion strategy"))
 	})
@@ -181,15 +182,14 @@ var _ = Describe("OperatorUninstall", func() {
 	It("should error with operands on cluster when default cancel strategy is set", func() {
 		uninstaller := internalaction.NewOperatorUninstall(&cfg)
 		uninstaller.Package = etcd
-		uninstaller.OperandStrategy.Kind = operand.Cancel
 		err := uninstaller.Run(context.TODO())
-		Expect(err.Error()).To(ContainSubstring("delete operands manually or re-run uninstall with a different operand deletion strategy"))
+		Expect(err).To(MatchError(operand.ErrCancelStrategy))
 	})
 
 	It("should ignore operands and delete sub and csv when ignore strategy is set", func() {
 		uninstaller := internalaction.NewOperatorUninstall(&cfg)
 		uninstaller.Package = etcd
-		uninstaller.OperandStrategy.Kind = operand.Ignore
+		uninstaller.OperandStrategy = operand.Ignore
 		err := uninstaller.Run(context.TODO())
 		Expect(err).To(BeNil())
 
@@ -215,7 +215,7 @@ var _ = Describe("OperatorUninstall", func() {
 	It("should delete sub, csv, and operands when delete strategy is set", func() {
 		uninstaller := internalaction.NewOperatorUninstall(&cfg)
 		uninstaller.Package = etcd
-		uninstaller.OperandStrategy.Kind = operand.Delete
+		uninstaller.OperandStrategy = operand.Delete
 		err := uninstaller.Run(context.TODO())
 		Expect(err).To(BeNil())
 
@@ -239,6 +239,7 @@ var _ = Describe("OperatorUninstall", func() {
 	It("should delete sub and operatorgroup when no CSV is found", func() {
 		uninstaller := internalaction.NewOperatorUninstall(&cfg)
 		uninstaller.Package = etcd
+		uninstaller.OperandStrategy = operand.Ignore
 		uninstaller.DeleteOperatorGroups = true
 
 		sub.Status.InstalledCSV = "foo" // returns nil CSV
