@@ -42,10 +42,4 @@ func bindOperatorInstallFlags(fs *pflag.FlagSet, i *internalaction.OperatorInsta
 	fs.StringSliceVarP(&i.WatchNamespaces, "watch", "w", []string{}, "namespaces to watch")
 	fs.DurationVar(&i.CleanupTimeout, "cleanup-timeout", time.Minute, "the amount of time to wait before cancelling cleanup")
 	fs.BoolVarP(&i.CreateOperatorGroup, "create-operator-group", "C", false, "create operator group if necessary")
-
-	fs.VarP(&i.InstallMode, "install-mode", "i", "install mode")
-	err := fs.MarkHidden("install-mode")
-	if err != nil {
-		panic(`requested flag "install-mode" missing`)
-	}
 }

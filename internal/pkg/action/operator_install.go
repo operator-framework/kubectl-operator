@@ -28,7 +28,6 @@ type OperatorInstall struct {
 	Version             string
 	Approval            subscription.ApprovalValue
 	WatchNamespaces     []string
-	InstallMode         operator.InstallMode
 	CleanupTimeout      time.Duration
 	CreateOperatorGroup bool
 
@@ -43,13 +42,6 @@ func NewOperatorInstall(cfg *action.Configuration) *OperatorInstall {
 }
 
 func (i *OperatorInstall) Run(ctx context.Context) (*v1alpha1.ClusterServiceVersion, error) {
-	if len(i.WatchNamespaces) > 0 && !i.InstallMode.IsEmpty() {
-		return nil, fmt.Errorf("WatchNamespaces and InstallMode options are mutually exclusive")
-	}
-	if i.InstallMode.IsEmpty() {
-		i.configureInstallModeFromWatch()
-	}
-
 	pm, err := i.getPackageManifest(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("get package manifest: %v", err)
@@ -89,19 +81,20 @@ func (i *OperatorInstall) Run(ctx context.Context) (*v1alpha1.ClusterServiceVers
 	return csv, nil
 }
 
-func (i *OperatorInstall) configureInstallModeFromWatch() {
-	i.InstallMode.TargetNamespaces = i.WatchNamespaces
-	switch len(i.InstallMode.TargetNamespaces) {
+func (i *OperatorInstall) possibleInstallModes(watchNamespaces []string) sets.String {
+	switch len(watchNamespaces) {
 	case 0:
-		i.InstallMode.InstallModeType = v1alpha1.InstallModeTypeAllNamespaces
+		return sets.NewString(
+			string(v1alpha1.InstallModeTypeAllNamespaces),
+			string(v1alpha1.InstallModeTypeOwnNamespace),
+		)
 	case 1:
-		if i.InstallMode.TargetNamespaces[0] == i.config.Namespace {
-			i.InstallMode.InstallModeType = v1alpha1.InstallModeTypeOwnNamespace
-		} else {
-			i.InstallMode.InstallModeType = v1alpha1.InstallModeTypeSingleNamespace
+		if watchNamespaces[0] == i.config.Namespace {
+			return sets.NewString(string(v1alpha1.InstallModeTypeOwnNamespace))
 		}
+		return sets.NewString(string(v1alpha1.InstallModeTypeSingleNamespace))
 	default:
-		i.InstallMode.InstallModeType = v1alpha1.InstallModeTypeMultiNamespace
+		return sets.NewString(string(v1alpha1.InstallModeTypeMultiNamespace))
 	}
 }
 
@@ -123,34 +116,29 @@ func (i *OperatorInstall) ensureOperatorGroup(ctx context.Context, pm *operator.
 		return nil, err
 	}
 
-	supported := pc.GetSupportedInstallModes()
+	operatorInstallModes := pc.GetSupportedInstallModes()
+	if operatorInstallModes.Len() == 0 {
+		return nil, fmt.Errorf("operator %q is not installable: operator defined no supported install modes", pm.Name)
+	}
+
+	desired := i.possibleInstallModes(i.WatchNamespaces)
+
+	supported := operatorInstallModes.Intersection(desired)
 	if supported.Len() == 0 {
-		return nil, fmt.Errorf("operator %q is not installable: no supported install modes", pm.Name)
+		return nil, fmt.Errorf("operator %q is not installable: install modes supported by operator (%q) not compatible with install modes supported by desired watches (%q)",
+			pm.Name,
+			strings.Join(operatorInstallModes.List(), ","),
+			strings.Join(desired.List(), ","),
+		)
 	}
 
-	if !i.InstallMode.IsEmpty() {
-		if i.InstallMode.InstallModeType == v1alpha1.InstallModeTypeSingleNamespace || i.InstallMode.InstallModeType == v1alpha1.InstallModeTypeMultiNamespace {
-			targetNsSet := sets.NewString(i.InstallMode.TargetNamespaces...)
-			if !supported.Has(string(v1alpha1.InstallModeTypeOwnNamespace)) && targetNsSet.Has(i.config.Namespace) {
-				return nil, fmt.Errorf("cannot watch namespace %q: operator %q does not support install mode %q", i.config.Namespace, pm.Name, v1alpha1.InstallModeTypeOwnNamespace)
-			}
+	if og != nil {
+		if err := i.validateOperatorGroup(*og, operatorInstallModes, desired); err != nil {
+			return nil, fmt.Errorf("operator %q not installable: %v", pm.Name, err)
 		}
-		if i.InstallMode.InstallModeType == v1alpha1.InstallModeTypeSingleNamespace && i.InstallMode.TargetNamespaces[0] == i.config.Namespace {
-			return nil, fmt.Errorf("use install mode %q to watch operator's namespace %q", v1alpha1.InstallModeTypeOwnNamespace, i.config.Namespace)
-		}
-
-		supported = supported.Intersection(sets.NewString(string(i.InstallMode.InstallModeType)))
-		if supported.Len() == 0 {
-			return nil, fmt.Errorf("operator %q does not support install mode %q", pm.Name, i.InstallMode.InstallModeType)
-		}
-	}
-
-	if og == nil {
+	} else {
 		if i.CreateOperatorGroup {
-			targetNamespaces, err := i.getTargetNamespaces(supported)
-			if err != nil {
-				return nil, err
-			}
+			targetNamespaces := i.getTargetNamespaces(supported)
 			if og, err = i.createOperatorGroup(ctx, targetNamespaces); err != nil {
 				return nil, fmt.Errorf("create operator group: %v", err)
 			}
@@ -158,10 +146,34 @@ func (i *OperatorInstall) ensureOperatorGroup(ctx context.Context, pm *operator.
 		} else {
 			return nil, fmt.Errorf("namespace %q has no existing operator group; use --create-operator-group to create one automatically", i.config.Namespace)
 		}
-	} else if err := i.validateOperatorGroup(*og, supported); err != nil {
-		return nil, err
 	}
 	return og, nil
+}
+
+func (i OperatorInstall) validateOperatorGroup(og v1.OperatorGroup, operatorInstallModes, desired sets.String) error {
+	ogSupported := i.possibleInstallModes(og.Status.Namespaces)
+
+	if operatorInstallModes.Intersection(ogSupported).Len() == 0 {
+		return fmt.Errorf("install modes supported by operator (%q) not compatible with install modes supported by existing operator group (%q)",
+			strings.Join(operatorInstallModes.List(), ","),
+			strings.Join(ogSupported.List(), ","),
+		)
+	}
+
+	if desired.Intersection(ogSupported).Len() == 0 {
+		return fmt.Errorf("install modes supported by desired watches (%q) not compatible with install modes supported by existing operator group (%q)",
+			strings.Join(desired.List(), ","),
+			strings.Join(ogSupported.List(), ","),
+		)
+	}
+	supported := operatorInstallModes.Intersection(desired)
+	if supported.Intersection(ogSupported).Len() == 0 {
+		return fmt.Errorf("install modes supported by operator and desired watches (%q) not compatible with install modes supported by existing operator group (%q)",
+			strings.Join(supported.List(), ","),
+			strings.Join(ogSupported.List(), ","),
+		)
+	}
+	return nil
 }
 
 func (i OperatorInstall) getOperatorGroup(ctx context.Context) (*v1.OperatorGroup, error) {
@@ -181,24 +193,14 @@ func (i OperatorInstall) getOperatorGroup(ctx context.Context) (*v1.OperatorGrou
 	}
 }
 
-func (i *OperatorInstall) getTargetNamespaces(supported sets.String) ([]string, error) {
+func (i *OperatorInstall) getTargetNamespaces(supported sets.String) []string {
 	switch {
 	case supported.Has(string(v1alpha1.InstallModeTypeAllNamespaces)):
-		return nil, nil
+		return nil
 	case supported.Has(string(v1alpha1.InstallModeTypeOwnNamespace)):
-		return []string{i.config.Namespace}, nil
-	case supported.Has(string(v1alpha1.InstallModeTypeSingleNamespace)):
-		if len(i.InstallMode.TargetNamespaces) != 1 {
-			return nil, fmt.Errorf("install mode %q requires explicit target namespace", v1alpha1.InstallModeTypeSingleNamespace)
-		}
-		return i.InstallMode.TargetNamespaces, nil
-	case supported.Has(string(v1alpha1.InstallModeTypeMultiNamespace)):
-		if len(i.InstallMode.TargetNamespaces) == 0 {
-			return nil, fmt.Errorf("install mode %q requires explicit target namespaces", v1alpha1.InstallModeTypeMultiNamespace)
-		}
-		return i.InstallMode.TargetNamespaces, nil
+		return []string{i.config.Namespace}
 	default:
-		return nil, fmt.Errorf("no supported install modes")
+		return i.WatchNamespaces
 	}
 }
 
@@ -212,28 +214,6 @@ func (i *OperatorInstall) createOperatorGroup(ctx context.Context, targetNamespa
 		return nil, err
 	}
 	return og, nil
-}
-
-func (i *OperatorInstall) validateOperatorGroup(og v1.OperatorGroup, supported sets.String) error {
-	ogTargetNs := sets.NewString(og.Spec.TargetNamespaces...)
-	imTargetNs := sets.NewString(i.InstallMode.TargetNamespaces...)
-	ownNamespaceNs := sets.NewString(i.config.Namespace)
-
-	if supported.Has(string(v1alpha1.InstallModeTypeAllNamespaces)) && len(og.Spec.TargetNamespaces) == 0 ||
-		supported.Has(string(v1alpha1.InstallModeTypeOwnNamespace)) && ogTargetNs.Equal(ownNamespaceNs) ||
-		supported.Has(string(v1alpha1.InstallModeTypeSingleNamespace)) && ogTargetNs.Equal(imTargetNs) ||
-		supported.Has(string(v1alpha1.InstallModeTypeMultiNamespace)) && ogTargetNs.Equal(imTargetNs) {
-		return nil
-	}
-
-	switch i.InstallMode.InstallModeType {
-	case v1alpha1.InstallModeTypeAllNamespaces, v1alpha1.InstallModeTypeOwnNamespace,
-		v1alpha1.InstallModeTypeSingleNamespace, v1alpha1.InstallModeTypeMultiNamespace:
-		return fmt.Errorf("existing operatorgroup %q is not compatible with install mode %q", og.Name, i.InstallMode)
-	case "":
-		return fmt.Errorf("existing operatorgroup %q is not compatible with any supported package install modes", og.Name)
-	}
-	panic(fmt.Sprintf("unknown install mode %q", i.InstallMode.InstallModeType))
 }
 
 func (i *OperatorInstall) createSubscription(ctx context.Context, pm *operator.PackageManifest, pc *operator.PackageChannel) (*v1alpha1.Subscription, error) {
