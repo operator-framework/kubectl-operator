@@ -45,4 +45,4 @@ lint:
 .PHONY: release
 RELEASE_ARGS?=release --rm-dist --snapshot
 release:
-	source ./scripts/fetch.sh; fetch goreleaser 0.156.1 && ./bin/goreleaser $(RELEASE_ARGS)
+	source ./scripts/fetch.sh; fetch goreleaser 0.177.0 && ./bin/goreleaser $(RELEASE_ARGS)
