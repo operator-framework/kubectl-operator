@@ -59,9 +59,12 @@ the operator (e.g. RBAC objects for the operator). These flags are:
   -X, --delete-all
 
       This is a convenience flag that is effectively equivalent to the flags
-      '--delete-operator=true --delete-operator-groups=true'. This is
-      most useful to completely undo the effect of a previous run of
-      'kubectl operator install <operator> --create-operator-group'
+      '--delete-operator=true --delete-operator-groups=true'.
+
+NOTE: This command does not recursively uninstall unused dependencies. To return
+a cluster to its state prior to a 'kubectl operator install' call, each
+dependency of the operator that was installed automatically by OLM must be
+individually uninstalled.
 `,
 		Args: cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
