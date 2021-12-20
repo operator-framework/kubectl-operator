@@ -179,11 +179,12 @@ var _ = Describe("OperatorUninstall", func() {
 		Expect(err.Error()).To(ContainSubstring("unknown operand deletion strategy"))
 	})
 
-	It("should error with operands on cluster when default cancel strategy is set", func() {
+	It("should error with operands on cluster when default abort strategy is set", func() {
 		uninstaller := internalaction.NewOperatorUninstall(&cfg)
 		uninstaller.Package = etcd
+		uninstaller.OperandStrategy = operand.Abort
 		err := uninstaller.Run(context.TODO())
-		Expect(err).To(MatchError(operand.ErrCancelStrategy))
+		Expect(err).To(MatchError(operand.ErrAbortStrategy))
 	})
 
 	It("should ignore operands and delete sub and csv when ignore strategy is set", func() {

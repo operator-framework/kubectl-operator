@@ -33,7 +33,7 @@ type OperatorUninstall struct {
 func NewOperatorUninstall(cfg *action.Configuration) *OperatorUninstall {
 	return &OperatorUninstall{
 		config:          cfg,
-		OperandStrategy: operand.Cancel,
+		OperandStrategy: operand.Abort,
 		Logf:            func(string, ...interface{}) {},
 	}
 }
@@ -266,8 +266,8 @@ func (u *OperatorUninstall) deleteOperatorGroup(ctx context.Context) error {
 
 // validStrategy validates the deletion strategy against the operands on-cluster
 func (u *OperatorUninstall) validStrategy(operands *unstructured.UnstructuredList) error {
-	if len(operands.Items) > 0 && u.OperandStrategy == operand.Cancel {
-		return operand.ErrCancelStrategy
+	if len(operands.Items) > 0 && u.OperandStrategy == operand.Abort {
+		return operand.ErrAbortStrategy
 	}
 	return nil
 }

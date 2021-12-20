@@ -32,7 +32,7 @@ by its operator group, this search will include namespace-scoped operands from
 the operator group's target namespaces and all cluster-scoped operands.
 
 The operand-deletion strategy is then considered if any operands are found
-on-cluster. One of cancel|ignore|delete. By default, the strategy is "cancel",
+on-cluster. One of abort|ignore|delete. By default, the strategy is "abort",
 which means that if any operands are found when deleting the operator abort the
 uninstall without deleting anything. The "ignore" strategy keeps the operands on
 cluster and deletes the subscription and the operator. The "delete" strategy
@@ -70,7 +70,7 @@ individually uninstalled.
 		Run: func(cmd *cobra.Command, args []string) {
 			u.Package = args[0]
 			if err := u.Run(cmd.Context()); err != nil {
-				if errors.Is(err, operand.ErrCancelStrategy) {
+				if errors.Is(err, operand.ErrAbortStrategy) {
 					log.Fatalf("uninstall operator: %v"+"\n\n%s", err,
 						"See kubectl operator uninstall --help for more information on operand deletion strategies.")
 				}
@@ -87,5 +87,5 @@ func bindOperatorUninstallFlags(fs *pflag.FlagSet, u *internalaction.OperatorUni
 	fs.BoolVar(&u.DeleteOperator, "delete-operator", false, "delete operator object associated with the operator, --operand-strategy=delete")
 	fs.BoolVar(&u.DeleteOperatorGroups, "delete-operator-groups", false, "delete operator groups if no other operators remain")
 	fs.StringSliceVar(&u.DeleteOperatorGroupNames, "delete-operator-group-names", nil, "specific operator group names to delete (only effective with --delete-operator-groups)")
-	fs.VarP(&u.OperandStrategy, "operand-strategy", "s", "determines how to handle operands when deleting the operator, one of cancel|ignore|delete (default: cancel)")
+	fs.VarP(&u.OperandStrategy, "operand-strategy", "s", "determines how to handle operands when deleting the operator, one of abort|ignore|delete (default: abort)")
 }
