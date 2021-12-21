@@ -1,54 +1,44 @@
 package operand
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 )
 
 // DeletionStrategy describes how to handle operands on-cluster when deleting the associated operator.
-type DeletionStrategy struct {
-	Kind DeletionStrategyKind
-}
+type DeletionStrategy string
 
-var _ flag.Value = &DeletionStrategy{}
-
-type DeletionStrategyKind string
+var _ flag.Value = new(DeletionStrategy)
 
 const (
-	// Cancel is the default deletion strategy: it will cancel the deletion operation if operands are on-cluster.
-	Cancel DeletionStrategyKind = "cancel"
+	// Abort is the default deletion strategy: it will abort the deletion operation if operands are on-cluster.
+	Abort DeletionStrategy = "abort"
 	// Ignore will ignore the operands when deleting the operator, in effect orphaning them.
-	Ignore DeletionStrategyKind = "ignore"
+	Ignore DeletionStrategy = "ignore"
 	// Delete will delete the operands associated with the operator before deleting the operator, allowing finalizers to run.
-	Delete DeletionStrategyKind = "delete"
-	// None represents an invalid empty strategy
-	None DeletionStrategyKind = ""
+	Delete DeletionStrategy = "delete"
 )
 
 func (d *DeletionStrategy) Set(str string) error {
-	d.Kind = DeletionStrategyKind(str)
+	*d = DeletionStrategy(str)
 	return d.Valid()
 }
 
-func (d *DeletionStrategy) String() string {
-	if d.Kind == None {
-		d.Kind = Cancel
-	}
-	return string(d.Kind)
+func (d DeletionStrategy) String() string {
+	return string(d)
 }
 
 func (d DeletionStrategy) Valid() error {
-	switch d.Kind {
-	// set default strategy to cancel
-	case None:
-		d.Kind = Cancel
-		fallthrough
-	case Cancel, Ignore, Delete:
+	switch d {
+	case Abort, Ignore, Delete:
 		return nil
 	}
-	return fmt.Errorf("unknown deletion strategy %q", d.Kind)
+	return fmt.Errorf("unknown operand deletion strategy %q", d)
 }
 
 func (d DeletionStrategy) Type() string {
 	return "DeletionStrategy"
 }
+
+var ErrAbortStrategy = errors.New(`operand deletion aborted: one or more operands exist and operand strategy is "abort"`)
