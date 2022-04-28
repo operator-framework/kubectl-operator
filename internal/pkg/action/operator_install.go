@@ -81,6 +81,21 @@ func (i *OperatorInstall) Run(ctx context.Context) (*v1alpha1.ClusterServiceVers
 	return csv, nil
 }
 
+func (i *OperatorInstall) operatorGroupSupportedInstallModes(og v1.OperatorGroup) sets.String {
+	ogNamespace := og.ObjectMeta.Namespace
+	ogTargetNamespaces := og.Status.Namespaces
+	if len(ogTargetNamespaces) == 1 {
+		if ogTargetNamespaces[0] == "" {
+			return sets.NewString(string(v1alpha1.InstallModeTypeAllNamespaces))
+		}
+		if ogTargetNamespaces[0] == ogNamespace {
+			return sets.NewString(string(v1alpha1.InstallModeTypeOwnNamespace))
+		}
+		return sets.NewString(string(v1alpha1.InstallModeTypeSingleNamespace))
+	}
+	return sets.NewString(string(v1alpha1.InstallModeTypeMultiNamespace))
+}
+
 func (i *OperatorInstall) possibleInstallModes(watchNamespaces []string) sets.String {
 	switch len(watchNamespaces) {
 	case 0:
@@ -151,7 +166,7 @@ func (i *OperatorInstall) ensureOperatorGroup(ctx context.Context, pm *operator.
 }
 
 func (i OperatorInstall) validateOperatorGroup(og v1.OperatorGroup, operatorInstallModes, desired sets.String) error {
-	ogSupported := i.possibleInstallModes(og.Status.Namespaces)
+	ogSupported := i.operatorGroupSupportedInstallModes(og)
 
 	if operatorInstallModes.Intersection(ogSupported).Len() == 0 {
 		return fmt.Errorf("install modes supported by operator (%q) not compatible with install modes supported by existing operator group (%q)",
