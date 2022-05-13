@@ -26,7 +26,7 @@ type() {
 	done
 	echo ""
 	sleep 0.25
-	$1
+	eval $1
 	[[ "$INTERACTIVE" == "1" ]] && read -p ""
 }
 
