@@ -2,6 +2,7 @@ package action
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -10,6 +11,7 @@ import (
 	v1 "github.com/operator-framework/api/pkg/operators/v1"
 	"github.com/operator-framework/api/pkg/operators/v1alpha1"
 	operatorsv1 "github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/apis/operators/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -23,13 +25,14 @@ import (
 type OperatorInstall struct {
 	config *action.Configuration
 
-	Package             string
-	Channel             string
-	Version             string
-	Approval            subscription.ApprovalValue
-	WatchNamespaces     []string
-	CleanupTimeout      time.Duration
-	CreateOperatorGroup bool
+	Package                  string
+	Channel                  string
+	Version                  string
+	Approval                 subscription.ApprovalValue
+	WatchNamespaces          []string
+	CleanupTimeout           time.Duration
+	CreateOperatorGroup      bool
+	PermitAlternateNamespace bool
 
 	Logf func(string, ...interface{})
 }
@@ -41,6 +44,17 @@ func NewOperatorInstall(cfg *action.Configuration) *OperatorInstall {
 	}
 }
 
+var ErrNoOperatorGroup = errors.New("operator group not found")
+
+type ErrIncorrectNamespace struct {
+	Requested string
+	Suggested string
+}
+
+func (e ErrIncorrectNamespace) Error() string {
+	return fmt.Sprintf("requested install namespace is %q, but operator's suggested namespace is %q", e.Requested, e.Suggested)
+}
+
 func (i *OperatorInstall) Run(ctx context.Context) (*v1alpha1.ClusterServiceVersion, error) {
 	pm, err := i.getPackageManifest(ctx)
 	if err != nil {
@@ -50,6 +64,10 @@ func (i *OperatorInstall) Run(ctx context.Context) (*v1alpha1.ClusterServiceVers
 	pc, err := pm.GetChannel(i.Channel)
 	if err != nil {
 		return nil, fmt.Errorf("get package channel: %v", err)
+	}
+
+	if err := i.ensureNamespace(ctx, pc); err != nil {
+		return nil, err
 	}
 
 	if _, err := i.ensureOperatorGroup(ctx, pm, pc); err != nil {
@@ -110,6 +128,18 @@ func (i *OperatorInstall) getPackageManifest(ctx context.Context) (*operator.Pac
 	return &operator.PackageManifest{PackageManifest: *pm}, nil
 }
 
+func (i *OperatorInstall) ensureNamespace(ctx context.Context, pc *operator.PackageChannel) error {
+	suggestedNamespace := pc.CurrentCSVDesc.Annotations["operatorframework.io/suggested-namespace"]
+	if !i.PermitAlternateNamespace && suggestedNamespace != "" && i.config.Namespace != suggestedNamespace {
+		return ErrIncorrectNamespace{Suggested: suggestedNamespace, Requested: i.config.Namespace}
+	}
+	ns := corev1.Namespace{}
+	if err := i.config.Client.Get(ctx, types.NamespacedName{Name: i.config.Namespace}, &ns); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (i *OperatorInstall) ensureOperatorGroup(ctx context.Context, pm *operator.PackageManifest, pc *operator.PackageChannel) (*v1.OperatorGroup, error) {
 	og, err := i.getOperatorGroup(ctx)
 	if err != nil {
@@ -144,7 +174,7 @@ func (i *OperatorInstall) ensureOperatorGroup(ctx context.Context, pm *operator.
 			}
 			i.Logf("operatorgroup %q created", og.Name)
 		} else {
-			return nil, fmt.Errorf("namespace %q has no existing operator group; use --create-operator-group to create one automatically", i.config.Namespace)
+			return nil, ErrNoOperatorGroup
 		}
 	}
 	return og, nil
