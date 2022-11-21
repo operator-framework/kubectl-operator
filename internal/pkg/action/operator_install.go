@@ -226,13 +226,33 @@ func (i *OperatorInstall) createSubscription(ctx context.Context, pm *operator.P
 	}
 
 	if i.Version != "" {
-		// Use the CSV name of the channel head as a template to guess the CSV name based on
-		// the desired version.
-		guessedStartingCSV, err := guessStartingCSV(pc.CurrentCSV, i.Version)
-		if err != nil {
-			return nil, fmt.Errorf("could not guess startingCSV: %v", err)
+		startingCSV := ""
+		// A listing of all channel entries was added in a recent version of the packagemanifests API.
+		// If the length of the list is 0, that means we're on an older version of the API, so we'll fall
+		// back to the previous behavior of just guessing a CSV name.
+		//
+		// With the updated packagemanifests API, we can iterate the list of entries and find the
+		// startingCSV, and error out if the specified version is not found.
+		if len(pc.Entries) == 0 {
+			// Use the CSV name of the channel head as a template to guess the CSV name based on
+			// the desired version.
+			var err error
+			startingCSV, err = guessStartingCSV(pc.CurrentCSV, i.Version)
+			if err != nil {
+				return nil, fmt.Errorf("could not guess startingCSV: %v", err)
+			}
+		} else {
+			for _, entry := range pc.Entries {
+				if i.Version == entry.Version {
+					startingCSV = entry.Name
+					break
+				}
+			}
+			if startingCSV == "" {
+				return nil, fmt.Errorf("version %q not found in channel %q for package %q", i.Version, pc.Name, pm.Status.PackageName)
+			}
 		}
-		opts = append(opts, subscription.StartingCSV(guessedStartingCSV))
+		opts = append(opts, subscription.StartingCSV(startingCSV))
 	}
 
 	subKey := types.NamespacedName{
