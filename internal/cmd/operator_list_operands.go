@@ -41,7 +41,7 @@ Operand kinds are determined from the owned CustomResourceDefinitions listed in
 the operator's ClusterServiceVersion.`,
 		Args: cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
-			writeOutput := func(io.Writer, *unstructured.UnstructuredList) error { panic("writeOutput was not set") }
+			writeOutput := func(io.Writer, *unstructured.UnstructuredList) error { panic("writeOutput was not set") } //nolint:staticcheck
 			switch output {
 			case "json":
 				writeOutput = writeJSON

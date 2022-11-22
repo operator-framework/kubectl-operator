@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"io/ioutil"
+	"io"
 	"time"
 
 	"github.com/operator-framework/operator-registry/pkg/image/containerdregistry"
@@ -24,7 +24,7 @@ func newCatalogAddCmd(cfg *action.Configuration) *cobra.Command {
 		Args:  cobra.ExactArgs(2),
 		PreRun: func(cmd *cobra.Command, args []string) {
 			regLogger := logrus.New()
-			regLogger.SetOutput(ioutil.Discard)
+			regLogger.SetOutput(io.Discard)
 			a.RegistryOptions = []containerdregistry.RegistryOption{
 				containerdregistry.WithLog(logrus.NewEntry(regLogger)),
 			}

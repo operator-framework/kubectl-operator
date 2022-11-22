@@ -14,8 +14,8 @@ fetch() {
       fetch_cmd="curl -sSfL \"https://raw.githubusercontent.com/golangci/golangci-lint/v${ver}/install.sh\" | sh -s -- -b \"${ROOT}/bin\" \"v${ver}\""
       ;;
     "goreleaser")
-      ver_cmd="${ROOT}/bin/goreleaser --version 2>/dev/null | grep version | cut -d' ' -f3"
-      fetch_cmd="curl -sSfL https://install.goreleaser.com/github.com/goreleaser/goreleaser.sh | sh -s -- -b \"${ROOT}/bin\" -d \"v${ver}\""
+      ver_cmd="${ROOT}/bin/goreleaser --version 2>/dev/null | grep 'goreleaser version' | cut -d' ' -f3"
+      fetch_cmd="curl -sSfL "https://github.com/goreleaser/goreleaser/releases/download/v${ver}/goreleaser_$(uname -s)_$(uname -m).tar.gz" | tar -C \"${ROOT}/bin\" -xz goreleaser"
       ;;
     *)
       echo "unknown tool $tool"

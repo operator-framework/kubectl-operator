@@ -40,9 +40,9 @@ gen-demo:
 
 .PHONY: lint
 lint:
-	source ./scripts/fetch.sh; fetch golangci-lint 1.29.0 && ./bin/golangci-lint --timeout 3m run
+	source ./scripts/fetch.sh; fetch golangci-lint 1.50.1 && ./bin/golangci-lint --timeout 3m run
 
 .PHONY: release
 RELEASE_ARGS?=release --rm-dist --snapshot
 release:
-	source ./scripts/fetch.sh; fetch goreleaser 0.177.0 && ./bin/goreleaser $(RELEASE_ARGS)
+	source ./scripts/fetch.sh; fetch goreleaser 1.13.0 && ./bin/goreleaser $(RELEASE_ARGS)
