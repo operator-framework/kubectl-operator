@@ -39,10 +39,10 @@ func (l *OperatorListAvailable) Run(ctx context.Context) ([]operator.PackageMani
 	if err := l.config.Client.List(ctx, &pms, labelSelector); err != nil {
 		return nil, err
 	}
-	pkgs := make([]operator.PackageManifest, len(pms.Items))
+	pkgs := make([]operator.PackageManifest, 0, len(pms.Items))
 	for i := range pms.Items {
 		if l.Package == "" || l.Package == pms.Items[i].GetName() {
-			pkgs[i] = operator.PackageManifest{PackageManifest: pms.Items[i]}
+			pkgs = append(pkgs, operator.PackageManifest{PackageManifest: pms.Items[i]})
 		}
 	}
 	return pkgs, nil
