@@ -36,7 +36,9 @@ func (l *OperatorListAvailable) Run(ctx context.Context) ([]operator.PackageMani
 	}
 
 	pms := v1.PackageManifestList{}
-	if err := l.config.Client.List(ctx, &pms, labelSelector); err != nil {
+
+	options := client.ListOptions{Namespace: l.config.Namespace}
+	if err := l.config.Client.List(ctx, &pms, labelSelector, &options); err != nil {
 		return nil, err
 	}
 	pkgs := make([]operator.PackageManifest, 0, len(pms.Items))
