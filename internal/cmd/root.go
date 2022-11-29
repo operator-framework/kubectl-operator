@@ -63,6 +63,7 @@ operators from the installed catalogs.`,
 		newOperatorListAvailableCmd(&cfg),
 		newOperatorListOperandsCmd(&cfg),
 		newOperatorDescribeCmd(&cfg),
+		newOperatorGroupListCmd(&cfg),
 		newVersionCmd(),
 	)
 
