@@ -37,7 +37,7 @@ func NewOperatorGroupList(cfg *action.Configuration) *OperatorGroupList {
 	}
 }
 
-// Retreive a list of Tenants that represent a Namespace with and without an OperatorGroup
+// Retrieve a list of Tenants that represent a Namespace with and without an OperatorGroup
 func (l *OperatorGroupList) Run(ctx context.Context) ([]*Tenant, error) {
 	ogs := v1.OperatorGroupList{}
 	options := client.ListOptions{Namespace: l.config.Namespace}
@@ -47,11 +47,12 @@ func (l *OperatorGroupList) Run(ctx context.Context) ([]*Tenant, error) {
 	// ObjectGroups by Namespace name.
 	ogMap := make(map[string]*v1.OperatorGroup, len(ogs.Items))
 	for _, og := range ogs.Items {
+		og := og
 		ogMap[og.Namespace] = &og
 	}
 
 	// Graph of Tenants
-	// Tenant has children, incuding (optionally) self.
+	// Tenant has children, including (optionally) self.
 	// Tenant has parents, not including self.
 	tenantMap := make(map[string]*Tenant)
 

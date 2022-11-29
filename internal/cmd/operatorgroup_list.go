@@ -140,7 +140,7 @@ func createGraph(tenants []*internalaction.Tenant) []string {
 
 	// The Node in a graph
 	type Node struct {
-		Id     string                 // The node id.
+		ID     string                 // The node id.
 		Tenant *internalaction.Tenant // The Tenant represented by the Node
 		Class  string                 // The style class
 		Name   string                 // The display name
@@ -152,16 +152,16 @@ func createGraph(tenants []*internalaction.Tenant) []string {
 	for i := range tenants {
 		t := tenants[i]
 		n := Node{
-			Id:     t.Namespace,
+			ID:     t.Namespace,
 			Tenant: t,
 		}
 
 		// No OG means an operand namespace
 		if t.OperatorGroup == nil {
-			n.Name = "[" + n.Id + "]"
+			n.Name = "[" + n.ID + "]"
 			n.Class = "ns"
 		} else {
-			n.Name = "(" + n.Id + ")"
+			n.Name = "(" + n.ID + ")"
 			n.im = effectiveInstallMode(*t)
 			n.Class = "im-" + n.im
 		}
@@ -189,12 +189,12 @@ func createGraph(tenants []*internalaction.Tenant) []string {
 				leftNode := nodeMap[leftTenant.Namespace]
 				rtNode := nodeMap[rtTenant.Namespace]
 
-				edge := leftNode.Id + ">" + rtNode.Id
+				edge := leftNode.ID + ">" + rtNode.ID
 				if !processed.Contains(edge) {
 					processed.Add(edge)
 
 					out = append(out,
-						space+fmt.Sprintf("%s%s:::%s --> %s%s:::%s\n", leftNode.Id, leftNode.Name, leftNode.Class, rtNode.Id, rtNode.Name, rtNode.Class),
+						space+fmt.Sprintf("%s%s:::%s --> %s%s:::%s\n", leftNode.ID, leftNode.Name, leftNode.Class, rtNode.ID, rtNode.Name, rtNode.Class),
 					)
 
 					for j := range rtTenant.ChildrenTenants {
@@ -214,8 +214,8 @@ func createGraph(tenants []*internalaction.Tenant) []string {
 			if len(node.Tenant.ParentTenants) == 0 {
 				// Linked Tenants will be embedded in the parent Tenant subgraph
 				out = append(out,
-					in+fmt.Sprintf("t-%s:::tenant\n", node.Id),
-					in+fmt.Sprintf("subgraph t-%s[%s]\n", node.Id, node.Id),
+					in+fmt.Sprintf("t-%s:::tenant\n", node.ID),
+					in+fmt.Sprintf("subgraph t-%s[%s]\n", node.ID, node.ID),
 					in+"direction LR\n",
 				)
 
