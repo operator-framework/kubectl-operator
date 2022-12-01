@@ -89,10 +89,14 @@ func (i *OperatorInstall) possibleInstallModes(watchNamespaces []string) sets.St
 			string(v1alpha1.InstallModeTypeOwnNamespace),
 		)
 	case 1:
-		if watchNamespaces[0] == i.config.Namespace {
+		switch watchNamespaces[0] {
+		case "":
+			return sets.NewString(string(v1alpha1.InstallModeTypeAllNamespaces))
+		case i.config.Namespace:
 			return sets.NewString(string(v1alpha1.InstallModeTypeOwnNamespace))
+		default:
+			return sets.NewString(string(v1alpha1.InstallModeTypeSingleNamespace))
 		}
-		return sets.NewString(string(v1alpha1.InstallModeTypeSingleNamespace))
 	default:
 		return sets.NewString(string(v1alpha1.InstallModeTypeMultiNamespace))
 	}
