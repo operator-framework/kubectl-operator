@@ -1,0 +1,591 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    operatorframework.io/kubectloperator: test
+  name: oa
+---
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: og
+  namespace: oa
+  labels:
+    operatorframework.coreos.com/kubectloperator: test
+spec:
+  targetNamespaces:
+  - oa
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    operatorframework.io/kubectloperator: test
+  name: ob
+---
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: og
+  namespace: ob
+  labels:
+    operatorframework.coreos.com/kubectloperator: test
+spec:
+  targetNamespaces:
+  - ob
+  - ob1
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    operatorframework.io/kubectloperator: test
+  name: ob1
+---
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: og
+  namespace: ob1
+  labels:
+    operatorframework.coreos.com/kubectloperator: test
+spec:
+  targetNamespaces:
+  - ob1
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    operatorframework.io/kubectloperator: test
+  name: oc
+---
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: og
+  namespace: oc
+  labels:
+    operatorframework.coreos.com/kubectloperator: test
+spec:
+  targetNamespaces:
+  - oc1
+  - oc2
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    operatorframework.io/kubectloperator: test
+  name: oc1
+---
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: og
+  namespace: oc1
+  labels:
+    operatorframework.coreos.com/kubectloperator: test
+spec:
+  targetNamespaces:
+  - oc1
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    operatorframework.io/kubectloperator: test
+  name: oc2
+---
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: og
+  namespace: oc2
+  labels:
+    operatorframework.coreos.com/kubectloperator: test
+spec:
+  targetNamespaces:
+  - oc2
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    operatorframework.io/kubectloperator: test
+  name: od
+---
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: og
+  namespace: od
+  labels:
+    operatorframework.coreos.com/kubectloperator: test
+spec:
+  targetNamespaces:
+  - od
+  - od1
+  - od2
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    operatorframework.io/kubectloperator: test
+  name: od1
+---
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: og
+  namespace: od1
+  labels:
+    operatorframework.coreos.com/kubectloperator: test
+spec:
+  targetNamespaces:
+  - od1
+  - od11
+  - od12
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    operatorframework.io/kubectloperator: test
+  name: od11
+---
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: og
+  namespace: od11
+  labels:
+    operatorframework.coreos.com/kubectloperator: test
+spec:
+  targetNamespaces:
+  - od11
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    operatorframework.io/kubectloperator: test
+  name: od12
+---
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: og
+  namespace: od12
+  labels:
+    operatorframework.coreos.com/kubectloperator: test
+spec:
+  targetNamespaces:
+  - od12
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    operatorframework.io/kubectloperator: test
+  name: od2
+---
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: og
+  namespace: od2
+  labels:
+    operatorframework.coreos.com/kubectloperator: test
+spec:
+  targetNamespaces:
+  - od2
+  - od21
+  - od22
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    operatorframework.io/kubectloperator: test
+  name: od21
+---
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: og
+  namespace: od21
+  labels:
+    operatorframework.coreos.com/kubectloperator: test
+spec:
+  targetNamespaces:
+  - od21
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    operatorframework.io/kubectloperator: test
+  name: od22
+---
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: og
+  namespace: od22
+  labels:
+    operatorframework.coreos.com/kubectloperator: test
+spec:
+  targetNamespaces:
+  - od22
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    operatorframework.io/kubectloperator: test
+  name: oe
+---
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: og
+  namespace: oe
+  labels:
+    operatorframework.coreos.com/kubectloperator: test
+spec:
+  targetNamespaces:
+  - ne1
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    operatorframework.io/kubectloperator: test
+  name: ne1
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    operatorframework.io/kubectloperator: test
+  name: of
+---
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: og
+  namespace: of
+  labels:
+    operatorframework.coreos.com/kubectloperator: test
+spec:
+  targetNamespaces:
+  - nf1
+  - nf2
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    operatorframework.io/kubectloperator: test
+  name: nf1
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    operatorframework.io/kubectloperator: test
+  name: nf2
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    operatorframework.io/kubectloperator: test
+  name: og
+---
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: og
+  namespace: og
+  labels:
+    operatorframework.coreos.com/kubectloperator: test
+spec:
+  targetNamespaces:
+  - og1
+  - og2
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    operatorframework.io/kubectloperator: test
+  name: og1
+---
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: og
+  namespace: og1
+  labels:
+    operatorframework.coreos.com/kubectloperator: test
+spec:
+  targetNamespaces:
+  - ng11
+  - ng12
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    operatorframework.io/kubectloperator: test
+  name: ng11
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    operatorframework.io/kubectloperator: test
+  name: ng12
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    operatorframework.io/kubectloperator: test
+  name: og2
+---
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: og
+  namespace: og2
+  labels:
+    operatorframework.coreos.com/kubectloperator: test
+spec:
+  targetNamespaces:
+  - ng21
+  - ng22
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    operatorframework.io/kubectloperator: test
+  name: ng21
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    operatorframework.io/kubectloperator: test
+  name: ng22
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    operatorframework.io/kubectloperator: test
+  name: oh
+---
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: og
+  namespace: oh
+  labels:
+    operatorframework.coreos.com/kubectloperator: test
+spec:
+  targetNamespaces:
+  - oh1
+  - th11
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    operatorframework.io/kubectloperator: test
+  name: oh1
+---
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: og
+  namespace: oh1
+  labels:
+    operatorframework.coreos.com/kubectloperator: test
+spec:
+  targetNamespaces:
+  - nh11
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    operatorframework.io/kubectloperator: test
+  name: nh11
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    operatorframework.io/kubectloperator: test
+  name: oaa
+---
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: og
+  namespace: oaa
+  labels:
+    operatorframework.coreos.com/kubectloperator: test
+spec:
+  targetNamespaces:
+  - oaa1
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    operatorframework.io/kubectloperator: test
+  name: oaa1
+---
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: og
+  namespace: oaa1
+  labels:
+    operatorframework.coreos.com/kubectloperator: test
+spec:
+  targetNamespaces:
+  - oaa1
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    operatorframework.io/kubectloperator: test
+  name: obb
+---
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: og
+  namespace: obb
+  labels:
+    operatorframework.coreos.com/kubectloperator: test
+spec:
+  targetNamespaces:
+  - oaa1
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    operatorframework.io/kubectloperator: test
+  name: occ
+---
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: og
+  namespace: occ
+  labels:
+    operatorframework.coreos.com/kubectloperator: test
+spec:
+  targetNamespaces:
+  - occ1
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    operatorframework.io/kubectloperator: test
+  name: occ1
+---
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: og
+  namespace: occ1
+  labels:
+    operatorframework.coreos.com/kubectloperator: test
+spec:
+  targetNamespaces:
+  - occ11
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    operatorframework.io/kubectloperator: test
+  name: occ11
+---
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: og
+  namespace: occ11
+  labels:
+    operatorframework.coreos.com/kubectloperator: test
+spec:
+  targetNamespaces:
+  - occ11
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    operatorframework.io/kubectloperator: test
+  name: odd
+---
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: og
+  namespace: odd
+  labels:
+    operatorframework.coreos.com/kubectloperator: test
+spec:
+  targetNamespaces:
+  - odd1
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    operatorframework.io/kubectloperator: test
+  name: odd1
+---
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: og
+  namespace: odd1
+  labels:
+    operatorframework.coreos.com/kubectloperator: test
+spec:
+  targetNamespaces:
+  - odd11
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    operatorframework.io/kubectloperator: test
+  name: odd2
+---
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: og
+  namespace: odd2
+  labels:
+    operatorframework.coreos.com/kubectloperator: test
+spec:
+  targetNamespaces:
+  - occ11
+---
