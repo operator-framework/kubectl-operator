@@ -35,15 +35,21 @@ func (l *OperatorListAvailable) Run(ctx context.Context) ([]operator.PackageMani
 		labelSelector["catalog-namespace"] = l.Catalog.Namespace
 	}
 
+	if l.Package != "" {
+		pm := v1.PackageManifest{}
+		if err := l.config.Client.Get(ctx, types.NamespacedName{Name: l.Package, Namespace: l.config.Namespace}, &pm); err != nil {
+			return nil, err
+		}
+		return []operator.PackageManifest{{PackageManifest: pm}}, nil
+	}
+
 	pms := v1.PackageManifestList{}
-	if err := l.config.Client.List(ctx, &pms, labelSelector); err != nil {
+	if err := l.config.Client.List(ctx, &pms, labelSelector, client.InNamespace(l.config.Namespace)); err != nil {
 		return nil, err
 	}
 	pkgs := make([]operator.PackageManifest, 0, len(pms.Items))
-	for i := range pms.Items {
-		if l.Package == "" || l.Package == pms.Items[i].GetName() {
-			pkgs = append(pkgs, operator.PackageManifest{PackageManifest: pms.Items[i]})
-		}
+	for _, pm := range pms.Items {
+		pkgs = append(pkgs, operator.PackageManifest{PackageManifest: pm})
 	}
 	return pkgs, nil
 }
