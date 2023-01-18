@@ -5,13 +5,14 @@ go 1.19
 require (
 	github.com/containerd/containerd v1.6.10
 	github.com/onsi/ginkgo v1.16.5
-	github.com/onsi/gomega v1.20.1
+	github.com/onsi/gomega v1.22.1
 	github.com/opencontainers/image-spec v1.0.3-0.20211202183452-c5a74bcca799
 	github.com/operator-framework/api v0.17.3
+	github.com/operator-framework/operator-controller v0.0.0-20230117211241-081c4b017b63
 	github.com/operator-framework/operator-lifecycle-manager v0.23.1
 	github.com/operator-framework/operator-registry v1.17.5
 	github.com/sirupsen/logrus v1.8.1
-	github.com/spf13/cobra v1.4.0
+	github.com/spf13/cobra v1.5.0
 	github.com/spf13/pflag v1.0.5
 	k8s.io/api v0.25.4
 	k8s.io/apiextensions-apiserver v0.25.4
