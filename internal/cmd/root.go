@@ -2,9 +2,7 @@ package cmd
 
 import (
 	"context"
-	"reflect"
 	"time"
-	"unsafe"
 
 	"github.com/spf13/cobra"
 
@@ -43,10 +41,7 @@ operators from the installed catalogs.`,
 		var ctx context.Context
 		ctx, cancel = context.WithTimeout(cmd.Context(), timeout)
 
-		// This sets the unexported cmd.ctx value using unsafe. If
-		// https://github.com/spf13/cobra/pull/1118 gets merged, we
-		// should use cmd.SetContext() instead.
-		setContext(cmd, ctx)
+		cmd.SetContext(ctx)
 
 		return cfg.Load()
 	}
@@ -63,15 +58,9 @@ operators from the installed catalogs.`,
 		newOperatorListAvailableCmd(&cfg),
 		newOperatorListOperandsCmd(&cfg),
 		newOperatorDescribeCmd(&cfg),
+		newOlmV1Cmd(&cfg),
 		newVersionCmd(),
 	)
 
 	return cmd
-}
-
-func setContext(cmd *cobra.Command, ctx context.Context) { //nolint:golint
-	rs := reflect.ValueOf(cmd).Elem()
-	rf := rs.FieldByName("ctx")
-	rf = reflect.NewAt(rf.Type(), unsafe.Pointer(rf.UnsafeAddr())).Elem()
-	rf.Set(reflect.ValueOf(ctx))
 }
