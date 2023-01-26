@@ -76,7 +76,7 @@ func newOperatorDescribeCmd(cfg *action.Configuration) *cobra.Command {
 					strings.Join(getAvailableChannelsWithMarkers(*pc, pm), "\n")),
 				// install modes
 				imHdr+fmt.Sprintf("%s\n\n",
-					strings.Join(pc.GetSupportedInstallModes().ToSlice(), "\n")),
+					strings.Join(pc.GetSupportedInstallModes().List(), "\n")),
 				// description
 				sdHdr+fmt.Sprintf("%s\n",
 					pc.CurrentCSVDesc.Annotations[descAnnot]),

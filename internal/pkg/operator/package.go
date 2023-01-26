@@ -3,8 +3,8 @@ package operator
 import (
 	"fmt"
 
-	sets "github.com/noahschumacher/go-collections/collections"
 	operatorsv1 "github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/apis/operators/v1"
+	"k8s.io/apimachinery/pkg/util/sets"
 )
 
 type PackageManifest struct {
@@ -42,11 +42,11 @@ type PackageChannel struct {
 	operatorsv1.PackageChannel
 }
 
-func (pc PackageChannel) GetSupportedInstallModes() sets.Set[string] {
-	supported := sets.NewSet[string](0)
+func (pc PackageChannel) GetSupportedInstallModes() sets.String {
+	supported := sets.NewString()
 	for _, im := range pc.CurrentCSVDesc.InstallModes {
 		if im.Supported {
-			supported.Add(string(im.Type))
+			supported.Insert(string(im.Type))
 		}
 	}
 	return supported
