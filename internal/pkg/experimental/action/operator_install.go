@@ -3,7 +3,6 @@ package action
 import (
 	"context"
 	"fmt"
-	"time"
 
 	olmv1 "github.com/operator-framework/operator-controller/api/v1alpha1"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -49,16 +48,18 @@ func (i *OperatorInstall) Run(ctx context.Context) (*olmv1.Operator, error) {
 	//     and conditions types and reasons are improved. For now, this will stop waiting as
 	//     soon as a Ready condition is found, but we should probably wait until the Operator
 	//     stops progressing.
+	// All Types will exist, so Ready may have a false Status. So, wait until
+	// Type=Ready,Status=True happens
 
-	if err := wait.PollImmediateUntil(time.Millisecond*250, func() (bool, error) {
+	if err := wait.PollImmediateUntil(pollTimeout, func() (bool, error) {
 		if err := i.config.Client.Get(ctx, opKey, op); err != nil {
 			return false, err
 		}
 		readyCondition := meta.FindStatusCondition(op.Status.Conditions, olmv1.TypeReady)
-		if readyCondition == nil {
-			return false, nil
+		if readyCondition != nil && readyCondition.Status == metav1.ConditionTrue {
+			return true, nil
 		}
-		return true, nil
+		return false, nil
 	}, ctx.Done()); err != nil {
 		return nil, fmt.Errorf("waiting for operator to become ready: %v", err)
 	}

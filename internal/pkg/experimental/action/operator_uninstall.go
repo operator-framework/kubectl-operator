@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"time"
 
 	olmv1 "github.com/operator-framework/operator-controller/api/v1alpha1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -55,7 +54,7 @@ func waitForDeletion(ctx context.Context, cl client.Client, objs ...client.Objec
 		obj := obj
 		lowerKind := strings.ToLower(obj.GetObjectKind().GroupVersionKind().Kind)
 		key := objectKeyForObject(obj)
-		if err := wait.PollImmediateUntil(250*time.Millisecond, func() (bool, error) {
+		if err := wait.PollImmediateUntil(pollTimeout, func() (bool, error) {
 			if err := cl.Get(ctx, key, obj); apierrors.IsNotFound(err) {
 				return true, nil
 			} else if err != nil {
