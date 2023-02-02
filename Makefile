@@ -22,8 +22,16 @@ GO_BUILD_ARGS = \
 .PHONY: all
 all: install
 
+.PHONY: vet
+vet:
+	go vet ./...
+
+.PHONY: fmt
+fmt:
+	go fmt ./...
+
 .PHONY: build
-build:
+build: vet fmt
 	go build $(GO_BUILD_ARGS) -o bin/kubectl-operator
 
 .PHONY: test

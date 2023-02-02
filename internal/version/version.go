@@ -5,11 +5,15 @@ import (
 	"runtime"
 )
 
+const (
+	unknown = "unknown"
+)
+
 var (
-	GitVersion    = "unknown"
-	GitCommit     = "unknown"
-	GitCommitTime = "unknown"
-	GitTreeState  = "unknown"
+	GitVersion    = unknown
+	GitCommit     = unknown
+	GitCommitTime = unknown
+	GitTreeState  = unknown
 	GoVersion     = runtime.Version()
 	Compiler      = runtime.Compiler
 	Platform      = fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH)
