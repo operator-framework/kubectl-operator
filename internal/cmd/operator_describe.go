@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+	"k8s.io/apimachinery/pkg/util/sets"
 
 	"github.com/operator-framework/kubectl-operator/internal/cmd/internal/log"
 	internalaction "github.com/operator-framework/kubectl-operator/internal/pkg/action"
@@ -76,7 +77,7 @@ func newOperatorDescribeCmd(cfg *action.Configuration) *cobra.Command {
 					strings.Join(getAvailableChannelsWithMarkers(*pc, pm), "\n")),
 				// install modes
 				imHdr+fmt.Sprintf("%s\n\n",
-					strings.Join(pc.GetSupportedInstallModes().List(), "\n")),
+					strings.Join(sets.List[string](pc.GetSupportedInstallModes()), "\n")),
 				// description
 				sdHdr+fmt.Sprintf("%s\n",
 					pc.CurrentCSVDesc.Annotations[descAnnot]),

@@ -81,24 +81,24 @@ func (i *OperatorInstall) Run(ctx context.Context) (*v1alpha1.ClusterServiceVers
 	return csv, nil
 }
 
-func (i *OperatorInstall) possibleInstallModes(watchNamespaces []string) sets.String {
+func (i *OperatorInstall) possibleInstallModes(watchNamespaces []string) sets.Set[string] {
 	switch len(watchNamespaces) {
 	case 0:
-		return sets.NewString(
+		return sets.New[string](
 			string(v1alpha1.InstallModeTypeAllNamespaces),
 			string(v1alpha1.InstallModeTypeOwnNamespace),
 		)
 	case 1:
 		switch watchNamespaces[0] {
 		case "":
-			return sets.NewString(string(v1alpha1.InstallModeTypeAllNamespaces))
+			return sets.New[string](string(v1alpha1.InstallModeTypeAllNamespaces))
 		case i.config.Namespace:
-			return sets.NewString(string(v1alpha1.InstallModeTypeOwnNamespace))
+			return sets.New[string](string(v1alpha1.InstallModeTypeOwnNamespace))
 		default:
-			return sets.NewString(string(v1alpha1.InstallModeTypeSingleNamespace))
+			return sets.New[string](string(v1alpha1.InstallModeTypeSingleNamespace))
 		}
 	default:
-		return sets.NewString(string(v1alpha1.InstallModeTypeMultiNamespace))
+		return sets.New[string](string(v1alpha1.InstallModeTypeMultiNamespace))
 	}
 }
 
@@ -131,8 +131,8 @@ func (i *OperatorInstall) ensureOperatorGroup(ctx context.Context, pm *operator.
 	if supported.Len() == 0 {
 		return nil, fmt.Errorf("operator %q is not installable: install modes supported by operator (%q) not compatible with install modes supported by desired watches (%q)",
 			pm.Name,
-			strings.Join(operatorInstallModes.List(), ","),
-			strings.Join(desired.List(), ","),
+			strings.Join(sets.List[string](operatorInstallModes), ","),
+			strings.Join(sets.List[string](desired), ","),
 		)
 	}
 
@@ -154,27 +154,27 @@ func (i *OperatorInstall) ensureOperatorGroup(ctx context.Context, pm *operator.
 	return og, nil
 }
 
-func (i OperatorInstall) validateOperatorGroup(og v1.OperatorGroup, operatorInstallModes, desired sets.String) error {
+func (i OperatorInstall) validateOperatorGroup(og v1.OperatorGroup, operatorInstallModes, desired sets.Set[string]) error {
 	ogSupported := i.possibleInstallModes(og.Status.Namespaces)
 
 	if operatorInstallModes.Intersection(ogSupported).Len() == 0 {
 		return fmt.Errorf("install modes supported by operator (%q) not compatible with install modes supported by existing operator group (%q)",
-			strings.Join(operatorInstallModes.List(), ","),
-			strings.Join(ogSupported.List(), ","),
+			strings.Join(sets.List[string](operatorInstallModes), ","),
+			strings.Join(sets.List[string](ogSupported), ","),
 		)
 	}
 
 	if desired.Intersection(ogSupported).Len() == 0 {
 		return fmt.Errorf("install modes supported by desired watches (%q) not compatible with install modes supported by existing operator group (%q)",
-			strings.Join(desired.List(), ","),
-			strings.Join(ogSupported.List(), ","),
+			strings.Join(sets.List[string](desired), ","),
+			strings.Join(sets.List[string](ogSupported), ","),
 		)
 	}
 	supported := operatorInstallModes.Intersection(desired)
 	if supported.Intersection(ogSupported).Len() == 0 {
 		return fmt.Errorf("install modes supported by operator and desired watches (%q) not compatible with install modes supported by existing operator group (%q)",
-			strings.Join(supported.List(), ","),
-			strings.Join(ogSupported.List(), ","),
+			strings.Join(sets.List[string](supported), ","),
+			strings.Join(sets.List[string](ogSupported), ","),
 		)
 	}
 	return nil
@@ -197,7 +197,7 @@ func (i OperatorInstall) getOperatorGroup(ctx context.Context) (*v1.OperatorGrou
 	}
 }
 
-func (i *OperatorInstall) getTargetNamespaces(supported sets.String) []string {
+func (i *OperatorInstall) getTargetNamespaces(supported sets.Set[string]) []string {
 	switch {
 	case supported.Has(string(v1alpha1.InstallModeTypeAllNamespaces)):
 		return nil

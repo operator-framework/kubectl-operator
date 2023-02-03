@@ -42,8 +42,8 @@ type PackageChannel struct {
 	operatorsv1.PackageChannel
 }
 
-func (pc PackageChannel) GetSupportedInstallModes() sets.String {
-	supported := sets.NewString()
+func (pc PackageChannel) GetSupportedInstallModes() sets.Set[string] {
+	supported := sets.New[string]()
 	for _, im := range pc.CurrentCSVDesc.InstallModes {
 		if im.Supported {
 			supported.Insert(string(im.Type))
