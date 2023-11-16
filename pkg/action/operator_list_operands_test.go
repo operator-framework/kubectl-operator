@@ -131,7 +131,7 @@ var _ = Describe("OperatorListOperands", func() {
 	It("should fail due to missing operator", func() {
 		lister := action.NewOperatorListOperands(&cfg)
 		_, err := lister.Run(context.TODO(), "missing")
-		Expect(err.Error()).To(ContainSubstring("package missing.etcd-namespace not found"))
+		Expect(err.Error()).To(ContainSubstring(`package "missing" not found in namespace "etcd-namespace"`))
 	})
 
 	It("should fail due to missing operator components", func() {

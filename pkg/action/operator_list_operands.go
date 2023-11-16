@@ -27,11 +27,7 @@ func NewOperatorListOperands(cfg *Configuration) *OperatorListOperands {
 }
 
 func (o *OperatorListOperands) Run(ctx context.Context, packageName string) (*unstructured.UnstructuredList, error) {
-	opKey := types.NamespacedName{
-		Name: fmt.Sprintf("%s.%s", packageName, o.config.Namespace),
-	}
-
-	result, err := o.listAll(ctx, opKey)
+	result, err := o.listAll(ctx, packageName)
 	if err != nil {
 		return nil, err
 	}
@@ -40,13 +36,16 @@ func (o *OperatorListOperands) Run(ctx context.Context, packageName string) (*un
 }
 
 // FindOperator finds an operator object on-cluster provided a package and namespace.
-func (o *OperatorListOperands) findOperator(ctx context.Context, key types.NamespacedName) (*v1.Operator, error) {
-	operator := v1.Operator{}
+func (o *OperatorListOperands) findOperator(ctx context.Context, packageName string) (*v1.Operator, error) {
+	opKey := types.NamespacedName{
+		Name: fmt.Sprintf("%s.%s", packageName, o.config.Namespace),
+	}
 
-	err := o.config.Client.Get(ctx, key, &operator)
+	operator := v1.Operator{}
+	err := o.config.Client.Get(ctx, opKey, &operator)
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
-			return nil, fmt.Errorf("package %s not found", key.Name)
+			return nil, fmt.Errorf("package %q not found in namespace %q", packageName, o.config.Namespace)
 		}
 		return nil, err
 	}
@@ -132,8 +131,8 @@ func (o *OperatorListOperands) list(ctx context.Context, crdDesc v1alpha1.CRDDes
 }
 
 // ListAll wraps the above functions to provide a convenient command to go from package/namespace to custom resources.
-func (o *OperatorListOperands) listAll(ctx context.Context, opKey types.NamespacedName) (*unstructured.UnstructuredList, error) {
-	operator, err := o.findOperator(ctx, opKey)
+func (o *OperatorListOperands) listAll(ctx context.Context, packageName string) (*unstructured.UnstructuredList, error) {
+	operator, err := o.findOperator(ctx, packageName)
 	if err != nil {
 		return nil, err
 	}
