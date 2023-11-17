@@ -3,6 +3,7 @@
 ROOT="$( git rev-parse --show-toplevel )"
 
 fetch() {
+  mkdir -p "${ROOT}/bin"
   local tool=$1; shift
   local ver=$1; shift
 
