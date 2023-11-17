@@ -36,3 +36,6 @@ archives:
   format: tar.gz
   files:
   - LICENSE
+
+release:
+  disable: '{{ ne .Env.ENABLE_RELEASE_PIPELINE "true" }}'
