@@ -48,7 +48,7 @@ gen-demo:
 
 .PHONY: lint
 lint:
-	source ./scripts/fetch.sh; fetch golangci-lint 1.50.1 && ./bin/golangci-lint --timeout 3m run
+	source ./scripts/fetch.sh; fetch golangci-lint 1.55.2 && ./bin/golangci-lint --timeout 3m run
 
 .PHONY: release
 RELEASE_ARGS?=release --clean --snapshot

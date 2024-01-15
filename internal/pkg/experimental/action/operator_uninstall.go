@@ -31,7 +31,7 @@ func NewOperatorUninstall(cfg *action.Configuration) *OperatorUninstall {
 
 func (u *OperatorUninstall) Run(ctx context.Context) error {
 	opKey := types.NamespacedName{Name: u.Package}
-	op := &olmv1.Operator{}
+	op := &olmv1.ClusterExtension{}
 	op.SetName(opKey.Name)
 	op.SetGroupVersionKind(olmv1.GroupVersion.WithKind("Operator"))
 
@@ -54,14 +54,14 @@ func waitForDeletion(ctx context.Context, cl client.Client, objs ...client.Objec
 		obj := obj
 		lowerKind := strings.ToLower(obj.GetObjectKind().GroupVersionKind().Kind)
 		key := objectKeyForObject(obj)
-		if err := wait.PollImmediateUntil(pollTimeout, func() (bool, error) {
-			if err := cl.Get(ctx, key, obj); apierrors.IsNotFound(err) {
+		if err := wait.PollUntilContextCancel(ctx, pollTimeout, true, func(conditionCtx context.Context) (bool, error) {
+			if err := cl.Get(conditionCtx, key, obj); apierrors.IsNotFound(err) {
 				return true, nil
 			} else if err != nil {
 				return false, err
 			}
 			return false, nil
-		}, ctx.Done()); err != nil {
+		}); err != nil {
 			return fmt.Errorf("wait for %s %q deleted: %v", lowerKind, key.Name, err)
 		}
 	}

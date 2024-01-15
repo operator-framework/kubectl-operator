@@ -288,15 +288,15 @@ var semverRegexp = regexp.MustCompile(`(?P<major>0|[1-9]\d*)\.(?P<minor>0|[1-9]\
 
 func (i *OperatorInstall) getInstallPlan(ctx context.Context, sub *v1alpha1.Subscription) (*v1alpha1.InstallPlan, error) {
 	subKey := objectKeyForObject(sub)
-	if err := wait.PollImmediateUntil(time.Millisecond*250, func() (bool, error) {
-		if err := i.config.Client.Get(ctx, subKey, sub); err != nil {
+	if err := wait.PollUntilContextCancel(ctx, time.Millisecond*250, true, func(conditionCtx context.Context) (bool, error) {
+		if err := i.config.Client.Get(conditionCtx, subKey, sub); err != nil {
 			return false, err
 		}
 		if sub.Status.InstallPlanRef != nil {
 			return true, nil
 		}
 		return false, nil
-	}, ctx.Done()); err != nil {
+	}); err != nil {
 		return nil, fmt.Errorf("waiting for install plan to exist: %v", err)
 	}
 
