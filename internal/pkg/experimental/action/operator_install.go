@@ -28,7 +28,7 @@ func NewOperatorInstall(cfg *action.Configuration) *OperatorInstall {
 	}
 }
 
-func (i *OperatorInstall) Run(ctx context.Context) (*olmv1.Operator, error) {
+func (i *OperatorInstall) Run(ctx context.Context) (*olmv1.ClusterExtension, error) {
 
 	// TODO(developer): Lookup package information when the OLMv1 equivalent of the
 	//     packagemanifests API is available. That way, we can check to see if the
@@ -36,9 +36,9 @@ func (i *OperatorInstall) Run(ctx context.Context) (*olmv1.Operator, error) {
 	//     object.
 
 	opKey := types.NamespacedName{Name: i.Package}
-	op := &olmv1.Operator{
+	op := &olmv1.ClusterExtension{
 		ObjectMeta: metav1.ObjectMeta{Name: opKey.Name},
-		Spec:       olmv1.OperatorSpec{PackageName: i.Package},
+		Spec:       olmv1.ClusterExtensionSpec{PackageName: i.Package},
 	}
 	if err := i.config.Client.Create(ctx, op); err != nil {
 		return nil, err
@@ -51,16 +51,16 @@ func (i *OperatorInstall) Run(ctx context.Context) (*olmv1.Operator, error) {
 	// All Types will exist, so Ready may have a false Status. So, wait until
 	// Type=Ready,Status=True happens
 
-	if err := wait.PollImmediateUntil(pollTimeout, func() (bool, error) {
-		if err := i.config.Client.Get(ctx, opKey, op); err != nil {
+	if err := wait.PollUntilContextCancel(ctx, pollTimeout, true, func(conditionCtx context.Context) (bool, error) {
+		if err := i.config.Client.Get(conditionCtx, opKey, op); err != nil {
 			return false, err
 		}
-		readyCondition := meta.FindStatusCondition(op.Status.Conditions, olmv1.TypeReady)
-		if readyCondition != nil && readyCondition.Status == metav1.ConditionTrue {
+		installedCondition := meta.FindStatusCondition(op.Status.Conditions, olmv1.TypeInstalled)
+		if installedCondition != nil && installedCondition.Status == metav1.ConditionTrue {
 			return true, nil
 		}
 		return false, nil
-	}, ctx.Done()); err != nil {
+	}); err != nil {
 		return nil, fmt.Errorf("waiting for operator to become ready: %v", err)
 	}
 

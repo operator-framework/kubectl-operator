@@ -26,14 +26,14 @@ func waitForDeletion(ctx context.Context, cl client.Client, objs ...client.Objec
 		obj := obj
 		lowerKind := strings.ToLower(obj.GetObjectKind().GroupVersionKind().Kind)
 		key := objectKeyForObject(obj)
-		if err := wait.PollImmediateUntil(250*time.Millisecond, func() (bool, error) {
-			if err := cl.Get(ctx, key, obj); apierrors.IsNotFound(err) {
+		if err := wait.PollUntilContextCancel(ctx, 250*time.Millisecond, true, func(conditionCtx context.Context) (bool, error) {
+			if err := cl.Get(conditionCtx, key, obj); apierrors.IsNotFound(err) {
 				return true, nil
 			} else if err != nil {
 				return false, err
 			}
 			return false, nil
-		}, ctx.Done()); err != nil {
+		}); err != nil {
 			return fmt.Errorf("wait for %s %q deleted: %v", lowerKind, key.Name, err)
 		}
 	}
@@ -53,15 +53,15 @@ func approveInstallPlan(ctx context.Context, cl client.Client, ip *v1alpha1.Inst
 
 func getCSV(ctx context.Context, cl client.Client, ip *v1alpha1.InstallPlan) (*v1alpha1.ClusterServiceVersion, error) {
 	ipKey := objectKeyForObject(ip)
-	if err := wait.PollImmediateUntil(time.Millisecond*250, func() (bool, error) {
-		if err := cl.Get(ctx, ipKey, ip); err != nil {
+	if err := wait.PollUntilContextCancel(ctx, time.Millisecond*250, true, func(conditionCtx context.Context) (bool, error) {
+		if err := cl.Get(conditionCtx, ipKey, ip); err != nil {
 			return false, err
 		}
 		if ip.Status.Phase == v1alpha1.InstallPlanPhaseComplete {
 			return true, nil
 		}
 		return false, nil
-	}, ctx.Done()); err != nil {
+	}); err != nil {
 		return nil, fmt.Errorf("waiting for operator installation to complete: %v", err)
 	}
 

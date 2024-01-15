@@ -217,15 +217,15 @@ func (a *CatalogAdd) createRegistryPod(ctx context.Context, cs *v1alpha1.Catalog
 	}
 
 	podKey := objectKeyForObject(pod)
-	if err := wait.PollImmediateUntil(time.Millisecond*250, func() (bool, error) {
-		if err := a.config.Client.Get(ctx, podKey, pod); err != nil {
+	if err := wait.PollUntilContextCancel(ctx, time.Millisecond*250, true, func(conditionCtx context.Context) (bool, error) {
+		if err := a.config.Client.Get(conditionCtx, podKey, pod); err != nil {
 			return false, err
 		}
 		if pod.Status.Phase == corev1.PodRunning && pod.Status.PodIP != "" {
 			return true, nil
 		}
 		return false, nil
-	}, ctx.Done()); err != nil {
+	}); err != nil {
 		return nil, fmt.Errorf("registry pod not ready: %v", err)
 	}
 	return pod, nil
@@ -259,8 +259,8 @@ func (a *CatalogAdd) updateCatalogSource(ctx context.Context, cs *v1alpha1.Catal
 
 func (a *CatalogAdd) waitForCatalogSourceReady(ctx context.Context, cs *v1alpha1.CatalogSource) error {
 	csKey := objectKeyForObject(cs)
-	if err := wait.PollImmediateUntil(time.Millisecond*250, func() (bool, error) {
-		if err := a.config.Client.Get(ctx, csKey, cs); err != nil {
+	if err := wait.PollUntilContextCancel(ctx, time.Millisecond*250, true, func(conditionCtx context.Context) (bool, error) {
+		if err := a.config.Client.Get(conditionCtx, csKey, cs); err != nil {
 			return false, err
 		}
 		if cs.Status.GRPCConnectionState != nil {
@@ -269,7 +269,7 @@ func (a *CatalogAdd) waitForCatalogSourceReady(ctx context.Context, cs *v1alpha1
 			}
 		}
 		return false, nil
-	}, ctx.Done()); err != nil {
+	}); err != nil {
 		return fmt.Errorf("catalogsource connection not ready: %v", err)
 	}
 	return nil

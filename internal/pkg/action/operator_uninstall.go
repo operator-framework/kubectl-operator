@@ -215,9 +215,9 @@ func (u *OperatorUninstall) deleteOperator(ctx context.Context) error {
 
 	// wait until all of the objects we just deleted disappear from the
 	// operator's references.
-	if err := wait.PollImmediateUntil(time.Millisecond*100, func() (bool, error) {
+	if err := wait.PollUntilContextCancel(ctx, time.Millisecond*100, true, func(conditionCtx context.Context) (bool, error) {
 		var check v1.Operator
-		if err := u.config.Client.Get(ctx, key, &check); err != nil {
+		if err := u.config.Client.Get(conditionCtx, key, &check); err != nil {
 			if apierrors.IsNotFound(err) {
 				return true, nil
 			}
@@ -227,7 +227,7 @@ func (u *OperatorUninstall) deleteOperator(ctx context.Context) error {
 			return true, nil
 		}
 		return false, nil
-	}, ctx.Done()); err != nil {
+	}); err != nil {
 		return err
 	}
 
