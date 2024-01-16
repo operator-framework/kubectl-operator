@@ -6,7 +6,7 @@ require (
 	github.com/containerd/containerd v1.7.12
 	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/gomega v1.30.0
-	github.com/opencontainers/image-spec v1.1.0-rc4
+	github.com/opencontainers/image-spec v1.1.0-rc5
 	github.com/operator-framework/api v0.21.0
 	github.com/operator-framework/operator-controller v0.9.0
 	github.com/operator-framework/operator-lifecycle-manager v0.23.1
