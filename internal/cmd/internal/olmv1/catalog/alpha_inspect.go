@@ -55,6 +55,7 @@ func inspect(ctx context.Context, inspector *experimentalaction.CatalogInspect, 
 	if inspector == nil {
 		return errors.New("nil CatalogInspect action provided")
 	}
+	inspectOpts.Name = name
 	metas, err := inspector.Run(ctx, inspectOpts)
 	if err != nil {
 		return fmt.Errorf("performing inspect: %w", err)
