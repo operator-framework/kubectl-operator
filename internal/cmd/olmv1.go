@@ -3,7 +3,8 @@ package cmd
 import (
 	"github.com/spf13/cobra"
 
-	"github.com/operator-framework/kubectl-operator/internal/cmd/internal/olmv1"
+	"github.com/operator-framework/kubectl-operator/internal/cmd/internal/olmv1/catalog"
+	"github.com/operator-framework/kubectl-operator/internal/cmd/internal/olmv1/operator"
 	"github.com/operator-framework/kubectl-operator/pkg/action"
 )
 
@@ -15,8 +16,9 @@ func newOlmV1Cmd(cfg *action.Configuration) *cobra.Command {
 	}
 
 	cmd.AddCommand(
-		olmv1.NewOperatorInstallCmd(cfg),
-		olmv1.NewOperatorUninstallCmd(cfg),
+		operator.NewOperatorInstallCmd(cfg),
+		operator.NewOperatorUninstallCmd(cfg),
+		catalog.NewCatalogCommand(cfg),
 	)
 
 	return cmd
