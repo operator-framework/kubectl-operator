@@ -5,11 +5,13 @@ import (
 
 	v1 "github.com/operator-framework/api/pkg/operators/v1"
 	"github.com/operator-framework/api/pkg/operators/v1alpha1"
+	catalogd "github.com/operator-framework/catalogd/api/core/v1alpha1"
 	olmv1 "github.com/operator-framework/operator-controller/api/v1alpha1"
 	operatorsv1 "github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/apis/operators/v1"
 	"github.com/spf13/pflag"
 	apiextv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -22,6 +24,7 @@ func NewScheme() (*runtime.Scheme, error) {
 		v1.AddToScheme,
 		apiextv1.AddToScheme,
 		olmv1.AddToScheme,
+		catalogd.AddToScheme,
 	} {
 		if err := f(sch); err != nil {
 			return nil, err
@@ -34,6 +37,7 @@ type Configuration struct {
 	Client    client.Client
 	Namespace string
 	Scheme    *runtime.Scheme
+	Clientset *kubernetes.Clientset
 
 	overrides *clientcmd.ConfigOverrides
 }
@@ -85,9 +89,15 @@ func (c *Configuration) Load() error {
 		return err
 	}
 
+	clientset, err := kubernetes.NewForConfig(cc)
+	if err != nil {
+		return err
+	}
+
 	c.Scheme = sch
 	c.Client = &operatorClient{cl}
 	c.Namespace = ns
+	c.Clientset = clientset
 
 	return nil
 }

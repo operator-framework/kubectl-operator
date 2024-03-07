@@ -1,4 +1,4 @@
-package olmv1
+package operator
 
 import (
 	"github.com/spf13/cobra"
