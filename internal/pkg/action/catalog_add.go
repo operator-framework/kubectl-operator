@@ -41,13 +41,15 @@ const (
 type CatalogAdd struct {
 	config *action.Configuration
 
-	CatalogSourceName string
-	IndexImage        string
-	InjectBundles     []string
-	InjectBundleMode  string
-	DisplayName       string
-	Publisher         string
-	CleanupTimeout    time.Duration
+	CatalogSourceName     string
+	IndexImage            string
+	InjectBundles         []string
+	InjectBundleMode      string
+	DisplayName           string
+	Publisher             string
+	SecurityContextConfig string
+	ExtractContent        *v1alpha1.ExtractContentConfig
+	CleanupTimeout        time.Duration
 
 	Logf            func(string, ...interface{})
 	RegistryOptions []containerdregistry.RegistryOption
@@ -87,9 +89,18 @@ func (a *CatalogAdd) Run(ctx context.Context) (*v1alpha1.CatalogSource, error) {
 
 	a.setDefaults(labels)
 
+	grpcPodConfig := &v1alpha1.GrpcPodConfig{}
+	if a.SecurityContextConfig != "" {
+		grpcPodConfig.SecurityContextConfig = v1alpha1.SecurityConfig(a.SecurityContextConfig)
+	}
+	if a.ExtractContent != nil {
+		grpcPodConfig.ExtractContent = a.ExtractContent
+	}
+
 	opts := []catalogsource.Option{
 		catalogsource.DisplayName(a.DisplayName),
 		catalogsource.Publisher(a.Publisher),
+		catalogsource.GRPCPodConfig(grpcPodConfig),
 	}
 
 	if len(a.InjectBundles) == 0 {

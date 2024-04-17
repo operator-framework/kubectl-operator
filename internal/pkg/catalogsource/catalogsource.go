@@ -25,6 +25,12 @@ func Publisher(v string) Option {
 	}
 }
 
+func GRPCPodConfig(grpcPodConfig *v1alpha1.GrpcPodConfig) Option {
+	return func(cs *v1alpha1.CatalogSource) {
+		cs.Spec.GrpcPodConfig = grpcPodConfig
+	}
+}
+
 func Build(key types.NamespacedName, opts ...Option) *v1alpha1.CatalogSource {
 	cs := &v1alpha1.CatalogSource{
 		ObjectMeta: metav1.ObjectMeta{
