@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"strings"
 
-	v1 "github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/apis/operators/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	v1 "github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/apis/operators/v1"
 
 	"github.com/operator-framework/kubectl-operator/internal/pkg/operator"
 	"github.com/operator-framework/kubectl-operator/pkg/action"

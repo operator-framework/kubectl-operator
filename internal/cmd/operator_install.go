@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/operator-framework/api/pkg/operators/v1alpha1"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+
+	"github.com/operator-framework/api/pkg/operators/v1alpha1"
 
 	"github.com/operator-framework/kubectl-operator/internal/cmd/internal/log"
 	internalaction "github.com/operator-framework/kubectl-operator/internal/pkg/action"

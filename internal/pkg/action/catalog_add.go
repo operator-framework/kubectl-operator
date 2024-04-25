@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"path"
-	"strings"
 	"time"
 
 	"github.com/containerd/containerd/archive/compression"
@@ -14,28 +12,21 @@ import (
 	"github.com/containerd/containerd/namespaces"
 	"github.com/containerd/containerd/platforms"
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/wait"
+
 	"github.com/operator-framework/api/pkg/operators/v1alpha1"
 	"github.com/operator-framework/operator-registry/pkg/image"
 	"github.com/operator-framework/operator-registry/pkg/image/containerdregistry"
-	corev1 "k8s.io/api/core/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/apimachinery/pkg/util/rand"
-	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/client-go/util/retry"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"github.com/operator-framework/kubectl-operator/internal/pkg/catalogsource"
 	"github.com/operator-framework/kubectl-operator/pkg/action"
 )
 
 const (
-	grpcPort              = "50051"
-	dbPathLabel           = "operators.operatorframework.io.index.database.v1"
 	alphaDisplayNameLabel = "alpha.operators.operatorframework.io.index.display-name.v1"
 	alphaPublisherLabel   = "alpha.operators.operatorframework.io.index.publisher.v1"
-	defaultDatabasePath   = "/database/index.db"
 )
 
 type CatalogAdd struct {
@@ -43,8 +34,6 @@ type CatalogAdd struct {
 
 	CatalogSourceName string
 	IndexImage        string
-	InjectBundles     []string
-	InjectBundleMode  string
 	DisplayName       string
 	Publisher         string
 	CleanupTimeout    time.Duration
@@ -90,41 +79,12 @@ func (a *CatalogAdd) Run(ctx context.Context) (*v1alpha1.CatalogSource, error) {
 	opts := []catalogsource.Option{
 		catalogsource.DisplayName(a.DisplayName),
 		catalogsource.Publisher(a.Publisher),
-	}
-
-	if len(a.InjectBundles) == 0 {
-		opts = append(opts, catalogsource.Image(a.IndexImage))
+		catalogsource.Image(a.IndexImage),
 	}
 
 	cs := catalogsource.Build(csKey, opts...)
 	if err := a.config.Client.Create(ctx, cs); err != nil {
 		return nil, fmt.Errorf("create catalogsource: %v", err)
-	}
-
-	var registryPod *corev1.Pod
-	if len(a.InjectBundles) > 0 {
-		dbPath, ok := labels[dbPathLabel]
-		if !ok {
-			// No database path label, so assume this is an index base image.
-			// Choose "semver" bundle add mode (if not explicitly set) and
-			// use the default database path.
-			if a.InjectBundleMode == "" {
-				a.InjectBundleMode = "semver"
-			}
-			dbPath = defaultDatabasePath
-		}
-		if a.InjectBundleMode == "" {
-			a.InjectBundleMode = "replaces"
-		}
-		if registryPod, err = a.createRegistryPod(ctx, cs, dbPath); err != nil {
-			defer a.cleanup(cs)
-			return nil, err
-		}
-
-		if err := a.updateCatalogSource(ctx, cs, registryPod); err != nil {
-			defer a.cleanup(cs)
-			return nil, fmt.Errorf("update catalog source: %v", err)
-		}
 	}
 
 	if err := a.waitForCatalogSourceReady(ctx, cs); err != nil {
@@ -181,80 +141,6 @@ func (a *CatalogAdd) setDefaults(labels map[string]string) {
 			a.Publisher = v
 		}
 	}
-}
-
-func (a *CatalogAdd) createRegistryPod(ctx context.Context, cs *v1alpha1.CatalogSource, dbPath string) (*corev1.Pod, error) {
-	dbDir := path.Dir(dbPath)
-	command := []string{
-		"/bin/sh",
-		"-c",
-		fmt.Sprintf(`mkdir -p %s && \
-/bin/opm registry add   -d %s --mode=%s -b %s && \
-/bin/opm registry serve -d %s -p %s`, dbDir, dbPath, a.InjectBundleMode, strings.Join(a.InjectBundles, ","), dbPath, grpcPort),
-	}
-
-	pod := &corev1.Pod{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      fmt.Sprintf("%s-%s", a.CatalogSourceName, rand.String(4)),
-			Namespace: a.config.Namespace,
-		},
-		Spec: corev1.PodSpec{
-			Containers: []corev1.Container{
-				{
-					Name:    "registry",
-					Image:   a.IndexImage,
-					Command: command,
-				},
-			},
-		},
-	}
-
-	if err := controllerutil.SetOwnerReference(cs, pod, a.config.Scheme); err != nil {
-		return nil, fmt.Errorf("set registry pod owner reference: %v", err)
-	}
-	if err := a.config.Client.Create(ctx, pod); err != nil {
-		return nil, fmt.Errorf("create registry pod: %v", err)
-	}
-
-	podKey := objectKeyForObject(pod)
-	if err := wait.PollUntilContextCancel(ctx, time.Millisecond*250, true, func(conditionCtx context.Context) (bool, error) {
-		if err := a.config.Client.Get(conditionCtx, podKey, pod); err != nil {
-			return false, err
-		}
-		if pod.Status.Phase == corev1.PodRunning && pod.Status.PodIP != "" {
-			return true, nil
-		}
-		return false, nil
-	}); err != nil {
-		return nil, fmt.Errorf("registry pod not ready: %v", err)
-	}
-	return pod, nil
-}
-
-func (a *CatalogAdd) updateCatalogSource(ctx context.Context, cs *v1alpha1.CatalogSource, pod *corev1.Pod) error {
-	injectedBundlesJSON, err := json.Marshal(a.InjectBundles)
-	if err != nil {
-		return fmt.Errorf("json marshal injected bundles: %v", err)
-	}
-
-	csKey := objectKeyForObject(cs)
-	if err := retry.RetryOnConflict(retry.DefaultBackoff, func() error {
-		if err := a.config.Client.Get(ctx, csKey, cs); err != nil {
-			return fmt.Errorf("get catalog source: %v", err)
-		}
-
-		cs.Spec.Address = fmt.Sprintf("%s:%s", pod.Status.PodIP, grpcPort)
-		cs.ObjectMeta.Annotations = map[string]string{
-			"operators.operatorframework.io/index-image":        a.IndexImage,
-			"operators.operatorframework.io/inject-bundle-mode": a.InjectBundleMode,
-			"operators.operatorframework.io/injected-bundles":   string(injectedBundlesJSON),
-		}
-
-		return a.config.Client.Update(ctx, cs)
-	}); err != nil {
-		return err
-	}
-	return nil
 }
 
 func (a *CatalogAdd) waitForCatalogSourceReady(ctx context.Context, cs *v1alpha1.CatalogSource) error {

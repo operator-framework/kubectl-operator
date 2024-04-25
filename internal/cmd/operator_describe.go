@@ -93,7 +93,6 @@ func newOperatorDescribeCmd(cfg *action.Configuration) *cobra.Command {
 			for _, v := range out {
 				fmt.Print(v)
 			}
-
 		},
 	}
 

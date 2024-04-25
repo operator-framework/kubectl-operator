@@ -6,13 +6,14 @@ import (
 	"strings"
 	"time"
 
-	v1 "github.com/operator-framework/api/pkg/operators/v1"
-	"github.com/operator-framework/api/pkg/operators/v1alpha1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	v1 "github.com/operator-framework/api/pkg/operators/v1"
+	"github.com/operator-framework/api/pkg/operators/v1alpha1"
 
 	"github.com/operator-framework/kubectl-operator/internal/pkg/operand"
 	"github.com/operator-framework/kubectl-operator/pkg/action"

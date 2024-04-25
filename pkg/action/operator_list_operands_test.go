@@ -5,15 +5,17 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	v1 "github.com/operator-framework/api/pkg/operators/v1"
-	"github.com/operator-framework/api/pkg/operators/v1alpha1"
+
 	corev1 "k8s.io/api/core/v1"
-	apiextv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+
+	v1 "github.com/operator-framework/api/pkg/operators/v1"
+	"github.com/operator-framework/api/pkg/operators/v1alpha1"
 
 	"github.com/operator-framework/kubectl-operator/pkg/action"
 )
@@ -23,7 +25,7 @@ var _ = Describe("OperatorListOperands", func() {
 		cfg          action.Configuration
 		operator     *v1.Operator
 		csv          *v1alpha1.ClusterServiceVersion
-		crd          *apiextv1.CustomResourceDefinition
+		crd          *apiextensionsv1.CustomResourceDefinition
 		og           *v1.OperatorGroup
 		etcdcluster1 *unstructured.Unstructured
 		etcdcluster2 *unstructured.Unstructured
@@ -92,13 +94,13 @@ var _ = Describe("OperatorListOperands", func() {
 			Status: v1.OperatorGroupStatus{Namespaces: []string{""}},
 		}
 
-		crd = &apiextv1.CustomResourceDefinition{
+		crd = &apiextensionsv1.CustomResourceDefinition{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "etcdclusters.etcd.database.coreos.com",
 			},
-			Spec: apiextv1.CustomResourceDefinitionSpec{
+			Spec: apiextensionsv1.CustomResourceDefinitionSpec{
 				Group: "etcd.database.coreos.com",
-				Names: apiextv1.CustomResourceDefinitionNames{
+				Names: apiextensionsv1.CustomResourceDefinitionNames{
 					ListKind: "EtcdClusterList",
 				},
 			},

@@ -10,7 +10,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/duration"
 
 	"github.com/operator-framework/kubectl-operator/internal/cmd/internal/log"
@@ -35,7 +35,7 @@ func newOperatorListAvailableCmd(cfg *action.Configuration) *cobra.Command {
 			}
 
 			if len(operators) == 0 {
-				if cfg.Namespace == v1.NamespaceAll {
+				if cfg.Namespace == corev1.NamespaceAll {
 					log.Print("No resources found")
 				} else {
 					log.Printf("No resources found in %s namespace.\n", cfg.Namespace)

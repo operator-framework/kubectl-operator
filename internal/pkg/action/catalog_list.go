@@ -3,8 +3,9 @@ package action
 import (
 	"context"
 
-	"github.com/operator-framework/api/pkg/operators/v1alpha1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/operator-framework/api/pkg/operators/v1alpha1"
 
 	"github.com/operator-framework/kubectl-operator/pkg/action"
 )

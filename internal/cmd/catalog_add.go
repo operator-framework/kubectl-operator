@@ -4,10 +4,11 @@ import (
 	"io"
 	"time"
 
-	"github.com/operator-framework/operator-registry/pkg/image/containerdregistry"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+
+	"github.com/operator-framework/operator-registry/pkg/image/containerdregistry"
 
 	"github.com/operator-framework/kubectl-operator/internal/cmd/internal/log"
 	internalaction "github.com/operator-framework/kubectl-operator/internal/pkg/action"
@@ -49,8 +50,4 @@ func bindCatalogAddFlags(fs *pflag.FlagSet, a *internalaction.CatalogAdd) {
 	fs.StringVarP(&a.DisplayName, "display-name", "d", "", "display name of the index")
 	fs.StringVarP(&a.Publisher, "publisher", "p", "", "publisher of the index")
 	fs.DurationVar(&a.CleanupTimeout, "cleanup-timeout", time.Minute, "the amount of time to wait before cancelling cleanup")
-
-	fs.StringArrayVarP(&a.InjectBundles, "inject-bundles", "b", nil, "inject extra bundles into the index at runtime")
-	fs.StringVarP(&a.InjectBundleMode, "inject-bundle-mode", "m", "", "mode to use to inject bundles")
-	_ = fs.MarkHidden("inject-bundle-mode")
 }

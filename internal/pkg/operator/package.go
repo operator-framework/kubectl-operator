@@ -3,8 +3,9 @@ package operator
 import (
 	"fmt"
 
-	operatorsv1 "github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/apis/operators/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
+
+	operatorsv1 "github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/apis/operators/v1"
 )
 
 type PackageManifest struct {

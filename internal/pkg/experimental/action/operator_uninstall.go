@@ -5,11 +5,12 @@ import (
 	"fmt"
 	"strings"
 
-	olmv1 "github.com/operator-framework/operator-controller/api/v1alpha1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	olmv1 "github.com/operator-framework/operator-controller/api/v1alpha1"
 
 	"github.com/operator-framework/kubectl-operator/pkg/action"
 )

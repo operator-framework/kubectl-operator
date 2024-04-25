@@ -7,13 +7,14 @@ import (
 	"strings"
 	"time"
 
-	v1 "github.com/operator-framework/api/pkg/operators/v1"
-	"github.com/operator-framework/api/pkg/operators/v1alpha1"
-	operatorsv1 "github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/apis/operators/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	v1 "github.com/operator-framework/api/pkg/operators/v1"
+	"github.com/operator-framework/api/pkg/operators/v1alpha1"
+	operatorsv1 "github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/apis/operators/v1"
 
 	"github.com/operator-framework/kubectl-operator/internal/pkg/operator"
 	"github.com/operator-framework/kubectl-operator/internal/pkg/subscription"
@@ -140,17 +141,17 @@ func (i *OperatorInstall) ensureOperatorGroup(ctx context.Context, pm *operator.
 		if err := i.validateOperatorGroup(*og, operatorInstallModes, desired); err != nil {
 			return nil, fmt.Errorf("operator %q not installable: %v", pm.Name, err)
 		}
-	} else {
-		if i.CreateOperatorGroup {
-			targetNamespaces := i.getTargetNamespaces(supported)
-			if og, err = i.createOperatorGroup(ctx, targetNamespaces); err != nil {
-				return nil, fmt.Errorf("create operator group: %v", err)
-			}
-			i.Logf("operatorgroup %q created", og.Name)
-		} else {
-			return nil, fmt.Errorf("namespace %q has no existing operator group; use --create-operator-group to create one automatically", i.config.Namespace)
-		}
+		return og, nil
 	}
+
+	if !i.CreateOperatorGroup {
+		return nil, fmt.Errorf("namespace %q has no existing operator group; use --create-operator-group to create one automatically", i.config.Namespace)
+	}
+	targetNamespaces := i.getTargetNamespaces(supported)
+	if og, err = i.createOperatorGroup(ctx, targetNamespaces); err != nil {
+		return nil, fmt.Errorf("create operator group: %v", err)
+	}
+	i.Logf("operatorgroup %q created", og.Name)
 	return og, nil
 }
 
@@ -226,31 +227,9 @@ func (i *OperatorInstall) createSubscription(ctx context.Context, pm *operator.P
 	}
 
 	if i.Version != "" {
-		startingCSV := ""
-		// A listing of all channel entries was added in a recent version of the packagemanifests API.
-		// If the length of the list is 0, that means we're on an older version of the API, so we'll fall
-		// back to the previous behavior of just guessing a CSV name.
-		//
-		// With the updated packagemanifests API, we can iterate the list of entries and find the
-		// startingCSV, and error out if the specified version is not found.
-		if len(pc.Entries) == 0 {
-			// Use the CSV name of the channel head as a template to guess the CSV name based on
-			// the desired version.
-			var err error
-			startingCSV, err = guessStartingCSV(pc.CurrentCSV, i.Version)
-			if err != nil {
-				return nil, fmt.Errorf("could not guess startingCSV: %v", err)
-			}
-		} else {
-			for _, entry := range pc.Entries {
-				if i.Version == entry.Version {
-					startingCSV = entry.Name
-					break
-				}
-			}
-			if startingCSV == "" {
-				return nil, fmt.Errorf("version %q not found in channel %q for package %q", i.Version, pc.Name, pm.Status.PackageName)
-			}
+		startingCSV, err := getStartingCSV(pc, i.Version)
+		if err != nil {
+			return nil, fmt.Errorf("get starting CSV: %v", err)
 		}
 		opts = append(opts, subscription.StartingCSV(startingCSV))
 	}
@@ -266,9 +245,28 @@ func (i *OperatorInstall) createSubscription(ctx context.Context, pm *operator.P
 	sub := subscription.Build(subKey, i.Channel, sourceKey, opts...)
 	if err := i.config.Client.Create(ctx, sub); err != nil {
 		return nil, fmt.Errorf("create subscription: %v", err)
-
 	}
 	return sub, nil
+}
+
+func getStartingCSV(pc *operator.PackageChannel, desiredVersion string) (string, error) {
+	// A listing of all channel entries was added in a recent version of the packagemanifests API.
+	// If the length of the list is 0, that means we're on an older version of the API, so we'll fall
+	// back to the previous behavior of just guessing a CSV name.
+	//
+	// With the updated packagemanifests API, we can iterate the list of entries and find the
+	// startingCSV, and error out if the specified version is not found.
+	if len(pc.Entries) == 0 {
+		// Use the CSV name of the channel head as a template to guess the CSV name based on
+		// the desired version.
+		return guessStartingCSV(pc.CurrentCSV, desiredVersion)
+	}
+	for _, entry := range pc.Entries {
+		if desiredVersion == entry.Version {
+			return entry.Name, nil
+		}
+	}
+	return "", fmt.Errorf("version %q not found in channel %q", desiredVersion, pc.Name)
 }
 
 // guessStartingCSV finds the first semver version string in csvNameExample, and replaces all
