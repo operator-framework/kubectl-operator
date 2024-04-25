@@ -6,12 +6,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/operator-framework/api/pkg/operators/v1alpha1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/util/retry"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/operator-framework/api/pkg/operators/v1alpha1"
 )
 
 func objectKeyForObject(obj client.Object) types.NamespacedName {

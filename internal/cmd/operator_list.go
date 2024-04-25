@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/duration"
 
 	"github.com/operator-framework/kubectl-operator/internal/cmd/internal/log"
@@ -26,7 +26,7 @@ func newOperatorListCmd(cfg *action.Configuration) *cobra.Command {
 		Args:  cobra.ExactArgs(0),
 		Run: func(cmd *cobra.Command, args []string) {
 			if allNamespaces {
-				cfg.Namespace = v1.NamespaceAll
+				cfg.Namespace = corev1.NamespaceAll
 			}
 			subs, err := l.Run(cmd.Context())
 			if err != nil {
@@ -34,7 +34,7 @@ func newOperatorListCmd(cfg *action.Configuration) *cobra.Command {
 			}
 
 			if len(subs) == 0 {
-				if cfg.Namespace == v1.NamespaceAll {
+				if cfg.Namespace == corev1.NamespaceAll {
 					log.Print("No resources found")
 				} else {
 					log.Printf("No resources found in %s namespace.", cfg.Namespace)
@@ -60,7 +60,6 @@ func newOperatorListCmd(cfg *action.Configuration) *cobra.Command {
 				_, _ = fmt.Fprintf(tw, "%s%s\t%s\t%s\t%s\t%s\t%s\n", sub.Spec.Package, ns, sub.Name, sub.Status.InstalledCSV, sub.Status.CurrentCSV, sub.Status.State, duration.HumanDuration(age))
 			}
 			_ = tw.Flush()
-
 		},
 	}
 	cmd.Flags().BoolVarP(&allNamespaces, "all-namespaces", "A", false, "list operators in all namespaces")

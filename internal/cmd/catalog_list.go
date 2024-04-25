@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/duration"
 
 	"github.com/operator-framework/kubectl-operator/internal/cmd/internal/log"
@@ -23,7 +23,7 @@ func newCatalogListCmd(cfg *action.Configuration) *cobra.Command {
 		Short: "List installed operator catalogs",
 		Run: func(cmd *cobra.Command, args []string) {
 			if allNamespaces {
-				cfg.Namespace = v1.NamespaceAll
+				cfg.Namespace = corev1.NamespaceAll
 			}
 			catalogs, err := l.Run(cmd.Context())
 			if err != nil {
@@ -31,7 +31,7 @@ func newCatalogListCmd(cfg *action.Configuration) *cobra.Command {
 			}
 
 			if len(catalogs) == 0 {
-				if cfg.Namespace == v1.NamespaceAll {
+				if cfg.Namespace == corev1.NamespaceAll {
 					log.Print("No resources found")
 				} else {
 					log.Printf("No resources found in %s namespace.", cfg.Namespace)

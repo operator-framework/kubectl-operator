@@ -4,11 +4,12 @@ import (
 	"context"
 	"fmt"
 
-	olmv1 "github.com/operator-framework/operator-controller/api/v1alpha1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
+
+	olmv1 "github.com/operator-framework/operator-controller/api/v1alpha1"
 
 	"github.com/operator-framework/kubectl-operator/pkg/action"
 )
@@ -29,7 +30,6 @@ func NewOperatorInstall(cfg *action.Configuration) *OperatorInstall {
 }
 
 func (i *OperatorInstall) Run(ctx context.Context) (*olmv1.ClusterExtension, error) {
-
 	// TODO(developer): Lookup package information when the OLMv1 equivalent of the
 	//     packagemanifests API is available. That way, we can check to see if the
 	//     package is actually available to the cluster before creating the Operator

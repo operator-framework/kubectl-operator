@@ -5,14 +5,15 @@ import (
 	"fmt"
 	"sort"
 
-	v1 "github.com/operator-framework/api/pkg/operators/v1"
-	"github.com/operator-framework/api/pkg/operators/v1alpha1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	v1 "github.com/operator-framework/api/pkg/operators/v1"
+	"github.com/operator-framework/api/pkg/operators/v1alpha1"
 )
 
 // OperatorListOperands knows how to find and list custom resources given a package name and namespace.
@@ -44,7 +45,7 @@ func (o *OperatorListOperands) findOperator(ctx context.Context, packageName str
 	operator := v1.Operator{}
 	err := o.config.Client.Get(ctx, opKey, &operator)
 	if err != nil {
-		if k8serrors.IsNotFound(err) {
+		if apierrors.IsNotFound(err) {
 			return nil, fmt.Errorf("package %q not found in namespace %q", packageName, o.config.Namespace)
 		}
 		return nil, err
