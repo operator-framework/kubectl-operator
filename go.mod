@@ -7,7 +7,7 @@ toolchain go1.21.0
 require (
 	github.com/containerd/containerd v1.7.15
 	github.com/onsi/ginkgo v1.16.5
-	github.com/onsi/gomega v1.32.0
+	github.com/onsi/gomega v1.33.0
 	github.com/opencontainers/image-spec v1.1.0
 	github.com/operator-framework/api v0.23.0
 	github.com/operator-framework/operator-controller v0.9.0
