@@ -10,7 +10,7 @@ require (
 	github.com/onsi/gomega v1.33.1
 	github.com/opencontainers/image-spec v1.1.0
 	github.com/operator-framework/api v0.26.0
-	github.com/operator-framework/operator-controller v0.10.0
+	github.com/operator-framework/operator-controller v0.11.0
 	github.com/operator-framework/operator-lifecycle-manager v0.23.1
 	github.com/operator-framework/operator-registry v1.44.0
 	github.com/sirupsen/logrus v1.9.3
@@ -55,7 +55,7 @@ require (
 	github.com/evanphx/json-patch/v5 v5.9.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
-	github.com/go-logr/logr v1.4.1 // indirect
+	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-openapi/jsonpointer v0.21.0 // indirect
 	github.com/go-openapi/jsonreference v0.21.0 // indirect
@@ -115,7 +115,7 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/klog/v2 v2.120.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20240228011516-70dd3763d340 // indirect
-	k8s.io/utils v0.0.0-20240102154912-e7106e64919e // indirect
+	k8s.io/utils v0.0.0-20240502163921-fe8a2dddb1d0 // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.4.1 // indirect
 )
