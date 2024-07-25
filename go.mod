@@ -5,7 +5,7 @@ go 1.22.0
 toolchain go1.22.2
 
 require (
-	github.com/containerd/containerd v1.7.19
+	github.com/containerd/containerd v1.7.20
 	github.com/containerd/platforms v0.2.1
 	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/gomega v1.33.1
