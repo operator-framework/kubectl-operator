@@ -10,7 +10,7 @@ require (
 	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/gomega v1.34.1
 	github.com/opencontainers/image-spec v1.1.0
-	github.com/operator-framework/api v0.26.0
+	github.com/operator-framework/api v0.27.0
 	github.com/operator-framework/operator-controller v0.12.0
 	github.com/operator-framework/operator-lifecycle-manager v0.23.1
 	github.com/operator-framework/operator-registry v1.45.0
