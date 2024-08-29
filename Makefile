@@ -32,6 +32,14 @@ vet:
 fmt:
 	go fmt ./...
 
+
+.PHONY: bingo-upgrade
+bingo-upgrade: $(BINGO) ## Upgrade tools
+	@for pkg in $$($(BINGO) list | awk '{ print $$1 }' | tail -n +3); do \
+		echo "Upgrading $$pkg to latest..."; \
+		$(BINGO) get "$$pkg@latest"; \
+	done
+
 .PHONY: build
 build: vet fmt
 	go build $(GO_BUILD_ARGS) -o bin/kubectl-operator
