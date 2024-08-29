@@ -1,8 +1,6 @@
 module github.com/operator-framework/kubectl-operator
 
-go 1.22.0
-
-toolchain go1.22.2
+go 1.22.5
 
 require (
 	github.com/containerd/containerd v1.7.21
