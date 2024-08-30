@@ -38,7 +38,14 @@ func (i *OperatorInstall) Run(ctx context.Context) (*olmv1.ClusterExtension, err
 	opKey := types.NamespacedName{Name: i.Package}
 	op := &olmv1.ClusterExtension{
 		ObjectMeta: metav1.ObjectMeta{Name: opKey.Name},
-		Spec:       olmv1.ClusterExtensionSpec{PackageName: i.Package},
+		Spec: olmv1.ClusterExtensionSpec{
+			Source: olmv1.SourceConfig{
+				SourceType: "Catalog",
+				Catalog: &olmv1.CatalogSource{
+					PackageName: i.Package,
+				},
+			},
+		},
 	}
 	if err := i.config.Client.Create(ctx, op); err != nil {
 		return nil, err
