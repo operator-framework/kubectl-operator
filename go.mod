@@ -9,7 +9,7 @@ require (
 	github.com/onsi/gomega v1.34.2
 	github.com/opencontainers/image-spec v1.1.0
 	github.com/operator-framework/api v0.27.0
-	github.com/operator-framework/operator-controller v0.14.0
+	github.com/operator-framework/operator-controller v0.15.0
 	github.com/operator-framework/operator-lifecycle-manager v0.23.1
 	github.com/operator-framework/operator-registry v1.46.0
 	github.com/sirupsen/logrus v1.9.3
