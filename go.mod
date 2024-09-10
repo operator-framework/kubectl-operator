@@ -3,7 +3,7 @@ module github.com/operator-framework/kubectl-operator
 go 1.22.5
 
 require (
-	github.com/containerd/containerd v1.7.21
+	github.com/containerd/containerd v1.7.22
 	github.com/containerd/platforms v0.2.1
 	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/gomega v1.34.2
