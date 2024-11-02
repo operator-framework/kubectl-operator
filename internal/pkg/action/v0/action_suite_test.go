@@ -1,4 +1,4 @@
-package action_test
+package v0_test
 
 import (
 	"testing"
@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestAction(t *testing.T) {
+func TestCommand(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Action Suite")
+	RunSpecs(t, "Internal action Suite")
 }

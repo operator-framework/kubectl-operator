@@ -1,4 +1,4 @@
-package action_test
+package v0_test
 
 import (
 	"context"
@@ -18,8 +18,8 @@ import (
 	v1 "github.com/operator-framework/api/pkg/operators/v1"
 	"github.com/operator-framework/api/pkg/operators/v1alpha1"
 
-	internalaction "github.com/operator-framework/kubectl-operator/internal/pkg/action"
-	"github.com/operator-framework/kubectl-operator/internal/pkg/operand"
+	internalaction "github.com/operator-framework/kubectl-operator/internal/pkg/action/v0"
+	"github.com/operator-framework/kubectl-operator/internal/pkg/legacy/operand"
 	"github.com/operator-framework/kubectl-operator/pkg/action"
 )
 

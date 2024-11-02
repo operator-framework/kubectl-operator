@@ -1,7 +1,8 @@
-package action_test
+package v0_test
 
 import (
 	"context"
+	"github.com/operator-framework/kubectl-operator/pkg/action/v0"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -131,7 +132,7 @@ var _ = Describe("OperatorListOperands", func() {
 	})
 
 	It("should fail due to missing operator", func() {
-		lister := action.NewOperatorListOperands(&cfg)
+		lister := v0.NewOperatorListOperands(&cfg)
 		_, err := lister.Run(context.TODO(), "missing")
 		Expect(err.Error()).To(ContainSubstring(`package "missing" not found in namespace "etcd-namespace"`))
 	})
@@ -140,7 +141,7 @@ var _ = Describe("OperatorListOperands", func() {
 		operator.Status.Components = nil
 		Expect(cfg.Client.Update(context.TODO(), operator)).To(Succeed())
 
-		lister := action.NewOperatorListOperands(&cfg)
+		lister := v0.NewOperatorListOperands(&cfg)
 		_, err := lister.Run(context.TODO(), "etcd")
 		Expect(err.Error()).To(ContainSubstring("could not find underlying components for operator"))
 	})
@@ -149,7 +150,7 @@ var _ = Describe("OperatorListOperands", func() {
 		operator.Status.Components = &v1.Components{}
 		Expect(cfg.Client.Update(context.TODO(), operator)).To(Succeed())
 
-		lister := action.NewOperatorListOperands(&cfg)
+		lister := v0.NewOperatorListOperands(&cfg)
 		_, err := lister.Run(context.TODO(), "etcd")
 		Expect(err.Error()).To(ContainSubstring("could not find underlying CSV for operator"))
 	})
@@ -157,7 +158,7 @@ var _ = Describe("OperatorListOperands", func() {
 	It("should fail due to missing CSV in cluster", func() {
 		Expect(cfg.Client.Delete(context.TODO(), csv)).To(Succeed())
 
-		lister := action.NewOperatorListOperands(&cfg)
+		lister := v0.NewOperatorListOperands(&cfg)
 		_, err := lister.Run(context.TODO(), "etcd")
 		Expect(err.Error()).To(ContainSubstring("could not get etcd-namespace/etcdoperator.v0.9.4-clusterwide CSV on cluster"))
 	})
@@ -166,7 +167,7 @@ var _ = Describe("OperatorListOperands", func() {
 		csv.Spec.CustomResourceDefinitions.Owned = nil
 		Expect(cfg.Client.Update(context.TODO(), csv)).To(Succeed())
 
-		lister := action.NewOperatorListOperands(&cfg)
+		lister := v0.NewOperatorListOperands(&cfg)
 		_, err := lister.Run(context.TODO(), "etcd")
 		Expect(err.Error()).To(ContainSubstring("no owned CustomResourceDefinitions specified on CSV etcd-namespace/etcdoperator.v0.9.4-clusterwide"))
 	})
@@ -175,7 +176,7 @@ var _ = Describe("OperatorListOperands", func() {
 		csv.Status.Phase = v1alpha1.CSVPhaseFailed
 		Expect(cfg.Client.Update(context.TODO(), csv)).To(Succeed())
 
-		lister := action.NewOperatorListOperands(&cfg)
+		lister := v0.NewOperatorListOperands(&cfg)
 		_, err := lister.Run(context.TODO(), "etcd")
 		Expect(err.Error()).To(ContainSubstring("CSV underlying operator is not in a succeeded state"))
 	})
@@ -183,7 +184,7 @@ var _ = Describe("OperatorListOperands", func() {
 	It("should fail if there is not exactly 1 operator group", func() {
 		Expect(cfg.Client.Delete(context.TODO(), og)).To(Succeed())
 
-		lister := action.NewOperatorListOperands(&cfg)
+		lister := v0.NewOperatorListOperands(&cfg)
 		_, err := lister.Run(context.TODO(), "etcd")
 		Expect(err.Error()).To(ContainSubstring("unexpected number (0) of operator groups found in namespace etcd"))
 	})
@@ -191,7 +192,7 @@ var _ = Describe("OperatorListOperands", func() {
 	It("should fail if an owned CRD does not exist", func() {
 		Expect(cfg.Client.Delete(context.TODO(), crd)).To(Succeed())
 
-		lister := action.NewOperatorListOperands(&cfg)
+		lister := v0.NewOperatorListOperands(&cfg)
 		_, err := lister.Run(context.TODO(), "etcd")
 		Expect(err.Error()).To(ContainSubstring("customresourcedefinitions.apiextensions.k8s.io \"etcdclusters.etcd.database.coreos.com\" not found"))
 	})
@@ -201,14 +202,14 @@ var _ = Describe("OperatorListOperands", func() {
 		Expect(cfg.Client.Delete(context.TODO(), etcdcluster2)).To(Succeed())
 		Expect(cfg.Client.Delete(context.TODO(), etcdcluster3)).To(Succeed())
 
-		lister := action.NewOperatorListOperands(&cfg)
+		lister := v0.NewOperatorListOperands(&cfg)
 		operands, err := lister.Run(context.TODO(), "etcd")
 		Expect(err).To(BeNil())
 		Expect(operands.Items).To(HaveLen(0))
 	})
 
 	It("should return operands from all namespaces", func() {
-		lister := action.NewOperatorListOperands(&cfg)
+		lister := v0.NewOperatorListOperands(&cfg)
 		operands, err := lister.Run(context.TODO(), "etcd")
 		Expect(err).To(BeNil())
 		Expect(getObjectNames(*operands)).To(ConsistOf(
@@ -222,7 +223,7 @@ var _ = Describe("OperatorListOperands", func() {
 		og.Status.Namespaces = []string{"ns1", "ns2"}
 		Expect(cfg.Client.Update(context.TODO(), og)).To(Succeed())
 
-		lister := action.NewOperatorListOperands(&cfg)
+		lister := v0.NewOperatorListOperands(&cfg)
 		operands, err := lister.Run(context.TODO(), "etcd")
 		Expect(err).To(BeNil())
 		Expect(getObjectNames(*operands)).To(ConsistOf(
@@ -236,7 +237,7 @@ var _ = Describe("OperatorListOperands", func() {
 		og.Status.Namespaces = []string{"ns1"}
 		Expect(cfg.Client.Update(context.TODO(), og)).To(Succeed())
 
-		lister := action.NewOperatorListOperands(&cfg)
+		lister := v0.NewOperatorListOperands(&cfg)
 		operands, err := lister.Run(context.TODO(), "etcd")
 		Expect(err).To(BeNil())
 		Expect(getObjectNames(*operands)).To(ConsistOf(
@@ -249,7 +250,7 @@ var _ = Describe("OperatorListOperands", func() {
 		og.Status.Namespaces = []string{"ns2"}
 		Expect(cfg.Client.Update(context.TODO(), og)).To(Succeed())
 
-		lister := action.NewOperatorListOperands(&cfg)
+		lister := v0.NewOperatorListOperands(&cfg)
 		operands, err := lister.Run(context.TODO(), "etcd")
 		Expect(err).To(BeNil())
 		Expect(getObjectNames(*operands)).To(ConsistOf(
@@ -262,7 +263,7 @@ var _ = Describe("OperatorListOperands", func() {
 		og.Status.Namespaces = []string{"other"}
 		Expect(cfg.Client.Update(context.TODO(), og)).To(Succeed())
 
-		lister := action.NewOperatorListOperands(&cfg)
+		lister := v0.NewOperatorListOperands(&cfg)
 		operands, err := lister.Run(context.TODO(), "etcd")
 		Expect(err).To(BeNil())
 		Expect(getObjectNames(*operands)).To(ConsistOf(

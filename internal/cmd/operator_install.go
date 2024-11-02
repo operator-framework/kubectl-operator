@@ -1,20 +1,17 @@
 package cmd
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
-	"github.com/operator-framework/api/pkg/operators/v1alpha1"
-
 	"github.com/operator-framework/kubectl-operator/internal/cmd/internal/log"
-	internalaction "github.com/operator-framework/kubectl-operator/internal/pkg/action"
+	internalaction "github.com/operator-framework/kubectl-operator/internal/pkg/action/v1"
 	"github.com/operator-framework/kubectl-operator/pkg/action"
 )
 
-func newOperatorInstallCmd(cfg *action.Configuration) *cobra.Command {
+func newExtensionInstallCmd(cfg *action.Configuration) *cobra.Command {
 	i := internalaction.NewOperatorInstall(cfg)
 	i.Logf = log.Printf
 
@@ -24,11 +21,14 @@ func newOperatorInstallCmd(cfg *action.Configuration) *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			i.Package = args[0]
-			csv, err := i.Run(cmd.Context())
-			if err != nil {
-				log.Fatalf("failed to install operator: %v", err)
+			i.Namespace = internalaction.OperatorInstallNamespaceConfig{
+				Name: cfg.Namespace,
 			}
-			log.Printf("operator %q installed; installed csv is %q", i.Package, csv.Name)
+			clusterExtension, err := i.Run(cmd.Context())
+			if err != nil {
+				log.Fatalf("failed to install cluster extension: %v", err)
+			}
+			log.Printf("cluster extension %q installed; installed bundle is %q", i.Package, clusterExtension.Status.Install.Bundle.Name)
 		},
 	}
 	bindOperatorInstallFlags(cmd.Flags(), i)
@@ -37,10 +37,9 @@ func newOperatorInstallCmd(cfg *action.Configuration) *cobra.Command {
 }
 
 func bindOperatorInstallFlags(fs *pflag.FlagSet, i *internalaction.OperatorInstall) {
-	fs.StringVarP(&i.Channel, "channel", "c", "", "subscription channel")
-	fs.VarP(&i.Approval, "approval", "a", fmt.Sprintf("approval (%s or %s)", v1alpha1.ApprovalManual, v1alpha1.ApprovalAutomatic))
-	fs.StringVarP(&i.Version, "version", "v", "", "install specific version for operator (default latest)")
-	fs.StringSliceVarP(&i.WatchNamespaces, "watch", "w", []string{}, "namespaces to watch")
+	fs.StringSliceVarP(&i.Channels, "channels", "c", []string{}, "upgrade channels from which to resolve bundles")
+	fs.StringVarP(&i.Version, "version", "v", "", "version (or version range) from which to resolve bundles")
 	fs.DurationVar(&i.CleanupTimeout, "cleanup-timeout", time.Minute, "the amount of time to wait before cancelling cleanup")
-	fs.BoolVarP(&i.CreateOperatorGroup, "create-operator-group", "C", false, "create operator group if necessary")
+	fs.BoolVarP(&i.UnsafeCreateClusterRoleBinding, "unsafe-create-cluster-role-binding", "X", false, "create a cluster-admin ClusterRoleBinding for the extension installation")
+	fs.StringVarP(&i.ServiceAccount, "service-account", "s", "default", "service account to use for the extension installation")
 }

@@ -1,8 +1,9 @@
-package action
+package v0
 
 import (
 	"context"
 	"fmt"
+	"github.com/operator-framework/kubectl-operator/pkg/action"
 	"sort"
 
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -18,10 +19,10 @@ import (
 
 // OperatorListOperands knows how to find and list custom resources given a package name and namespace.
 type OperatorListOperands struct {
-	config *Configuration
+	config *action.Configuration
 }
 
-func NewOperatorListOperands(cfg *Configuration) *OperatorListOperands {
+func NewOperatorListOperands(cfg *action.Configuration) *OperatorListOperands {
 	return &OperatorListOperands{
 		config: cfg,
 	}

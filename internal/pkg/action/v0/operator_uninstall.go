@@ -1,8 +1,9 @@
-package action
+package v0
 
 import (
 	"context"
 	"fmt"
+	"github.com/operator-framework/kubectl-operator/pkg/action/v0"
 	"strings"
 	"time"
 
@@ -15,7 +16,7 @@ import (
 	v1 "github.com/operator-framework/api/pkg/operators/v1"
 	"github.com/operator-framework/api/pkg/operators/v1alpha1"
 
-	"github.com/operator-framework/kubectl-operator/internal/pkg/operand"
+	"github.com/operator-framework/kubectl-operator/internal/pkg/legacy/operand"
 	"github.com/operator-framework/kubectl-operator/pkg/action"
 )
 
@@ -86,7 +87,7 @@ func (u *OperatorUninstall) Run(ctx context.Context) error {
 	}
 
 	// find operands related to the operator on cluster
-	lister := action.NewOperatorListOperands(u.config)
+	lister := v0.NewOperatorListOperands(u.config)
 	operands, err := lister.Run(ctx, u.Package)
 	if err != nil {
 		return fmt.Errorf("list operands for operator %q: %v", u.Package, err)

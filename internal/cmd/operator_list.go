@@ -3,65 +3,60 @@ package cmd
 import (
 	"fmt"
 	"os"
-	"sort"
 	"strings"
 	"text/tabwriter"
 	"time"
 
 	"github.com/spf13/cobra"
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/duration"
 
 	"github.com/operator-framework/kubectl-operator/internal/cmd/internal/log"
-	internalaction "github.com/operator-framework/kubectl-operator/internal/pkg/action"
+	internalaction "github.com/operator-framework/kubectl-operator/internal/pkg/action/v1"
 	"github.com/operator-framework/kubectl-operator/pkg/action"
+	ocv1 "github.com/operator-framework/operator-controller/api/v1"
+	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"slices"
 )
 
-func newOperatorListCmd(cfg *action.Configuration) *cobra.Command {
-	var allNamespaces bool
+func newExtensionListCmd(cfg *action.Configuration) *cobra.Command {
 	l := internalaction.NewOperatorList(cfg)
 	cmd := &cobra.Command{
 		Use:   "list",
-		Short: "List installed operators",
+		Short: "List cluster extensions",
 		Args:  cobra.ExactArgs(0),
 		Run: func(cmd *cobra.Command, args []string) {
-			if allNamespaces {
-				cfg.Namespace = corev1.NamespaceAll
-			}
-			subs, err := l.Run(cmd.Context())
+			clusterExtensions, err := l.Run(cmd.Context())
 			if err != nil {
 				log.Fatalf("list operators: %v", err)
 			}
 
-			if len(subs) == 0 {
-				if cfg.Namespace == corev1.NamespaceAll {
-					log.Print("No resources found")
-				} else {
-					log.Printf("No resources found in %s namespace.", cfg.Namespace)
-				}
+			if len(clusterExtensions) == 0 {
+				log.Print("No resources found")
 				return
 			}
 
-			sort.SliceStable(subs, func(i, j int) bool {
-				return strings.Compare(subs[i].Spec.Package, subs[j].Spec.Package) < 0
+			slices.SortFunc(clusterExtensions, func(a, b ocv1.ClusterExtension) int {
+				return strings.Compare(a.Status.Install.Bundle.Name, b.Status.Install.Bundle.Name)
 			})
-			nsCol := ""
-			if allNamespaces {
-				nsCol = "\tNAMESPACE"
-			}
 			tw := tabwriter.NewWriter(os.Stdout, 3, 4, 2, ' ', 0)
-			_, _ = fmt.Fprintf(tw, "PACKAGE%s\tSUBSCRIPTION\tINSTALLED CSV\tCURRENT CSV\tSTATUS\tAGE\n", nsCol)
-			for _, sub := range subs {
-				ns := ""
-				if allNamespaces {
-					ns = "\t" + sub.Namespace
+			_, _ = fmt.Fprintf(tw, "NAME\tNAMESPACE\tINSTALLED BUNDLE\tAT DESIRED STATE\tAGE\n")
+			for _, ce := range clusterExtensions {
+				installedBundle := "(not installed)"
+				if meta.IsStatusConditionPresentAndEqual(ce.Status.Conditions, ocv1.TypeInstalled, metav1.ConditionTrue) {
+					installedBundle = ce.Status.Install.Bundle.Name
 				}
-				age := time.Since(sub.CreationTimestamp.Time)
-				_, _ = fmt.Fprintf(tw, "%s%s\t%s\t%s\t%s\t%s\t%s\n", sub.Spec.Package, ns, sub.Name, sub.Status.InstalledCSV, sub.Status.CurrentCSV, sub.Status.State, duration.HumanDuration(age))
+				atDesiredState := "False"
+				progressing := meta.FindStatusCondition(ce.Status.Conditions, ocv1.TypeProgressing)
+				if progressing != nil && progressing.Status == metav1.ConditionTrue && progressing.Reason == ocv1.ReasonSucceeded {
+					atDesiredState = "True"
+				}
+
+				age := time.Since(ce.CreationTimestamp.Time)
+				_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\n", ce.Name, ce.Spec.Namespace, installedBundle, atDesiredState, duration.HumanDuration(age))
 			}
 			_ = tw.Flush()
 		},
 	}
-	cmd.Flags().BoolVarP(&allNamespaces, "all-namespaces", "A", false, "list operators in all namespaces")
 	return cmd
 }

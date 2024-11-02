@@ -1,4 +1,4 @@
-package action
+package v0
 
 import (
 	"context"
@@ -10,7 +10,7 @@ import (
 
 	v1 "github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/apis/operators/v1"
 
-	"github.com/operator-framework/kubectl-operator/internal/pkg/operator"
+	"github.com/operator-framework/kubectl-operator/internal/pkg/legacy/operator"
 	"github.com/operator-framework/kubectl-operator/pkg/action"
 )
 

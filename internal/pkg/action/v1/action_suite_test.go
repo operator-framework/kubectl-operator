@@ -1,4 +1,4 @@
-package action_test
+package v1_test
 
 import (
 	"testing"
