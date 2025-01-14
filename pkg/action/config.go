@@ -1,28 +1,30 @@
 package action
 
 import (
-	"context"
-
+	catalogdv1 "github.com/operator-framework/catalogd/api/v1"
 	"github.com/spf13/pflag"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	v1 "github.com/operator-framework/api/pkg/operators/v1"
-	"github.com/operator-framework/api/pkg/operators/v1alpha1"
-	olmv1 "github.com/operator-framework/operator-controller/api/v1alpha1"
-	operatorsv1 "github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/apis/operators/v1"
+	ofapiv1 "github.com/operator-framework/api/pkg/operators/v1"
+	ofapiv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
+	ocv1 "github.com/operator-framework/operator-controller/api/v1"
+	packageserveroperatorsv1 "github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/apis/operators/v1"
 )
 
 func NewScheme() (*runtime.Scheme, error) {
-	sch := runtime.NewScheme()
+	sch := scheme.Scheme
 	for _, f := range []func(*runtime.Scheme) error{
-		v1alpha1.AddToScheme,
-		operatorsv1.AddToScheme,
-		v1.AddToScheme,
+		ofapiv1alpha1.AddToScheme,
+		packageserveroperatorsv1.AddToScheme,
+		ofapiv1.AddToScheme,
 		apiextensionsv1.AddToScheme,
-		olmv1.AddToScheme,
+		ocv1.AddToScheme,
+		catalogdv1.AddToScheme,
 	} {
 		if err := f(sch); err != nil {
 			return nil, err
@@ -32,6 +34,7 @@ func NewScheme() (*runtime.Scheme, error) {
 }
 
 type Configuration struct {
+	Config    *rest.Config
 	Client    client.Client
 	Namespace string
 	Scheme    *runtime.Scheme
@@ -86,18 +89,10 @@ func (c *Configuration) Load() error {
 		return err
 	}
 
+	c.Config = cc
 	c.Scheme = sch
-	c.Client = &operatorClient{cl}
+	c.Client = client.WithFieldOwner(cl, "kubectl-operator")
 	c.Namespace = ns
 
 	return nil
-}
-
-type operatorClient struct {
-	client.Client
-}
-
-func (c *operatorClient) Create(ctx context.Context, obj client.Object, opts ...client.CreateOption) error {
-	opts = append(opts, client.FieldOwner("kubectl-operator"))
-	return c.Client.Create(ctx, obj, opts...)
 }

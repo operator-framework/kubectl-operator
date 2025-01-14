@@ -1,17 +1,13 @@
 package cmd
 
 import (
-	"io"
 	"time"
 
-	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
-	"github.com/operator-framework/operator-registry/pkg/image/containerdregistry"
-
 	"github.com/operator-framework/kubectl-operator/internal/cmd/internal/log"
-	internalaction "github.com/operator-framework/kubectl-operator/internal/pkg/action"
+	internalaction "github.com/operator-framework/kubectl-operator/internal/pkg/action/v1"
 	"github.com/operator-framework/kubectl-operator/pkg/action"
 )
 
@@ -20,25 +16,18 @@ func newCatalogAddCmd(cfg *action.Configuration) *cobra.Command {
 	a.Logf = log.Printf
 
 	cmd := &cobra.Command{
-		Use:   "add <name> <index_image>",
-		Short: "Add an operator catalog",
+		Use:   "add <name> <catalog_image>",
+		Short: "Add an cluster catalog",
 		Args:  cobra.ExactArgs(2),
-		PreRun: func(cmd *cobra.Command, args []string) {
-			regLogger := logrus.New()
-			regLogger.SetOutput(io.Discard)
-			a.RegistryOptions = []containerdregistry.RegistryOption{
-				containerdregistry.WithLog(logrus.NewEntry(regLogger)),
-			}
-		},
 		Run: func(cmd *cobra.Command, args []string) {
-			a.CatalogSourceName = args[0]
-			a.IndexImage = args[1]
+			a.CatalogName = args[0]
+			a.CatalogImage = args[1]
 
 			cs, err := a.Run(cmd.Context())
 			if err != nil {
-				log.Fatalf("failed to add catalog: %v", err)
+				log.Fatalf("failed to add clustercatalog: %v", err)
 			}
-			log.Printf("created catalogsource %q\n", cs.Name)
+			log.Printf("created clustercatalog %q\n", cs.Name)
 		},
 	}
 	bindCatalogAddFlags(cmd.Flags(), a)
@@ -47,7 +36,7 @@ func newCatalogAddCmd(cfg *action.Configuration) *cobra.Command {
 }
 
 func bindCatalogAddFlags(fs *pflag.FlagSet, a *internalaction.CatalogAdd) {
-	fs.StringVarP(&a.DisplayName, "display-name", "d", "", "display name of the index")
-	fs.StringVarP(&a.Publisher, "publisher", "p", "", "publisher of the index")
+	fs.Int32Var(&a.Priority, "priority", 0, "the priority of the catalog")
+	fs.DurationVar(&a.PollInterval, "poll-interval", 10*time.Minute, "the poll interval to configure for the catalog, set to 0 to disable")
 	fs.DurationVar(&a.CleanupTimeout, "cleanup-timeout", time.Minute, "the amount of time to wait before cancelling cleanup")
 }

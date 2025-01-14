@@ -51,14 +51,10 @@ operators from the installed catalogs.`,
 
 	cmd.AddCommand(
 		newCatalogCmd(&cfg),
-		newOperatorInstallCmd(&cfg),
-		newOperatorUpgradeCmd(&cfg),
-		newOperatorUninstallCmd(&cfg),
-		newOperatorListCmd(&cfg),
-		newOperatorListAvailableCmd(&cfg),
-		newOperatorListOperandsCmd(&cfg),
-		newOperatorDescribeCmd(&cfg),
-		newOlmV1Cmd(&cfg),
+		newExtensionInstallCmd(&cfg),
+		newExtensionUninstallCmd(&cfg),
+		newExtensionListCmd(&cfg),
+		//newExtensionListOperandsCmd(&cfg),
 		newVersionCmd(),
 	)
 

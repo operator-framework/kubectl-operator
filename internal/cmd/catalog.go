@@ -14,6 +14,7 @@ func newCatalogCmd(cfg *action.Configuration) *cobra.Command {
 	cmd.AddCommand(
 		newCatalogAddCmd(cfg),
 		newCatalogListCmd(cfg),
+		newCatalogContentCmd(cfg),
 		newCatalogRemoveCmd(cfg),
 	)
 	return cmd

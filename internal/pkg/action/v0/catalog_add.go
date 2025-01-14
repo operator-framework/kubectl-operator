@@ -1,4 +1,4 @@
-package action
+package v0
 
 import (
 	"context"
@@ -20,7 +20,7 @@ import (
 	"github.com/operator-framework/operator-registry/pkg/image"
 	"github.com/operator-framework/operator-registry/pkg/image/containerdregistry"
 
-	"github.com/operator-framework/kubectl-operator/internal/pkg/catalogsource"
+	"github.com/operator-framework/kubectl-operator/internal/pkg/legacy/catalogsource"
 	"github.com/operator-framework/kubectl-operator/pkg/action"
 )
 
