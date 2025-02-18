@@ -4,12 +4,12 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/operator-framework/kubectl-operator/internal/cmd/internal/log"
-	experimentalaction "github.com/operator-framework/kubectl-operator/internal/pkg/experimental/action"
+	v1action "github.com/operator-framework/kubectl-operator/internal/pkg/v1/action"
 	"github.com/operator-framework/kubectl-operator/pkg/action"
 )
 
 func NewOperatorInstallCmd(cfg *action.Configuration) *cobra.Command {
-	i := experimentalaction.NewOperatorInstall(cfg)
+	i := v1action.NewOperatorInstall(cfg)
 	i.Logf = log.Printf
 
 	cmd := &cobra.Command{
