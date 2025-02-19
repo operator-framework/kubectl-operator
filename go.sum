@@ -242,6 +242,8 @@ github.com/opencontainers/runtime-spec v1.2.0 h1:z97+pHb3uELt/yiAWD691HNHQIF07bE
 github.com/opencontainers/runtime-spec v1.2.0/go.mod h1:jwyrGlmzljRJv/Fgzds9SsS/C5hL+LL3ko9hs6T5lQ0=
 github.com/operator-framework/api v0.29.0 h1:TxAR8RCO+I4FjRrY4PSMgnlmbxNWeD8pzHXp7xwHNmw=
 github.com/operator-framework/api v0.29.0/go.mod h1:0whQE4mpMDd2zyHkQe+bFa3DLoRs6oGWCbu8dY/3pyc=
+github.com/operator-framework/catalogd v1.1.0 h1:mu2DYL5mpREEAAP+uPG+CMSsfsJkgrIasgLRG8nvwJg=
+github.com/operator-framework/catalogd v1.1.0/go.mod h1:8Je9CqMPwhNgRoqGX5OPsLYHsEoTDvPnELLLKRw1RHE=
 github.com/operator-framework/operator-controller v1.1.0 h1:h0b1SSuv9ZiIgI8dTuutSPVL4uIeyvTW3gOB2szkBMQ=
 github.com/operator-framework/operator-controller v1.1.0/go.mod h1:dJIt5/gfm1n3y9IeX4kpSlpu4CFq8WFVHU2n9ZDVUkA=
 github.com/operator-framework/operator-lifecycle-manager v0.23.1 h1:Xw2ml1T4W2ieoFaVwanW/eFlZ11yAOJZUpUI8RLSql8=
