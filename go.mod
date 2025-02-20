@@ -11,6 +11,7 @@ require (
 	github.com/onsi/gomega v1.36.2
 	github.com/opencontainers/image-spec v1.1.0
 	github.com/operator-framework/api v0.29.0
+	github.com/operator-framework/catalogd v1.1.0
 	github.com/operator-framework/operator-controller v1.1.0
 	github.com/operator-framework/operator-lifecycle-manager v0.23.1
 	github.com/operator-framework/operator-registry v1.50.0
