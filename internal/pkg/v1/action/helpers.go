@@ -2,6 +2,7 @@ package action
 
 import (
 	"context"
+	"fmt"
 	"slices"
 	"time"
 
@@ -43,6 +44,22 @@ func waitUntilCatalogStatusCondition(
 		}
 		return false, nil
 	})
+}
+
+func waitForDeletion(ctx context.Context, cl client.Client, obj client.Object) error {
+	key := objectKeyForObject(obj)
+	if err := wait.PollUntilContextCancel(ctx, pollInterval, true, func(conditionCtx context.Context) (bool, error) {
+		if err := cl.Get(conditionCtx, key, obj); apierrors.IsNotFound(err) {
+			return true, nil
+		} else if err != nil {
+			return false, err
+		}
+		return false, nil
+	}); err != nil {
+		return fmt.Errorf("waiting for deletion: %w", err)
+	}
+
+	return nil
 }
 
 func deleteWithTimeout(cl deleter, obj client.Object, timeout time.Duration) error {

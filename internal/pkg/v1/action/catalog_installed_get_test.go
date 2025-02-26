@@ -2,13 +2,11 @@ package action_test
 
 import (
 	"context"
-	"fmt"
 	"slices"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
@@ -82,18 +80,3 @@ var _ = Describe("CatalogInstalledGet", func() {
 		Expect(operators).To(BeEmpty())
 	})
 })
-
-func setupTestCatalogs(n int) []client.Object {
-	var result []client.Object
-	for i := 1; i <= n; i++ {
-		result = append(result, newClusterCatalog(fmt.Sprintf("cat%d", i)))
-	}
-
-	return result
-}
-
-func newClusterCatalog(name string) *olmv1catalogd.ClusterCatalog {
-	return &olmv1catalogd.ClusterCatalog{
-		ObjectMeta: metav1.ObjectMeta{Name: name},
-	}
-}
