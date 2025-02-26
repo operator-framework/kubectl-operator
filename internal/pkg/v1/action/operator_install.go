@@ -58,7 +58,7 @@ func (i *OperatorInstall) Run(ctx context.Context) (*olmv1.ClusterExtension, err
 	// All Types will exist, so Ready may have a false Status. So, wait until
 	// Type=Ready,Status=True happens
 
-	if err := wait.PollUntilContextCancel(ctx, pollTimeout, true, func(conditionCtx context.Context) (bool, error) {
+	if err := wait.PollUntilContextCancel(ctx, pollInterval, true, func(conditionCtx context.Context) (bool, error) {
 		if err := i.config.Client.Get(conditionCtx, opKey, op); err != nil {
 			return false, err
 		}

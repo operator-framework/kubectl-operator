@@ -24,10 +24,18 @@ func newOlmV1Cmd(cfg *action.Configuration) *cobra.Command {
 		olmv1.NewCatalogInstalledGetCmd(cfg),
 	)
 
+	deleteCmd := &cobra.Command{
+		Use:   "delete",
+		Short: "Delete an OLMv1 resource",
+		Long:  "Delete an OLMv1 resource",
+	}
+	deleteCmd.AddCommand(olmv1.NewCatalogDeleteCmd(cfg))
+
 	cmd.AddCommand(
 		olmv1.NewOperatorInstallCmd(cfg),
 		olmv1.NewOperatorUninstallCmd(cfg),
 		getCmd,
+		deleteCmd,
 	)
 
 	return cmd
