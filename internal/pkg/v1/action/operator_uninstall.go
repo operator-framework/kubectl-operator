@@ -43,13 +43,6 @@ func (u *OperatorUninstall) Run(ctx context.Context) error {
 	return waitForDeletion(ctx, u.config.Client, op)
 }
 
-func objectKeyForObject(obj client.Object) types.NamespacedName {
-	return types.NamespacedName{
-		Namespace: obj.GetNamespace(),
-		Name:      obj.GetName(),
-	}
-}
-
 func waitForDeletion(ctx context.Context, cl client.Client, objs ...client.Object) error {
 	for _, obj := range objs {
 		obj := obj
