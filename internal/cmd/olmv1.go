@@ -16,18 +16,26 @@ func newOlmV1Cmd(cfg *action.Configuration) *cobra.Command {
 
 	getCmd := &cobra.Command{
 		Use:   "get",
-		Short: "Display one or many OLMv1-specific resource(s)",
-		Long:  "Display one or many OLMv1-specific resource(s)",
+		Short: "Display one or many resource(s)",
+		Long:  "Display one or many resource(s)",
 	}
 	getCmd.AddCommand(
 		olmv1.NewOperatorInstalledGetCmd(cfg),
 		olmv1.NewCatalogInstalledGetCmd(cfg),
 	)
 
+	createCmd := &cobra.Command{
+		Use:   "create",
+		Short: "Create a resource",
+		Long:  "Create a resource",
+	}
+	createCmd.AddCommand(olmv1.NewCatalogCreateCmd(cfg))
+
 	cmd.AddCommand(
 		olmv1.NewOperatorInstallCmd(cfg),
 		olmv1.NewOperatorUninstallCmd(cfg),
 		getCmd,
+		createCmd,
 	)
 
 	return cmd
