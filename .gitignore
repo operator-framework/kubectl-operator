@@ -28,3 +28,6 @@ dist/
 
 # Session
 Session.vim
+
+#asciicinema
+assets/demo/demo.asciinema.json
