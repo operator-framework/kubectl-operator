@@ -12,7 +12,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	olmv1catalogd "github.com/operator-framework/catalogd/api/v1"
+	olmv1 "github.com/operator-framework/operator-controller/api/v1"
 )
 
 const pollInterval = 250 * time.Millisecond
@@ -27,7 +27,7 @@ func objectKeyForObject(obj client.Object) types.NamespacedName {
 func waitUntilCatalogStatusCondition(
 	ctx context.Context,
 	cl getter,
-	catalog *olmv1catalogd.ClusterCatalog,
+	catalog *olmv1.ClusterCatalog,
 	conditionType string,
 	conditionStatus metav1.ConditionStatus,
 ) error {

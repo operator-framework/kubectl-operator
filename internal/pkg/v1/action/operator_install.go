@@ -41,7 +41,7 @@ func (i *OperatorInstall) Run(ctx context.Context) (*olmv1.ClusterExtension, err
 		Spec: olmv1.ClusterExtensionSpec{
 			Source: olmv1.SourceConfig{
 				SourceType: "Catalog",
-				Catalog: &olmv1.CatalogSource{
+				Catalog: &olmv1.CatalogFilter{
 					PackageName: i.Package,
 				},
 			},

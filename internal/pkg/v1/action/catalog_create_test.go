@@ -10,7 +10,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	olmv1catalogd "github.com/operator-framework/catalogd/api/v1"
+	olmv1 "github.com/operator-framework/operator-controller/api/v1"
 
 	internalaction "github.com/operator-framework/kubectl-operator/internal/pkg/v1/action"
 )
@@ -19,31 +19,31 @@ type mockCreateClient struct {
 	*mockCreator
 	*mockGetter
 	*mockDeleter
-	createCatalog *olmv1catalogd.ClusterCatalog
+	createCatalog *olmv1.ClusterCatalog
 }
 
 func (mcc *mockCreateClient) Create(ctx context.Context, obj client.Object, opts ...client.CreateOption) error {
-	mcc.createCatalog = obj.(*olmv1catalogd.ClusterCatalog)
+	mcc.createCatalog = obj.(*olmv1.ClusterCatalog)
 	return mcc.mockCreator.Create(ctx, obj, opts...)
 }
 
 var _ = Describe("CatalogCreate", func() {
 	pollInterval := 20
-	expectedCatalog := olmv1catalogd.ClusterCatalog{
+	expectedCatalog := olmv1.ClusterCatalog{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   "testcatalog",
 			Labels: map[string]string{"a": "b"},
 		},
-		Spec: olmv1catalogd.ClusterCatalogSpec{
-			Source: olmv1catalogd.CatalogSource{
-				Type: olmv1catalogd.SourceTypeImage,
-				Image: &olmv1catalogd.ImageSource{
+		Spec: olmv1.ClusterCatalogSpec{
+			Source: olmv1.CatalogSource{
+				Type: olmv1.SourceTypeImage,
+				Image: &olmv1.ImageSource{
 					Ref:                 "testcatalog:latest",
 					PollIntervalMinutes: &pollInterval,
 				},
 			},
 			Priority:         77,
-			AvailabilityMode: olmv1catalogd.AvailabilityModeAvailable,
+			AvailabilityMode: olmv1.AvailabilityModeAvailable,
 		},
 	}
 
@@ -100,7 +100,7 @@ var _ = Describe("CatalogCreate", func() {
 	})
 })
 
-func validateCreateCatalog(actual, expected *olmv1catalogd.ClusterCatalog) {
+func validateCreateCatalog(actual, expected *olmv1.ClusterCatalog) {
 	Expect(actual.Spec.Source.Image.Ref).To(Equal(expected.Spec.Source.Image.Ref))
 	Expect(actual.Spec.Source.Image.PollIntervalMinutes).To(Equal(expected.Spec.Source.Image.PollIntervalMinutes))
 	Expect(actual.Spec.AvailabilityMode).To(Equal(expected.Spec.AvailabilityMode))

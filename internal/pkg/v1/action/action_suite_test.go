@@ -11,7 +11,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	olmv1catalogd "github.com/operator-framework/catalogd/api/v1"
+	olmv1 "github.com/operator-framework/operator-controller/api/v1"
 )
 
 func TestCommand(t *testing.T) {
@@ -58,8 +58,8 @@ func setupTestCatalogs(n int) []client.Object {
 	return result
 }
 
-func newClusterCatalog(name string) *olmv1catalogd.ClusterCatalog {
-	return &olmv1catalogd.ClusterCatalog{
+func newClusterCatalog(name string) *olmv1.ClusterCatalog {
+	return &olmv1.ClusterCatalog{
 		ObjectMeta: metav1.ObjectMeta{Name: name},
 	}
 }

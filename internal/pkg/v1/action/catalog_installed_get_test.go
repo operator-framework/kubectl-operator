@@ -10,7 +10,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
-	olmv1catalogd "github.com/operator-framework/catalogd/api/v1"
+	olmv1 "github.com/operator-framework/operator-controller/api/v1"
 
 	internalaction "github.com/operator-framework/kubectl-operator/internal/pkg/v1/action"
 	"github.com/operator-framework/kubectl-operator/pkg/action"
@@ -43,7 +43,7 @@ var _ = Describe("CatalogInstalledGet", func() {
 		Expect(catalogs).To(HaveLen(3))
 
 		for _, testCatalogName := range []string{"cat1", "cat2", "cat3"} {
-			Expect(slices.ContainsFunc(catalogs, func(cat olmv1catalogd.ClusterCatalog) bool {
+			Expect(slices.ContainsFunc(catalogs, func(cat olmv1.ClusterCatalog) bool {
 				return cat.Name == testCatalogName
 			})).To(BeTrue())
 		}

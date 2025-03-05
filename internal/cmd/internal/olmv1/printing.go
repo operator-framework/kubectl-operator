@@ -12,7 +12,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/duration"
 
-	catalogdv1 "github.com/operator-framework/catalogd/api/v1"
 	olmv1 "github.com/operator-framework/operator-controller/api/v1"
 )
 
@@ -36,7 +35,7 @@ func printFormattedOperators(extensions ...olmv1.ClusterExtension) {
 	_ = tw.Flush()
 }
 
-func printFormattedCatalogs(catalogs ...catalogdv1.ClusterCatalog) {
+func printFormattedCatalogs(catalogs ...olmv1.ClusterCatalog) {
 	tw := tabwriter.NewWriter(os.Stdout, 3, 4, 2, ' ', 0)
 	_, _ = fmt.Fprint(tw, "NAME\tAVAILABILITY\tPRIORITY\tLASTUNPACKED\tSERVING\tAGE\n")
 
@@ -49,7 +48,7 @@ func printFormattedCatalogs(catalogs ...catalogdv1.ClusterCatalog) {
 			string(cat.Spec.AvailabilityMode),
 			cat.Spec.Priority,
 			duration.HumanDuration(lastUnpacked),
-			status(cat.Status.Conditions, catalogdv1.TypeServing),
+			status(cat.Status.Conditions, olmv1.TypeServing),
 			duration.HumanDuration(age),
 		)
 	}
@@ -69,8 +68,8 @@ func sortOperators(extensions []olmv1.ClusterExtension) {
 
 // sortCatalogs sorts catalogs in place and uses the following sorting order:
 // availability (asc), priority (desc), name (asc)
-func sortCatalogs(catalogs []catalogdv1.ClusterCatalog) {
-	slices.SortFunc(catalogs, func(a, b catalogdv1.ClusterCatalog) int {
+func sortCatalogs(catalogs []olmv1.ClusterCatalog) {
+	slices.SortFunc(catalogs, func(a, b olmv1.ClusterCatalog) int {
 		return cmp.Or(
 			cmp.Compare(a.Spec.AvailabilityMode, b.Spec.AvailabilityMode),
 			-cmp.Compare(a.Spec.Priority, b.Spec.Priority),
