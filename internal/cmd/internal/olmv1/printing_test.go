@@ -6,17 +6,16 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	olmv1catalogd "github.com/operator-framework/catalogd/api/v1"
 	olmv1 "github.com/operator-framework/operator-controller/api/v1"
 )
 
 var _ = Describe("SortCatalogs", func() {
 	It("sorts catalogs in correct order", func() {
-		catalogs := []olmv1catalogd.ClusterCatalog{
-			newClusterCatalog("cat-unavailable-0", olmv1catalogd.AvailabilityModeUnavailable, 0),
-			newClusterCatalog("cat-unavailable-1", olmv1catalogd.AvailabilityModeUnavailable, 1),
-			newClusterCatalog("cat-available-0", olmv1catalogd.AvailabilityModeAvailable, 0),
-			newClusterCatalog("cat-available-1", olmv1catalogd.AvailabilityModeAvailable, 1),
+		catalogs := []olmv1.ClusterCatalog{
+			newClusterCatalog("cat-unavailable-0", olmv1.AvailabilityModeUnavailable, 0),
+			newClusterCatalog("cat-unavailable-1", olmv1.AvailabilityModeUnavailable, 1),
+			newClusterCatalog("cat-available-0", olmv1.AvailabilityModeAvailable, 0),
+			newClusterCatalog("cat-available-1", olmv1.AvailabilityModeAvailable, 1),
 		}
 		sortCatalogs(catalogs)
 
@@ -46,10 +45,10 @@ var _ = Describe("SortOperators", func() {
 	})
 })
 
-func newClusterCatalog(name string, availabilityMode olmv1catalogd.AvailabilityMode, priority int32) olmv1catalogd.ClusterCatalog {
-	return olmv1catalogd.ClusterCatalog{
+func newClusterCatalog(name string, availabilityMode olmv1.AvailabilityMode, priority int32) olmv1.ClusterCatalog {
+	return olmv1.ClusterCatalog{
 		ObjectMeta: metav1.ObjectMeta{Name: name},
-		Spec:       olmv1catalogd.ClusterCatalogSpec{AvailabilityMode: availabilityMode, Priority: priority},
+		Spec:       olmv1.ClusterCatalogSpec{AvailabilityMode: availabilityMode, Priority: priority},
 	}
 }
 
