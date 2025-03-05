@@ -6,7 +6,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	olmv1catalogd "github.com/operator-framework/catalogd/api/v1"
+	olmv1 "github.com/operator-framework/operator-controller/api/v1"
 
 	"github.com/operator-framework/kubectl-operator/pkg/action"
 )
@@ -25,10 +25,10 @@ func NewCatalogInstalledGet(cfg *action.Configuration) *CatalogInstalledGet {
 	}
 }
 
-func (i *CatalogInstalledGet) Run(ctx context.Context) ([]olmv1catalogd.ClusterCatalog, error) {
+func (i *CatalogInstalledGet) Run(ctx context.Context) ([]olmv1.ClusterCatalog, error) {
 	// get
 	if i.CatalogName != "" {
-		var result olmv1catalogd.ClusterCatalog
+		var result olmv1.ClusterCatalog
 
 		opKey := types.NamespacedName{Name: i.CatalogName}
 		err := i.config.Client.Get(ctx, opKey, &result)
@@ -36,11 +36,11 @@ func (i *CatalogInstalledGet) Run(ctx context.Context) ([]olmv1catalogd.ClusterC
 			return nil, err
 		}
 
-		return []olmv1catalogd.ClusterCatalog{result}, nil
+		return []olmv1.ClusterCatalog{result}, nil
 	}
 
 	// list
-	var result olmv1catalogd.ClusterCatalogList
+	var result olmv1.ClusterCatalogList
 	err := i.config.Client.List(ctx, &result, &client.ListOptions{})
 
 	return result.Items, err

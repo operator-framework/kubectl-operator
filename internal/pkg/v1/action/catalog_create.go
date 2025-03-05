@@ -6,7 +6,7 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	olmv1catalogd "github.com/operator-framework/catalogd/api/v1"
+	olmv1 "github.com/operator-framework/operator-controller/api/v1"
 )
 
 type createClient interface {
@@ -44,9 +44,9 @@ func (i *CatalogCreate) Run(ctx context.Context) error {
 
 	var err error
 	if i.Available {
-		err = waitUntilCatalogStatusCondition(ctx, i.client, &catalog, olmv1catalogd.TypeServing, metav1.ConditionTrue)
+		err = waitUntilCatalogStatusCondition(ctx, i.client, &catalog, olmv1.TypeServing, metav1.ConditionTrue)
 	} else {
-		err = waitUntilCatalogStatusCondition(ctx, i.client, &catalog, olmv1catalogd.TypeServing, metav1.ConditionFalse)
+		err = waitUntilCatalogStatusCondition(ctx, i.client, &catalog, olmv1.TypeServing, metav1.ConditionFalse)
 	}
 
 	if err != nil {
@@ -59,26 +59,26 @@ func (i *CatalogCreate) Run(ctx context.Context) error {
 	return nil
 }
 
-func (i *CatalogCreate) buildCatalog() olmv1catalogd.ClusterCatalog {
-	catalog := olmv1catalogd.ClusterCatalog{
+func (i *CatalogCreate) buildCatalog() olmv1.ClusterCatalog {
+	catalog := olmv1.ClusterCatalog{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   i.CatalogName,
 			Labels: i.Labels,
 		},
-		Spec: olmv1catalogd.ClusterCatalogSpec{
-			Source: olmv1catalogd.CatalogSource{
-				Type: olmv1catalogd.SourceTypeImage,
-				Image: &olmv1catalogd.ImageSource{
+		Spec: olmv1.ClusterCatalogSpec{
+			Source: olmv1.CatalogSource{
+				Type: olmv1.SourceTypeImage,
+				Image: &olmv1.ImageSource{
 					Ref:                 i.ImageSourceRef,
 					PollIntervalMinutes: &i.PollIntervalMinutes,
 				},
 			},
 			Priority:         i.Priority,
-			AvailabilityMode: olmv1catalogd.AvailabilityModeAvailable,
+			AvailabilityMode: olmv1.AvailabilityModeAvailable,
 		},
 	}
 	if !i.Available {
-		catalog.Spec.AvailabilityMode = olmv1catalogd.AvailabilityModeUnavailable
+		catalog.Spec.AvailabilityMode = olmv1.AvailabilityModeUnavailable
 	}
 
 	return catalog
