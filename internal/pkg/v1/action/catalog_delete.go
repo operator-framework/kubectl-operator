@@ -28,7 +28,7 @@ func NewCatalogDelete(cfg *action.Configuration) *CatalogDelete {
 func (cd *CatalogDelete) Run(ctx context.Context) ([]string, error) {
 	// validate
 	if cd.DeleteAll && cd.CatalogName != "" {
-		return nil, errNameAndSelector
+		return nil, ErrNameAndSelector
 	}
 
 	// delete single, specified catalog
@@ -42,7 +42,7 @@ func (cd *CatalogDelete) Run(ctx context.Context) ([]string, error) {
 		return nil, err
 	}
 	if len(catatalogList.Items) == 0 {
-		return nil, errNoResourcesFound
+		return nil, ErrNoResourcesFound
 	}
 
 	errs := make([]error, 0, len(catatalogList.Items))

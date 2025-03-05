@@ -10,6 +10,10 @@ type creator interface {
 	Create(ctx context.Context, obj client.Object, opts ...client.CreateOption) error
 }
 
+type updater interface {
+	Update(ctx context.Context, obj client.Object, opts ...client.UpdateOption) error
+}
+
 type deleter interface {
 	Delete(ctx context.Context, obj client.Object, opts ...client.DeleteOption) error
 }

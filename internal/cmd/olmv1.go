@@ -38,12 +38,22 @@ func newOlmV1Cmd(cfg *action.Configuration) *cobra.Command {
 	}
 	deleteCmd.AddCommand(olmv1.NewCatalogDeleteCmd(cfg))
 
+	updateCmd := &cobra.Command{
+		Use:   "update",
+		Short: "Update a resource",
+		Long:  "Update a resource",
+	}
+	updateCmd.AddCommand(
+		olmv1.NewOperatorUpdateCmd(cfg),
+	)
+
 	cmd.AddCommand(
 		olmv1.NewOperatorInstallCmd(cfg),
 		olmv1.NewOperatorUninstallCmd(cfg),
 		getCmd,
 		createCmd,
 		deleteCmd,
+		updateCmd,
 	)
 
 	return cmd
