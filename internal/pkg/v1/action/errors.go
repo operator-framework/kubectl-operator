@@ -3,6 +3,7 @@ package action
 import "errors"
 
 var (
-	errNoResourcesFound = errors.New("no resources found")
-	errNameAndSelector  = errors.New("name cannot be provided when a selector is specified")
+	ErrNoResourcesFound = errors.New("no resources found")
+	ErrNameAndSelector  = errors.New("name cannot be provided when a selector is specified")
+	ErrNoChange         = errors.New("no changes detected - operator already in desired state")
 )
