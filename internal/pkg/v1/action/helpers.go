@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"slices"
+	"strings"
 	"time"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -46,20 +47,26 @@ func waitUntilCatalogStatusCondition(
 	})
 }
 
-func waitForDeletion(ctx context.Context, cl client.Client, obj client.Object) error {
-	key := objectKeyForObject(obj)
-	if err := wait.PollUntilContextCancel(ctx, pollInterval, true, func(conditionCtx context.Context) (bool, error) {
-		if err := cl.Get(conditionCtx, key, obj); apierrors.IsNotFound(err) {
-			return true, nil
-		} else if err != nil {
+func waitUntilOperatorStatusCondition(
+	ctx context.Context,
+	cl getter,
+	operator *olmv1.ClusterExtension,
+	conditionType string,
+	conditionStatus metav1.ConditionStatus,
+) error {
+	opKey := objectKeyForObject(operator)
+	return wait.PollUntilContextCancel(ctx, pollInterval, true, func(conditionCtx context.Context) (bool, error) {
+		if err := cl.Get(conditionCtx, opKey, operator); err != nil {
 			return false, err
 		}
-		return false, nil
-	}); err != nil {
-		return fmt.Errorf("waiting for deletion: %w", err)
-	}
 
-	return nil
+		if slices.ContainsFunc(operator.Status.Conditions, func(cond metav1.Condition) bool {
+			return cond.Type == conditionType && cond.Status == conditionStatus
+		}) {
+			return true, nil
+		}
+		return false, nil
+	})
 }
 
 func deleteWithTimeout(cl deleter, obj client.Object, timeout time.Duration) error {
@@ -70,5 +77,24 @@ func deleteWithTimeout(cl deleter, obj client.Object, timeout time.Duration) err
 		return err
 	}
 
+	return nil
+}
+
+func waitForDeletion(ctx context.Context, cl client.Client, objs ...client.Object) error {
+	for _, obj := range objs {
+		obj := obj
+		lowerKind := strings.ToLower(obj.GetObjectKind().GroupVersionKind().Kind)
+		key := objectKeyForObject(obj)
+		if err := wait.PollUntilContextCancel(ctx, pollInterval, true, func(conditionCtx context.Context) (bool, error) {
+			if err := cl.Get(conditionCtx, key, obj); apierrors.IsNotFound(err) {
+				return true, nil
+			} else if err != nil {
+				return false, err
+			}
+			return false, nil
+		}); err != nil {
+			return fmt.Errorf("wait for %s %q deleted: %v", lowerKind, key.Name, err)
+		}
+	}
 	return nil
 }
