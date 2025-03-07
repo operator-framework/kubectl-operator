@@ -8,30 +8,21 @@ import (
 	. "github.com/onsi/gomega"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	olmv1 "github.com/operator-framework/operator-controller/api/v1"
 
 	internalaction "github.com/operator-framework/kubectl-operator/internal/pkg/v1/action"
+	"github.com/operator-framework/kubectl-operator/pkg/action"
 )
 
-type mockCreateClient struct {
-	*mockCreator
-	*mockGetter
-	*mockDeleter
-	createCatalog *olmv1.ClusterCatalog
-}
-
-func (mcc *mockCreateClient) Create(ctx context.Context, obj client.Object, opts ...client.CreateOption) error {
-	mcc.createCatalog = obj.(*olmv1.ClusterCatalog)
-	return mcc.mockCreator.Create(ctx, obj, opts...)
-}
-
 var _ = Describe("CatalogCreate", func() {
+	catalogName := "testcatalog"
 	pollInterval := 20
 	expectedCatalog := olmv1.ClusterCatalog{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:   "testcatalog",
+			Name:   catalogName,
 			Labels: map[string]string{"a": "b"},
 		},
 		Spec: olmv1.ClusterCatalogSpec{
@@ -49,9 +40,10 @@ var _ = Describe("CatalogCreate", func() {
 
 	It("fails creating catalog", func() {
 		expectedErr := errors.New("create failed")
-		mockClient := &mockCreateClient{&mockCreator{createErr: expectedErr}, nil, nil, &expectedCatalog}
+		testClient := fakeClient{createErr: expectedErr}
+		Expect(testClient.Initialize()).To(Succeed())
 
-		creator := internalaction.NewCatalogCreate(mockClient)
+		creator := internalaction.NewCatalogCreate(&action.Configuration{Client: testClient})
 		creator.Available = true
 		creator.CatalogName = expectedCatalog.Name
 		creator.ImageSourceRef = expectedCatalog.Spec.Source.Image.Ref
@@ -62,41 +54,78 @@ var _ = Describe("CatalogCreate", func() {
 
 		Expect(err).NotTo(BeNil())
 		Expect(err).To(MatchError(expectedErr))
-		Expect(mockClient.createCalled).To(Equal(1))
-
-		// there is no way of testing a happy path in unit tests because we have no way to
-		// set/mock the catalog status condition we're waiting for in waitUntilCatalogStatusCondition
-		// but we can still at least verify that CR would have been created with expected attribute values
-		validateCreateCatalog(mockClient.createCatalog, &expectedCatalog)
+		Expect(testClient.createCalled).To(Equal(1))
 	})
 
 	It("fails waiting for created catalog status, successfully cleans up", func() {
 		expectedErr := errors.New("get failed")
-		mockClient := &mockCreateClient{&mockCreator{}, &mockGetter{getErr: expectedErr}, &mockDeleter{}, nil}
+		testClient := fakeClient{getErr: expectedErr}
+		Expect(testClient.Initialize()).To(Succeed())
 
-		creator := internalaction.NewCatalogCreate(mockClient)
+		creator := internalaction.NewCatalogCreate(&action.Configuration{Client: testClient})
+		// fakeClient requires at least the catalogName to be set to run
+		creator.CatalogName = expectedCatalog.Name
 		err := creator.Run(context.TODO())
 
 		Expect(err).NotTo(BeNil())
 		Expect(err).To(MatchError(expectedErr))
-		Expect(mockClient.createCalled).To(Equal(1))
-		Expect(mockClient.getCalled).To(Equal(1))
-		Expect(mockClient.deleteCalled).To(Equal(1))
+		Expect(testClient.createCalled).To(Equal(1))
+		Expect(testClient.getCalled).To(Equal(1))
+		Expect(testClient.deleteCalled).To(Equal(1))
 	})
 
 	It("fails waiting for created catalog status, fails clean up", func() {
 		getErr := errors.New("get failed")
 		deleteErr := errors.New("delete failed")
-		mockClient := &mockCreateClient{&mockCreator{}, &mockGetter{getErr: getErr}, &mockDeleter{deleteErr: deleteErr}, nil}
+		testClient := fakeClient{deleteErr: deleteErr, getErr: getErr}
+		Expect(testClient.Initialize()).To(Succeed())
 
-		creator := internalaction.NewCatalogCreate(mockClient)
+		creator := internalaction.NewCatalogCreate(&action.Configuration{Client: testClient})
+		// fakeClient requires at least the catalogName to be set to run
+		creator.CatalogName = expectedCatalog.Name
 		err := creator.Run(context.TODO())
 
 		Expect(err).NotTo(BeNil())
 		Expect(err).To(MatchError(getErr))
-		Expect(mockClient.createCalled).To(Equal(1))
-		Expect(mockClient.getCalled).To(Equal(1))
-		Expect(mockClient.deleteCalled).To(Equal(1))
+		Expect(testClient.createCalled).To(Equal(1))
+		Expect(testClient.getCalled).To(Equal(1))
+		Expect(testClient.deleteCalled).To(Equal(1))
+	})
+	It("succeeds creating catalog", func() {
+		testClient := fakeClient{
+			transformers: []objectTransformer{
+				{
+					verb:      verbCreate,
+					objectKey: types.NamespacedName{Name: catalogName},
+					transformFunc: func(obj *client.Object) {
+						if obj == nil {
+							return
+						}
+						catalogObj, ok := (*obj).(*olmv1.ClusterCatalog)
+						if !ok {
+							return
+						}
+						catalogObj.Status.Conditions = []metav1.Condition{{Type: olmv1.TypeServing, Status: metav1.ConditionTrue}}
+					},
+				},
+			},
+		}
+		Expect(testClient.Initialize()).To(Succeed())
+
+		creator := internalaction.NewCatalogCreate(&action.Configuration{Client: testClient})
+		creator.Available = true
+		creator.CatalogName = expectedCatalog.Name
+		creator.ImageSourceRef = expectedCatalog.Spec.Source.Image.Ref
+		creator.Priority = expectedCatalog.Spec.Priority
+		creator.Labels = expectedCatalog.Labels
+		creator.PollIntervalMinutes = *expectedCatalog.Spec.Source.Image.PollIntervalMinutes
+		Expect(creator.Run(context.TODO())).To(Succeed())
+
+		Expect(testClient.createCalled).To(Equal(1))
+
+		actualCatalog := &olmv1.ClusterCatalog{TypeMeta: metav1.TypeMeta{Kind: "ClusterCatalog", APIVersion: "olm.operatorframework.io/v1"}}
+		Expect(testClient.Client.Get(context.TODO(), types.NamespacedName{Name: catalogName}, actualCatalog)).To(Succeed())
+		validateCreateCatalog(actualCatalog, &expectedCatalog)
 	})
 })
 

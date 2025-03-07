@@ -6,10 +6,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-type creator interface {
-	Create(ctx context.Context, obj client.Object, opts ...client.CreateOption) error
-}
-
 type deleter interface {
 	Delete(ctx context.Context, obj client.Object, opts ...client.DeleteOption) error
 }

@@ -12,8 +12,16 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+	"sigs.k8s.io/controller-runtime/pkg/client/interceptor"
 
 	olmv1 "github.com/operator-framework/operator-controller/api/v1"
+
+	"github.com/operator-framework/kubectl-operator/pkg/action"
+)
+
+const (
+	verbCreate = "create"
 )
 
 func TestCommand(t *testing.T) {
@@ -21,34 +29,68 @@ func TestCommand(t *testing.T) {
 	RunSpecs(t, "Internal v1 action Suite")
 }
 
-type mockCreator struct {
-	createErr    error
-	createCalled int
-}
-
-func (mc *mockCreator) Create(ctx context.Context, obj client.Object, opts ...client.CreateOption) error {
-	mc.createCalled++
-	return mc.createErr
-}
-
-type mockDeleter struct {
-	deleteErr    error
-	deleteCalled int
-}
-
-func (md *mockDeleter) Delete(ctx context.Context, obj client.Object, opts ...client.DeleteOption) error {
-	md.deleteCalled++
-	return md.deleteErr
-}
-
-type mockGetter struct {
+type fakeClient struct {
+	// Expected errors for create/delete/get.
+	createErr error
+	deleteErr error
 	getErr    error
-	getCalled int
+
+	// counters for number of create/delete/get calls seen.
+	createCalled int
+	deleteCalled int
+	getCalled    int
+
+	// transformer functions for applying changes to an object
+	// matching the objectKey prior to an operation of the
+	// type `verb` (get/create/delete), where the operation is
+	// not set to error fail with a corresponding error (getErr/createErr/deleteErr).
+	transformers []objectTransformer
+	client.Client
 }
 
-func (mg *mockGetter) Get(ctx context.Context, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error {
-	mg.getCalled++
-	return mg.getErr
+type objectTransformer struct {
+	verb          string
+	objectKey     client.ObjectKey
+	transformFunc func(obj *client.Object)
+}
+
+func (c *fakeClient) Initialize() error {
+	scheme, err := action.NewScheme()
+	if err != nil {
+		return err
+	}
+	clientBuilder := fake.NewClientBuilder().WithInterceptorFuncs(interceptor.Funcs{
+		Create: func(ctx context.Context, client client.WithWatch, obj client.Object, opts ...client.CreateOption) error {
+			c.createCalled++
+			if c.createErr != nil {
+				return c.createErr
+			}
+			objKey := types.NamespacedName{Name: obj.GetName(), Namespace: obj.GetNamespace()}
+			for _, t := range c.transformers {
+				if t.verb == verbCreate && objKey == t.objectKey && t.transformFunc != nil {
+					t.transformFunc(&obj)
+				}
+			}
+			// make sure to plumb request through to underlying client
+			return client.Create(ctx, obj, opts...)
+		},
+		Delete: func(ctx context.Context, client client.WithWatch, obj client.Object, opts ...client.DeleteOption) error {
+			c.deleteCalled++
+			if c.deleteErr != nil {
+				return c.deleteErr
+			}
+			return client.Delete(ctx, obj, opts...)
+		},
+		Get: func(ctx context.Context, client client.WithWatch, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error {
+			c.getCalled++
+			if c.getErr != nil {
+				return c.getErr
+			}
+			return client.Get(ctx, key, obj, opts...)
+		},
+	}).WithScheme(scheme)
+	c.Client = clientBuilder.Build()
+	return nil
 }
 
 func setupTestCatalogs(n int) []client.Object {

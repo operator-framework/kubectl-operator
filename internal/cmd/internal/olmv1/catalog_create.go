@@ -13,7 +13,7 @@ import (
 
 // NewCatalogCreateCmd allows creating a new catalog
 func NewCatalogCreateCmd(cfg *action.Configuration) *cobra.Command {
-	i := v1action.NewCatalogCreate(cfg.Client)
+	i := v1action.NewCatalogCreate(cfg)
 	i.Logf = log.Printf
 
 	cmd := &cobra.Command{

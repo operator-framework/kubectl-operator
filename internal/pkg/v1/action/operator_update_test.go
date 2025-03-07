@@ -145,8 +145,9 @@ var _ = Describe("OperatorUpdate", func() {
 		cfg := setupEnv(testExt, buildExtension("test2"), buildExtension("test3"))
 
 		go func() {
-			Eventually(updateOperatorConditionStatus("test", cfg.Client, olmv1.TypeInstalled, metav1.ConditionTrue)).
-				WithTimeout(5 * time.Second).WithPolling(200 * time.Second).
+			Eventually(updateOperatorConditionStatus).
+				WithArguments("test", cfg.Client, olmv1.TypeInstalled, metav1.ConditionTrue).
+				WithTimeout(5 * time.Second).WithPolling(200 * time.Millisecond).
 				Should(Succeed())
 		}()
 
