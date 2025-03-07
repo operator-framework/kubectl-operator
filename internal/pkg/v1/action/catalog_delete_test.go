@@ -10,7 +10,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
-	olmv1catalogd "github.com/operator-framework/catalogd/api/v1"
+	olmv1 "github.com/operator-framework/operator-controller/api/v1"
 
 	internalaction "github.com/operator-framework/kubectl-operator/internal/pkg/v1/action"
 	"github.com/operator-framework/kubectl-operator/pkg/action"
@@ -96,14 +96,14 @@ var _ = Describe("CatalogDelete", func() {
 })
 
 func validateExistingCatalogs(c client.Client, wantedNames []string) {
-	var catalogsList olmv1catalogd.ClusterCatalogList
+	var catalogsList olmv1.ClusterCatalogList
 	err := c.List(context.TODO(), &catalogsList)
 	Expect(err).To(BeNil())
 
 	catalogs := catalogsList.Items
 	Expect(catalogs).To(HaveLen(len(wantedNames)))
 	for _, wantedName := range wantedNames {
-		Expect(slices.ContainsFunc(catalogs, func(cat olmv1catalogd.ClusterCatalog) bool {
+		Expect(slices.ContainsFunc(catalogs, func(cat olmv1.ClusterCatalog) bool {
 			return cat.Name == wantedName
 		})).To(BeTrue())
 	}

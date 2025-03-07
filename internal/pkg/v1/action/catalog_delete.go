@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	olmv1catalogd "github.com/operator-framework/catalogd/api/v1"
+	olmv1 "github.com/operator-framework/operator-controller/api/v1"
 
 	"github.com/operator-framework/kubectl-operator/pkg/action"
 )
@@ -37,7 +37,7 @@ func (cd *CatalogDelete) Run(ctx context.Context) ([]string, error) {
 	}
 
 	// delete all existing catalogs
-	var catatalogList olmv1catalogd.ClusterCatalogList
+	var catatalogList olmv1.ClusterCatalogList
 	if err := cd.config.Client.List(ctx, &catatalogList); err != nil {
 		return nil, err
 	}
@@ -58,7 +58,7 @@ func (cd *CatalogDelete) Run(ctx context.Context) ([]string, error) {
 }
 
 func (cd *CatalogDelete) deleteCatalog(ctx context.Context, name string) error {
-	op := &olmv1catalogd.ClusterCatalog{}
+	op := &olmv1.ClusterCatalog{}
 	op.SetName(name)
 
 	if err := cd.config.Client.Delete(ctx, op); err != nil {
