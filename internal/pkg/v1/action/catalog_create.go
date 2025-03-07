@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/operator-framework/kubectl-operator/pkg/action"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	olmv1 "github.com/operator-framework/operator-controller/api/v1"
@@ -16,7 +17,7 @@ type createClient interface {
 }
 
 type CatalogCreate struct {
-	client         createClient
+	config         *action.Configuration
 	CatalogName    string
 	ImageSourceRef string
 
@@ -29,28 +30,28 @@ type CatalogCreate struct {
 	Logf func(string, ...interface{})
 }
 
-func NewCatalogCreate(client createClient) *CatalogCreate {
+func NewCatalogCreate(cfg *action.Configuration) *CatalogCreate {
 	return &CatalogCreate{
-		client: client,
+		config: cfg,
 		Logf:   func(string, ...interface{}) {},
 	}
 }
 
 func (i *CatalogCreate) Run(ctx context.Context) error {
 	catalog := i.buildCatalog()
-	if err := i.client.Create(ctx, &catalog); err != nil {
+	if err := i.config.Client.Create(ctx, &catalog); err != nil {
 		return err
 	}
 
 	var err error
 	if i.Available {
-		err = waitUntilCatalogStatusCondition(ctx, i.client, &catalog, olmv1.TypeServing, metav1.ConditionTrue)
+		err = waitUntilCatalogStatusCondition(ctx, i.config.Client, &catalog, olmv1.TypeServing, metav1.ConditionTrue)
 	} else {
-		err = waitUntilCatalogStatusCondition(ctx, i.client, &catalog, olmv1.TypeServing, metav1.ConditionFalse)
+		err = waitUntilCatalogStatusCondition(ctx, i.config.Client, &catalog, olmv1.TypeServing, metav1.ConditionFalse)
 	}
 
 	if err != nil {
-		if cleanupErr := deleteWithTimeout(i.client, &catalog, i.CleanupTimeout); cleanupErr != nil {
+		if cleanupErr := deleteWithTimeout(i.config.Client, &catalog, i.CleanupTimeout); cleanupErr != nil {
 			i.Logf("cleaning up failed catalog: %v", cleanupErr)
 		}
 		return err

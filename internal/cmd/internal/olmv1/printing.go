@@ -21,11 +21,16 @@ func printFormattedOperators(extensions ...olmv1.ClusterExtension) {
 
 	sortOperators(extensions)
 	for _, ext := range extensions {
+		var bundleName, bundleVersion string
+		if ext.Status.Install != nil {
+			bundleName = ext.Status.Install.Bundle.Name
+			bundleVersion = ext.Status.Install.Bundle.Version
+		}
 		age := time.Since(ext.CreationTimestamp.Time)
 		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
 			ext.Name,
-			ext.Status.Install.Bundle.Name,
-			ext.Status.Install.Bundle.Version,
+			bundleName,
+			bundleVersion,
 			ext.Spec.Source.SourceType,
 			status(ext.Status.Conditions, olmv1.TypeInstalled),
 			status(ext.Status.Conditions, olmv1.TypeProgressing),
@@ -41,13 +46,16 @@ func printFormattedCatalogs(catalogs ...olmv1.ClusterCatalog) {
 
 	sortCatalogs(catalogs)
 	for _, cat := range catalogs {
+		var lastUnpacked string
+		if cat.Status.LastUnpacked != nil {
+			duration.HumanDuration(time.Since(cat.Status.LastUnpacked.Time))
+		}
 		age := time.Since(cat.CreationTimestamp.Time)
-		lastUnpacked := time.Since(cat.Status.LastUnpacked.Time)
 		_, _ = fmt.Fprintf(tw, "%s\t%s\t%d\t%s\t%s\t%s\n",
 			cat.Name,
 			string(cat.Spec.AvailabilityMode),
 			cat.Spec.Priority,
-			duration.HumanDuration(lastUnpacked),
+			lastUnpacked,
 			status(cat.Status.Conditions, olmv1.TypeServing),
 			duration.HumanDuration(age),
 		)
@@ -59,6 +67,9 @@ func printFormattedCatalogs(catalogs ...olmv1.ClusterCatalog) {
 // name (asc), version (desc)
 func sortOperators(extensions []olmv1.ClusterExtension) {
 	slices.SortFunc(extensions, func(a, b olmv1.ClusterExtension) int {
+		if a.Status.Install == nil || b.Status.Install == nil {
+			return cmp.Compare(a.Name, b.Name)
+		}
 		return cmp.Or(
 			cmp.Compare(a.Name, b.Name),
 			-semver.MustParse(a.Status.Install.Bundle.Version).Compare(semver.MustParse(b.Status.Install.Bundle.Version)),
