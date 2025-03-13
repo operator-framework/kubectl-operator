@@ -26,22 +26,22 @@ var _ = Describe("SortCatalogs", func() {
 	})
 })
 
-var _ = Describe("SortOperators", func() {
-	It("sorts operators in correct order", func() {
-		operators := []olmv1.ClusterExtension{
+var _ = Describe("SortExtensions", func() {
+	It("sorts extensions in correct order", func() {
+		extensions := []olmv1.ClusterExtension{
 			newClusterExtension("op-1", "1.0.0"),
 			newClusterExtension("op-1", "1.0.1"),
 			newClusterExtension("op-1", "1.0.1-rc4"),
 			newClusterExtension("op-1", "1.0.1-rc2"),
 			newClusterExtension("op-2", "2.0.0"),
 		}
-		sortOperators(operators)
+		sortExtensions(extensions)
 
-		Expect(operators[0].Status.Install.Bundle.Version).To(Equal("1.0.1"))
-		Expect(operators[1].Status.Install.Bundle.Version).To(Equal("1.0.1-rc4"))
-		Expect(operators[2].Status.Install.Bundle.Version).To(Equal("1.0.1-rc2"))
-		Expect(operators[3].Status.Install.Bundle.Version).To(Equal("1.0.0"))
-		Expect(operators[4].Status.Install.Bundle.Version).To(Equal("2.0.0"))
+		Expect(extensions[0].Status.Install.Bundle.Version).To(Equal("1.0.1"))
+		Expect(extensions[1].Status.Install.Bundle.Version).To(Equal("1.0.1-rc4"))
+		Expect(extensions[2].Status.Install.Bundle.Version).To(Equal("1.0.1-rc2"))
+		Expect(extensions[3].Status.Install.Bundle.Version).To(Equal("1.0.0"))
+		Expect(extensions[4].Status.Install.Bundle.Version).To(Equal("2.0.0"))
 	})
 })
 

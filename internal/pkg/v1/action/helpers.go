@@ -47,20 +47,20 @@ func waitUntilCatalogStatusCondition(
 	})
 }
 
-func waitUntilOperatorStatusCondition(
+func waitUntilExtensionStatusCondition(
 	ctx context.Context,
 	cl getter,
-	operator *olmv1.ClusterExtension,
+	extension *olmv1.ClusterExtension,
 	conditionType string,
 	conditionStatus metav1.ConditionStatus,
 ) error {
-	opKey := objectKeyForObject(operator)
+	opKey := objectKeyForObject(extension)
 	return wait.PollUntilContextCancel(ctx, pollInterval, true, func(conditionCtx context.Context) (bool, error) {
-		if err := cl.Get(conditionCtx, opKey, operator); err != nil {
+		if err := cl.Get(conditionCtx, opKey, extension); err != nil {
 			return false, err
 		}
 
-		if slices.ContainsFunc(operator.Status.Conditions, func(cond metav1.Condition) bool {
+		if slices.ContainsFunc(extension.Status.Conditions, func(cond metav1.Condition) bool {
 			return cond.Type == conditionType && cond.Status == conditionStatus
 		}) {
 			return true, nil

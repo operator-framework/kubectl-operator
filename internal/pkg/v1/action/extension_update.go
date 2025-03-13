@@ -16,7 +16,7 @@ import (
 	"github.com/operator-framework/kubectl-operator/pkg/action"
 )
 
-type OperatorUpdate struct {
+type ExtensionUpdate struct {
 	cfg *action.Configuration
 
 	Package string
@@ -36,14 +36,14 @@ type OperatorUpdate struct {
 	Logf func(string, ...interface{})
 }
 
-func NewOperatorUpdate(cfg *action.Configuration) *OperatorUpdate {
-	return &OperatorUpdate{
+func NewExtensionUpdate(cfg *action.Configuration) *ExtensionUpdate {
+	return &ExtensionUpdate{
 		cfg:  cfg,
 		Logf: func(string, ...interface{}) {},
 	}
 }
 
-func (ou *OperatorUpdate) Run(ctx context.Context) (*olmv1.ClusterExtension, error) {
+func (ou *ExtensionUpdate) Run(ctx context.Context) (*olmv1.ClusterExtension, error) {
 	var ext olmv1.ClusterExtension
 	var err error
 
@@ -80,14 +80,14 @@ func (ou *OperatorUpdate) Run(ctx context.Context) (*olmv1.ClusterExtension, err
 		return nil, err
 	}
 
-	if err := waitUntilOperatorStatusCondition(ctx, ou.cfg.Client, &ext, olmv1.TypeInstalled, metav1.ConditionTrue); err != nil {
-		return nil, fmt.Errorf("timed out waiting for operator: %w", err)
+	if err := waitUntilExtensionStatusCondition(ctx, ou.cfg.Client, &ext, olmv1.TypeInstalled, metav1.ConditionTrue); err != nil {
+		return nil, fmt.Errorf("timed out waiting for extension: %w", err)
 	}
 
 	return &ext, nil
 }
 
-func (ou *OperatorUpdate) setDefaults(ext olmv1.ClusterExtension) {
+func (ou *ExtensionUpdate) setDefaults(ext olmv1.ClusterExtension) {
 	if !ou.IgnoreUnset {
 		if ou.UpgradeConstraintPolicy == "" {
 			ou.UpgradeConstraintPolicy = string(olmv1.UpgradeConstraintPolicyCatalogProvided)
@@ -116,7 +116,7 @@ func (ou *OperatorUpdate) setDefaults(ext olmv1.ClusterExtension) {
 	}
 }
 
-func (ou *OperatorUpdate) needsUpdate(ext olmv1.ClusterExtension, constraintPolicy olmv1.UpgradeConstraintPolicy) bool {
+func (ou *ExtensionUpdate) needsUpdate(ext olmv1.ClusterExtension, constraintPolicy olmv1.UpgradeConstraintPolicy) bool {
 	catalogSrc := ext.Spec.Source.Catalog
 
 	// object string form is used for comparison to:
@@ -137,7 +137,7 @@ func (ou *OperatorUpdate) needsUpdate(ext olmv1.ClusterExtension, constraintPoli
 	return true
 }
 
-func (ou *OperatorUpdate) prepareUpdatedExtension(ext *olmv1.ClusterExtension, constraintPolicy olmv1.UpgradeConstraintPolicy) {
+func (ou *ExtensionUpdate) prepareUpdatedExtension(ext *olmv1.ClusterExtension, constraintPolicy olmv1.UpgradeConstraintPolicy) {
 	ext.SetLabels(ou.Labels)
 	ext.Spec.Source.Catalog.Version = ou.Version
 	ext.Spec.Source.Catalog.Selector = ou.parsedSelector

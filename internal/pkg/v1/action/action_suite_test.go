@@ -157,7 +157,7 @@ func buildExtension(packageName string, opts ...extensionOpt) *olmv1.ClusterExte
 	return ext
 }
 
-func updateOperatorConditionStatus(name string, cl client.Client, typ string, status metav1.ConditionStatus) error {
+func updateExtensionConditionStatus(name string, cl client.Client, typ string, status metav1.ConditionStatus) error {
 	var ext olmv1.ClusterExtension
 	key := types.NamespacedName{Name: name}
 

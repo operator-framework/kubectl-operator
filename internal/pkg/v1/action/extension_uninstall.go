@@ -13,7 +13,7 @@ import (
 	"github.com/operator-framework/kubectl-operator/pkg/action"
 )
 
-type OperatorUninstall struct {
+type ExtensionUninstall struct {
 	config *action.Configuration
 
 	Package string
@@ -21,18 +21,18 @@ type OperatorUninstall struct {
 	Logf func(string, ...interface{})
 }
 
-func NewOperatorUninstall(cfg *action.Configuration) *OperatorUninstall {
-	return &OperatorUninstall{
+func NewExtensionUninstall(cfg *action.Configuration) *ExtensionUninstall {
+	return &ExtensionUninstall{
 		config: cfg,
 		Logf:   func(string, ...interface{}) {},
 	}
 }
 
-func (u *OperatorUninstall) Run(ctx context.Context) error {
+func (u *ExtensionUninstall) Run(ctx context.Context) error {
 	opKey := types.NamespacedName{Name: u.Package}
 	op := &olmv1.ClusterExtension{}
 	op.SetName(opKey.Name)
-	op.SetGroupVersionKind(olmv1.GroupVersion.WithKind("Operator"))
+	op.SetGroupVersionKind(olmv1.GroupVersion.WithKind("Extension"))
 
 	lowerKind := strings.ToLower(op.GetObjectKind().GroupVersionKind().Kind)
 	if err := u.config.Client.Delete(ctx, op); err != nil && !apierrors.IsNotFound(err) {

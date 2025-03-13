@@ -14,7 +14,7 @@ import (
 	"github.com/operator-framework/kubectl-operator/pkg/action"
 )
 
-type OperatorInstall struct {
+type ExtensionInstall struct {
 	config *action.Configuration
 
 	Package string
@@ -22,17 +22,17 @@ type OperatorInstall struct {
 	Logf func(string, ...interface{})
 }
 
-func NewOperatorInstall(cfg *action.Configuration) *OperatorInstall {
-	return &OperatorInstall{
+func NewExtensionInstall(cfg *action.Configuration) *ExtensionInstall {
+	return &ExtensionInstall{
 		config: cfg,
 		Logf:   func(string, ...interface{}) {},
 	}
 }
 
-func (i *OperatorInstall) Run(ctx context.Context) (*olmv1.ClusterExtension, error) {
+func (i *ExtensionInstall) Run(ctx context.Context) (*olmv1.ClusterExtension, error) {
 	// TODO(developer): Lookup package information when the OLMv1 equivalent of the
 	//     packagemanifests API is available. That way, we can check to see if the
-	//     package is actually available to the cluster before creating the Operator
+	//     package is actually available to the cluster before creating the Extension
 	//     object.
 
 	opKey := types.NamespacedName{Name: i.Package}
@@ -51,9 +51,9 @@ func (i *OperatorInstall) Run(ctx context.Context) (*olmv1.ClusterExtension, err
 		return nil, err
 	}
 
-	// TODO(developer): Improve the logic in this poll wait once the Operator reconciler
+	// TODO(developer): Improve the logic in this poll wait once the Extension reconciler
 	//     and conditions types and reasons are improved. For now, this will stop waiting as
-	//     soon as a Ready condition is found, but we should probably wait until the Operator
+	//     soon as a Ready condition is found, but we should probably wait until the Extension
 	//     stops progressing.
 	// All Types will exist, so Ready may have a false Status. So, wait until
 	// Type=Ready,Status=True happens
@@ -68,7 +68,7 @@ func (i *OperatorInstall) Run(ctx context.Context) (*olmv1.ClusterExtension, err
 		}
 		return false, nil
 	}); err != nil {
-		return nil, fmt.Errorf("waiting for operator to become ready: %v", err)
+		return nil, fmt.Errorf("waiting for extension to become ready: %v", err)
 	}
 
 	return op, nil
