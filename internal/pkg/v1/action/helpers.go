@@ -80,9 +80,8 @@ func deleteWithTimeout(cl deleter, obj client.Object, timeout time.Duration) err
 	return nil
 }
 
-func waitForDeletion(ctx context.Context, cl client.Client, objs ...client.Object) error {
+func waitForDeletion(ctx context.Context, cl getter, objs ...client.Object) error {
 	for _, obj := range objs {
-		obj := obj
 		lowerKind := strings.ToLower(obj.GetObjectKind().GroupVersionKind().Kind)
 		key := objectKeyForObject(obj)
 		if err := wait.PollUntilContextCancel(ctx, pollInterval, true, func(conditionCtx context.Context) (bool, error) {
