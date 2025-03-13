@@ -18,7 +18,7 @@ import (
 	"github.com/operator-framework/kubectl-operator/pkg/action"
 )
 
-var _ = Describe("OperatorUpdate", func() {
+var _ = Describe("ExtensionUpdate", func() {
 	setupEnv := func(extensions ...client.Object) action.Configuration {
 		var cfg action.Configuration
 
@@ -35,10 +35,10 @@ var _ = Describe("OperatorUpdate", func() {
 		return cfg
 	}
 
-	It("fails finding existing operator", func() {
+	It("fails finding existing extension", func() {
 		cfg := setupEnv()
 
-		updater := internalaction.NewOperatorUpdate(&cfg)
+		updater := internalaction.NewExtensionUpdate(&cfg)
 		updater.Package = "does-not-exist"
 		ext, err := updater.Run(context.TODO())
 
@@ -47,10 +47,10 @@ var _ = Describe("OperatorUpdate", func() {
 		Expect(ext).To(BeNil())
 	})
 
-	It("fails to handle operator with non-catalog source type", func() {
+	It("fails to handle extension with non-catalog source type", func() {
 		cfg := setupEnv(buildExtension("test", withSourceType("unknown")))
 
-		updater := internalaction.NewOperatorUpdate(&cfg)
+		updater := internalaction.NewExtensionUpdate(&cfg)
 		updater.Package = "test"
 		ext, err := updater.Run(context.TODO())
 
@@ -59,14 +59,14 @@ var _ = Describe("OperatorUpdate", func() {
 		Expect(ext).To(BeNil())
 	})
 
-	It("fails because desired operator state matches current", func() {
+	It("fails because desired extension state matches current", func() {
 		cfg := setupEnv(buildExtension(
 			"test",
 			withSourceType(olmv1.SourceTypeCatalog),
 			withConstraintPolicy(string(olmv1.UpgradeConstraintPolicyCatalogProvided))),
 		)
 
-		updater := internalaction.NewOperatorUpdate(&cfg)
+		updater := internalaction.NewExtensionUpdate(&cfg)
 		updater.Package = "test"
 		ext, err := updater.Run(context.TODO())
 
@@ -75,7 +75,7 @@ var _ = Describe("OperatorUpdate", func() {
 		Expect(ext).To(BeNil())
 	})
 
-	It("fails because desired operator state matches current with IgnoreUnset enabled", func() {
+	It("fails because desired extension state matches current with IgnoreUnset enabled", func() {
 		cfg := setupEnv(buildExtension(
 			"test",
 			withSourceType(olmv1.SourceTypeCatalog),
@@ -85,7 +85,7 @@ var _ = Describe("OperatorUpdate", func() {
 			withVersion("10.0.4"),
 		))
 
-		updater := internalaction.NewOperatorUpdate(&cfg)
+		updater := internalaction.NewExtensionUpdate(&cfg)
 		updater.Package = "test"
 		updater.IgnoreUnset = true
 		ext, err := updater.Run(context.TODO())
@@ -95,14 +95,14 @@ var _ = Describe("OperatorUpdate", func() {
 		Expect(ext).To(BeNil())
 	})
 
-	It("fails validating operator version", func() {
+	It("fails validating extension version", func() {
 		cfg := setupEnv(buildExtension(
 			"test",
 			withSourceType(olmv1.SourceTypeCatalog),
 			withConstraintPolicy(string(olmv1.UpgradeConstraintPolicyCatalogProvided))),
 		)
 
-		updater := internalaction.NewOperatorUpdate(&cfg)
+		updater := internalaction.NewExtensionUpdate(&cfg)
 		updater.Package = "test"
 		updater.Version = "10-4"
 		ext, err := updater.Run(context.TODO())
@@ -112,7 +112,7 @@ var _ = Describe("OperatorUpdate", func() {
 		Expect(ext).To(BeNil())
 	})
 
-	It("fails updating operator", func() {
+	It("fails updating extension", func() {
 		testExt := buildExtension(
 			"test",
 			withSourceType(olmv1.SourceTypeCatalog),
@@ -123,7 +123,7 @@ var _ = Describe("OperatorUpdate", func() {
 		ctx, cancel := context.WithCancel(context.TODO())
 		cancel()
 
-		updater := internalaction.NewOperatorUpdate(&cfg)
+		updater := internalaction.NewExtensionUpdate(&cfg)
 		updater.Package = "test"
 		updater.Version = "10.0.4"
 		updater.Channels = []string{"a", "b"}
@@ -136,7 +136,7 @@ var _ = Describe("OperatorUpdate", func() {
 		Expect(ext).To(BeNil())
 	})
 
-	It("successfully updates operator", func() {
+	It("successfully updates extension", func() {
 		testExt := buildExtension(
 			"test",
 			withSourceType(olmv1.SourceTypeCatalog),
@@ -145,13 +145,13 @@ var _ = Describe("OperatorUpdate", func() {
 		cfg := setupEnv(testExt, buildExtension("test2"), buildExtension("test3"))
 
 		go func() {
-			Eventually(updateOperatorConditionStatus).
+			Eventually(updateExtensionConditionStatus).
 				WithArguments("test", cfg.Client, olmv1.TypeInstalled, metav1.ConditionTrue).
 				WithTimeout(5 * time.Second).WithPolling(200 * time.Millisecond).
 				Should(Succeed())
 		}()
 
-		updater := internalaction.NewOperatorUpdate(&cfg)
+		updater := internalaction.NewExtensionUpdate(&cfg)
 		updater.Package = "test"
 		updater.Version = "10.0.4"
 		updater.Channels = []string{"a", "b"}

@@ -11,25 +11,25 @@ import (
 	"github.com/operator-framework/kubectl-operator/pkg/action"
 )
 
-type OperatorInstalledGet struct {
-	config       *action.Configuration
-	OperatorName string
+type ExtensionInstalledGet struct {
+	config        *action.Configuration
+	ExtensionName string
 
 	Logf func(string, ...interface{})
 }
 
-func NewOperatorInstalledGet(cfg *action.Configuration) *OperatorInstalledGet {
-	return &OperatorInstalledGet{
+func NewExtensionInstalledGet(cfg *action.Configuration) *ExtensionInstalledGet {
+	return &ExtensionInstalledGet{
 		config: cfg,
 		Logf:   func(string, ...interface{}) {},
 	}
 }
 
-func (i *OperatorInstalledGet) Run(ctx context.Context) ([]olmv1.ClusterExtension, error) {
+func (i *ExtensionInstalledGet) Run(ctx context.Context) ([]olmv1.ClusterExtension, error) {
 	// get
-	if i.OperatorName != "" {
+	if i.ExtensionName != "" {
 		var result olmv1.ClusterExtension
-		opKey := types.NamespacedName{Name: i.OperatorName}
+		opKey := types.NamespacedName{Name: i.ExtensionName}
 		err := i.config.Client.Get(ctx, opKey, &result)
 		if err != nil {
 			return nil, err

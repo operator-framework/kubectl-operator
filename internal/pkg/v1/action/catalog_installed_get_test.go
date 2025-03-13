@@ -52,10 +52,10 @@ var _ = Describe("CatalogInstalledGet", func() {
 	It("returns empty list in case no catalogs were found", func() {
 		cfg := setupEnv()
 
-		getter := internalaction.NewOperatorInstalledGet(&cfg)
-		operators, err := getter.Run(context.TODO())
+		getter := internalaction.NewCatalogInstalledGet(&cfg)
+		catalogs, err := getter.Run(context.TODO())
 		Expect(err).To(BeNil())
-		Expect(operators).To(BeEmpty())
+		Expect(catalogs).To(BeEmpty())
 	})
 
 	It("gets an installed catalog", func() {
@@ -63,20 +63,20 @@ var _ = Describe("CatalogInstalledGet", func() {
 
 		getter := internalaction.NewCatalogInstalledGet(&cfg)
 		getter.CatalogName = "cat2"
-		operators, err := getter.Run(context.TODO())
+		catalogs, err := getter.Run(context.TODO())
 		Expect(err).To(BeNil())
-		Expect(operators).NotTo(BeEmpty())
-		Expect(operators).To(HaveLen(1))
-		Expect(operators[0].Name).To(Equal("cat2"))
+		Expect(catalogs).NotTo(BeEmpty())
+		Expect(catalogs).To(HaveLen(1))
+		Expect(catalogs[0].Name).To(Equal("cat2"))
 	})
 
 	It("returns an empty list when an installed catalog was not found", func() {
 		cfg := setupEnv()
 
-		getter := internalaction.NewOperatorInstalledGet(&cfg)
-		getter.OperatorName = "cat2"
-		operators, err := getter.Run(context.TODO())
+		getter := internalaction.NewCatalogInstalledGet(&cfg)
+		getter.CatalogName = "cat2"
+		catalogs, err := getter.Run(context.TODO())
 		Expect(err).NotTo(BeNil())
-		Expect(operators).To(BeEmpty())
+		Expect(catalogs).To(BeEmpty())
 	})
 })
