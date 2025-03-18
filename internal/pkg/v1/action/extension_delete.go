@@ -13,28 +13,27 @@ import (
 	"github.com/operator-framework/kubectl-operator/pkg/action"
 )
 
-type ExtensionUninstall struct {
-	config *action.Configuration
-
-	Package string
-
-	Logf func(string, ...interface{})
+type ExtensionDeletion struct {
+	config        *action.Configuration
+	ExtensionName string
+	DeleteAll     bool
+	Logf          func(string, ...interface{})
 }
 
-func NewExtensionUninstall(cfg *action.Configuration) *ExtensionUninstall {
-	return &ExtensionUninstall{
+func NewExtensionDelete(cfg *action.Configuration) *ExtensionDeletion {
+	return &ExtensionDeletion{
 		config: cfg,
 		Logf:   func(string, ...interface{}) {},
 	}
 }
 
-func (u *ExtensionUninstall) Run(ctx context.Context) error {
-	opKey := types.NamespacedName{Name: u.Package}
+func (u *ExtensionDeletion) Run(ctx context.Context) error {
+	opKey := types.NamespacedName{Name: u.ExtensionName}
 	op := &olmv1.ClusterExtension{}
 	op.SetName(opKey.Name)
-	op.SetGroupVersionKind(olmv1.GroupVersion.WithKind("Extension"))
-
+	op.SetGroupVersionKind(olmv1.GroupVersion.WithKind("ClusterExtension"))
 	lowerKind := strings.ToLower(op.GetObjectKind().GroupVersionKind().Kind)
+	//Lala:Fixme: return error if extension does not exist
 	if err := u.config.Client.Delete(ctx, op); err != nil && !apierrors.IsNotFound(err) {
 		return fmt.Errorf("delete %s %q: %v", lowerKind, op.GetName(), err)
 	}
