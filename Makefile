@@ -60,6 +60,10 @@ gen-demo:
 lint: $(GOLANGCI_LINT)
 	$(GOLANGCI_LINT) --timeout 3m run
 
+.PHONY: fix-lint-issues
+lint-fix: $(GOLANGCI_LINT) #HELP Run golangci linter.
+	$(GOLANGCI_LINT) run --fix --timeout 3m
+
 .PHONY: release
 RELEASE_ARGS?=release --clean --snapshot
 release: $(GORELEASER)
