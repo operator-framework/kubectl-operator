@@ -10,8 +10,8 @@ import (
 func newOlmV1Cmd(cfg *action.Configuration) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "olmv1",
-		Short: "Manage operators via OLMv1 in a cluster from the command line",
-		Long:  "Manage operators via OLMv1 in a cluster from the command line.",
+		Short: "Manage extensions via OLMv1 in a cluster from the command line",
+		Long:  "Manage extensions via OLMv1 in a cluster from the command line.",
 	}
 
 	getCmd := &cobra.Command{
@@ -20,7 +20,7 @@ func newOlmV1Cmd(cfg *action.Configuration) *cobra.Command {
 		Long:  "Display one or many resource(s)",
 	}
 	getCmd.AddCommand(
-		olmv1.NewOperatorInstalledGetCmd(cfg),
+		olmv1.NewExtensionInstalledGetCmd(cfg),
 		olmv1.NewCatalogInstalledGetCmd(cfg),
 	)
 
@@ -44,12 +44,12 @@ func newOlmV1Cmd(cfg *action.Configuration) *cobra.Command {
 		Long:  "Update a resource",
 	}
 	updateCmd.AddCommand(
-		olmv1.NewOperatorUpdateCmd(cfg),
+		olmv1.NewExtensionUpdateCmd(cfg),
 	)
 
 	cmd.AddCommand(
-		olmv1.NewOperatorInstallCmd(cfg),
-		olmv1.NewOperatorUninstallCmd(cfg),
+		olmv1.NewExtensionInstallCmd(cfg),
+		olmv1.NewExtensionUninstallCmd(cfg),
 		getCmd,
 		createCmd,
 		deleteCmd,

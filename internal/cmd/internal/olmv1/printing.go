@@ -15,11 +15,11 @@ import (
 	olmv1 "github.com/operator-framework/operator-controller/api/v1"
 )
 
-func printFormattedOperators(extensions ...olmv1.ClusterExtension) {
+func printFormattedExtensions(extensions ...olmv1.ClusterExtension) {
 	tw := tabwriter.NewWriter(os.Stdout, 3, 4, 2, ' ', 0)
 	_, _ = fmt.Fprint(tw, "NAME\tINSTALLED BUNDLE\tVERSION\tSOURCE TYPE\tINSTALLED\tPROGRESSING\tAGE\n")
 
-	sortOperators(extensions)
+	sortExtensions(extensions)
 	for _, ext := range extensions {
 		var bundleName, bundleVersion string
 		if ext.Status.Install != nil {
@@ -63,9 +63,9 @@ func printFormattedCatalogs(catalogs ...olmv1.ClusterCatalog) {
 	_ = tw.Flush()
 }
 
-// sortOperators sorts operators in place and uses the following sorting order:
+// sortExtensions sorts extensions in place and uses the following sorting order:
 // name (asc), version (desc)
-func sortOperators(extensions []olmv1.ClusterExtension) {
+func sortExtensions(extensions []olmv1.ClusterExtension) {
 	slices.SortFunc(extensions, func(a, b olmv1.ClusterExtension) int {
 		if a.Status.Install == nil || b.Status.Install == nil {
 			return cmp.Compare(a.Name, b.Name)
