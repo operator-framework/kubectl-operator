@@ -36,7 +36,10 @@ func newOlmV1Cmd(cfg *action.Configuration) *cobra.Command {
 		Short: "Delete a resource",
 		Long:  "Delete a resource",
 	}
-	deleteCmd.AddCommand(olmv1.NewCatalogDeleteCmd(cfg))
+	deleteCmd.AddCommand(
+		olmv1.NewCatalogDeleteCmd(cfg),
+		olmv1.NewExtensionDeleteCmd(cfg),
+	)
 
 	updateCmd := &cobra.Command{
 		Use:   "update",
@@ -47,9 +50,15 @@ func newOlmV1Cmd(cfg *action.Configuration) *cobra.Command {
 		olmv1.NewExtensionUpdateCmd(cfg),
 	)
 
+	installCmd := &cobra.Command{
+		Use:   "install",
+		Short: "Install a resource",
+		Long:  "Install a resource",
+	}
+	installCmd.AddCommand(olmv1.NewExtensionInstallCmd(cfg))
+
 	cmd.AddCommand(
-		olmv1.NewExtensionInstallCmd(cfg),
-		olmv1.NewExtensionUninstallCmd(cfg),
+		installCmd,
 		getCmd,
 		createCmd,
 		deleteCmd,
