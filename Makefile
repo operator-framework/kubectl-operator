@@ -52,9 +52,13 @@ test:
 install: build
 	install bin/kubectl-operator $(shell go env GOPATH)/bin
 
-.PHONY: gen-demo
-gen-demo:
+.PHONY: gen-demo-v0
+gen-demo-v0:
 	./assets/demo/gen-demo.sh
+
+.PHONY: gen-demo-v1
+gen-demo-v1:
+	./assets/demo/gen-demo_v1.sh
 
 .PHONY: lint
 lint: $(GOLANGCI_LINT)
