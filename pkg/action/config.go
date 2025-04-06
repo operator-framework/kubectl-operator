@@ -23,7 +23,6 @@ func NewScheme() (*runtime.Scheme, error) {
 		v1.AddToScheme,
 		apiextensionsv1.AddToScheme,
 		olmv1.AddToScheme,
-		olmv1.AddToScheme,
 	} {
 		if err := f(sch); err != nil {
 			return nil, err
