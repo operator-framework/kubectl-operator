@@ -48,6 +48,7 @@ func newOlmV1Cmd(cfg *action.Configuration) *cobra.Command {
 	}
 	updateCmd.AddCommand(
 		olmv1.NewExtensionUpdateCmd(cfg),
+		olmv1.NewCatalogUpdateCmd(cfg),
 	)
 
 	installCmd := &cobra.Command{

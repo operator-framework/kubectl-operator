@@ -110,6 +110,8 @@ func newClusterCatalog(name string) *olmv1.ClusterCatalog {
 
 type extensionOpt func(*olmv1.ClusterExtension)
 
+type catalogOpt func(*olmv1.ClusterCatalog)
+
 func withVersion(version string) extensionOpt {
 	return func(ext *olmv1.ClusterExtension) {
 		ext.Spec.Source.Catalog.Version = version
@@ -119,6 +121,28 @@ func withVersion(version string) extensionOpt {
 func withSourceType(sourceType string) extensionOpt {
 	return func(ext *olmv1.ClusterExtension) {
 		ext.Spec.Source.SourceType = sourceType
+	}
+}
+
+func withCatalogSourceType(sourceType olmv1.SourceType) catalogOpt {
+	return func(catalog *olmv1.ClusterCatalog) {
+		catalog.Spec.Source.Type = sourceType
+	}
+}
+
+func withCatalogSourcePriority(priority int32) catalogOpt {
+	return func(catalog *olmv1.ClusterCatalog) {
+		catalog.Spec.Priority = int32(priority)
+	}
+}
+
+func withCatalogPollInterval(pollInterval int, ref string) catalogOpt {
+	return func(catalog *olmv1.ClusterCatalog) {
+		if catalog.Spec.Source.Image == nil {
+			catalog.Spec.Source.Image = &olmv1.ImageSource{}
+		}
+		catalog.Spec.Source.Image.Ref = ref
+		catalog.Spec.Source.Image.PollIntervalMinutes = &pollInterval
 	}
 }
 
@@ -155,6 +179,22 @@ func buildExtension(packageName string, opts ...extensionOpt) *olmv1.ClusterExte
 	}
 
 	return ext
+}
+
+func buildCatalog(catalogName string, opts ...catalogOpt) *olmv1.ClusterCatalog {
+	catalog := &olmv1.ClusterCatalog{
+		Spec: olmv1.ClusterCatalogSpec{
+			Source: olmv1.CatalogSource{
+				Type: olmv1.SourceTypeImage,
+			},
+		},
+	}
+	catalog.SetName(catalogName)
+	for _, opt := range opts {
+		opt(catalog)
+	}
+
+	return catalog
 }
 
 func updateExtensionConditionStatus(name string, cl client.Client, typ string, status metav1.ConditionStatus) error {
