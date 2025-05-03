@@ -34,7 +34,8 @@ func NewCatalogUpdateCmd(cfg *action.Configuration) *cobra.Command {
 
 func bindCatalogUpdateFlags(fs *pflag.FlagSet, i *v1action.CatalogUpdate) {
 	fs.Int32Var(&i.Priority, "priority", 1, "priority determines the likelihood of a catalog being selected in conflict scenarios")
-	fs.IntVar(&i.PollIntervalMinutes, "source-poll-interval-minutes", 5, "catalog source polling interval [in minutes]")
+	fs.IntVar(&i.PollIntervalMinutes, "source-poll-interval-minutes", 5, "catalog source polling interval [in minutes]. Set to 0 or -1 to remove the polling interval.")
 	fs.StringToStringVar(&i.Labels, "labels", map[string]string{}, "labels that will be added to the catalog")
 	fs.StringVar(&i.AvailabilityMode, "availability-mode", "", "available means that the catalog should be active and serving data")
+	fs.StringVar(&i.ImageRef, "image", "", "Image reference for the catalog source. Leave unset to retain the current image.")
 }

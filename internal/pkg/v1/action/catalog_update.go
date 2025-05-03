@@ -19,6 +19,7 @@ type CatalogUpdate struct {
 	PollIntervalMinutes int
 	Labels              map[string]string
 	AvailabilityMode    string
+	ImageRef            string
 
 	Logf func(string, ...interface{})
 }
@@ -59,26 +60,35 @@ func (cu *CatalogUpdate) Run(ctx context.Context) (*olmv1.ClusterCatalog, error)
 func (cu *CatalogUpdate) setUpdatedCatalog(catalog *olmv1.ClusterCatalog) {
 	catalog.SetLabels(cu.Labels)
 	catalog.Spec.Priority = cu.Priority
-	if catalog.Spec.Source.Image != nil && catalog.Spec.Source.Image.PollIntervalMinutes != nil {
-		catalog.Spec.Source.Image.PollIntervalMinutes = &cu.PollIntervalMinutes
+	if catalog.Spec.Source.Image != nil {
+		switch {
+		case cu.PollIntervalMinutes <= 0:
+			catalog.Spec.Source.Image.PollIntervalMinutes = nil
+		default:
+			catalog.Spec.Source.Image.PollIntervalMinutes = &cu.PollIntervalMinutes
+		}
+
+		if cu.ImageRef != "" {
+			catalog.Spec.Source.Image.Ref = cu.ImageRef
+		}
 	}
 	catalog.Spec.AvailabilityMode = olmv1.AvailabilityMode(cu.AvailabilityMode)
 }
 
 func (cu *CatalogUpdate) setDefaults(catalog olmv1.ClusterCatalog) {
 	catalogSrc := catalog.Spec.Source
-	if catalogSrc.Image != nil && catalogSrc.Image.PollIntervalMinutes != nil {
-		if cu.PollIntervalMinutes == 0 {
-			cu.PollIntervalMinutes = *catalogSrc.Image.PollIntervalMinutes
+	if cu.ImageRef != "" && catalogSrc.Image != nil {
+		{
+			cu.ImageRef = catalogSrc.Image.Ref
 		}
-	}
-	if cu.AvailabilityMode == "" {
-		cu.AvailabilityMode = string(catalog.Spec.AvailabilityMode)
-	}
-	if cu.Priority == 1 {
-		cu.Priority = catalog.Spec.Priority
-	}
-	if len(cu.Labels) == 0 {
-		cu.Labels = catalog.Labels
+		if cu.AvailabilityMode == "" {
+			cu.AvailabilityMode = string(catalog.Spec.AvailabilityMode)
+		}
+		if cu.Priority == 1 {
+			cu.Priority = catalog.Spec.Priority
+		}
+		if len(cu.Labels) == 0 {
+			cu.Labels = catalog.Labels
+		}
 	}
 }

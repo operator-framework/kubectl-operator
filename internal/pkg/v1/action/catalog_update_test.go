@@ -81,4 +81,23 @@ var _ = Describe("CatalogUpdate", func() {
 		Expect(*catalog.Spec.Source.Image.PollIntervalMinutes).To(Equal(int(5)))
 		Expect(catalog.Spec.AvailabilityMode).To(Equal(olmv1.AvailabilityMode(updater.AvailabilityMode)))
 	})
+
+	It("unsets the poll interval field when set to 0", func() {
+		testCatalog := buildCatalog(
+			"test",
+			withCatalogSourceType(olmv1.SourceTypeImage),
+			withCatalogPollInterval(7, "test"),
+			withCatalogImageRef("quay.io/test/samplecatalog"),
+		)
+		cfg := setupEnv(testCatalog)
+
+		updater := internalaction.NewCatalogUpdate(&cfg)
+		updater.CatalogName = "test"
+		updater.PollIntervalMinutes = 0
+		catalog, err := updater.Run(context.TODO())
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(catalog.Spec.Source.Image.PollIntervalMinutes).To(BeNil())
+	})
+
 })

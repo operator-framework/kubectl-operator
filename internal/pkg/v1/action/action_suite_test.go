@@ -165,6 +165,12 @@ func withCatalogPollInterval(pollInterval int, ref string) catalogOpt {
 	}
 }
 
+func withCatalogImageRef(ref string) catalogOpt {
+	return func(catalog *olmv1.ClusterCatalog) {
+		catalog.Spec.Source.Image.Ref = ref
+	}
+}
+
 func buildExtension(packageName string, opts ...extensionOpt) *olmv1.ClusterExtension {
 	ext := &olmv1.ClusterExtension{
 		Spec: olmv1.ClusterExtensionSpec{
