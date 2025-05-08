@@ -62,13 +62,16 @@ var _ = Describe("CatalogUpdate", func() {
 			withCatalogSourceType(olmv1.SourceTypeImage),
 			withCatalogPollInterval(5, "testCatalog"),
 			withCatalogSourcePriority(1),
+			withCatalogImageRef("quay.io/myrepo/myimage"),
+			withCatalogAvailabilityMode(olmv1.AvailabilityModeAvailable),
+			withCatalogLabels(map[string]string{"foo": "bar"}),
 		)
 		cfg := setupEnv(testCatalog)
 
 		updater := internalaction.NewCatalogUpdate(&cfg)
 		updater.CatalogName = "testCatalog"
 		updater.Priority = int32(1)
-		updater.Labels = map[string]string{"c": "d"}
+		updater.Labels = map[string]string{"abc": "xyz"}
 		updater.AvailabilityMode = string(olmv1.AvailabilityModeAvailable)
 		updater.PollIntervalMinutes = int(5)
 		catalog, err := updater.Run(context.TODO())
@@ -87,7 +90,9 @@ var _ = Describe("CatalogUpdate", func() {
 			"test",
 			withCatalogSourceType(olmv1.SourceTypeImage),
 			withCatalogPollInterval(7, "test"),
-			withCatalogImageRef("quay.io/test/samplecatalog"),
+			withCatalogImageRef("quay.io/myrepo/myimage"),
+			withCatalogAvailabilityMode(olmv1.AvailabilityModeAvailable),
+			withCatalogLabels(map[string]string{"foo": "bar"}),
 		)
 		cfg := setupEnv(testCatalog)
 
@@ -98,6 +103,44 @@ var _ = Describe("CatalogUpdate", func() {
 
 		Expect(err).NotTo(HaveOccurred())
 		Expect(catalog.Spec.Source.Image.PollIntervalMinutes).To(BeNil())
+	})
+
+	It("succeessfully updates catalog with a valid image reference", func() {
+		testCatalog := buildCatalog(
+			"test",
+			withCatalogSourceType(olmv1.SourceTypeImage),
+			withCatalogImageRef("quay.io/myrepo/myimage"),
+			withCatalogPollInterval(10, "my-catalog"),
+			withCatalogSourcePriority(5),
+			withCatalogAvailabilityMode(olmv1.AvailabilityModeAvailable),
+			withCatalogLabels(map[string]string{"foo": "bar"}),
+		)
+		cfg := setupEnv(testCatalog)
+
+		updater := internalaction.NewCatalogUpdate(&cfg)
+		updater.CatalogName = "test"
+		updater.ImageRef = "quay.io/myrepo/mynewimage"
+		catalog, err := updater.Run(context.TODO())
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(catalog.Spec.Source.Image.Ref).To(Equal(updater.ImageRef))
+	})
+
+	It("fails catalog update with an invalid image reference", func() {
+		testCatalog := buildCatalog(
+			"test",
+			withCatalogSourceType(olmv1.SourceTypeImage),
+			withCatalogImageRef("quay.io/valid/image"),
+		)
+		cfg := setupEnv(testCatalog)
+
+		updater := internalaction.NewCatalogUpdate(&cfg)
+		updater.CatalogName = "test"
+		updater.ImageRef = "invalid//image!!"
+
+		_, err := updater.Run(context.TODO())
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(ContainSubstring("invalid image reference"))
 	})
 
 })

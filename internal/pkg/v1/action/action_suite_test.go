@@ -167,7 +167,22 @@ func withCatalogPollInterval(pollInterval int, ref string) catalogOpt {
 
 func withCatalogImageRef(ref string) catalogOpt {
 	return func(catalog *olmv1.ClusterCatalog) {
+		if catalog.Spec.Source.Image == nil {
+			catalog.Spec.Source.Image = &olmv1.ImageSource{}
+		}
 		catalog.Spec.Source.Image.Ref = ref
+	}
+}
+
+func withCatalogAvailabilityMode(mode olmv1.AvailabilityMode) catalogOpt {
+	return func(catalog *olmv1.ClusterCatalog) {
+		catalog.Spec.AvailabilityMode = mode
+	}
+}
+
+func withCatalogLabels(labels map[string]string) catalogOpt {
+	return func(catalog *olmv1.ClusterCatalog) {
+		catalog.Labels = labels
 	}
 }
 
@@ -206,6 +221,9 @@ func updateExtensionConditionStatus(name string, cl client.Client, typ string, s
 
 func buildCatalog(catalogName string, opts ...catalogOpt) *olmv1.ClusterCatalog {
 	catalog := &olmv1.ClusterCatalog{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: catalogName,
+		},
 		Spec: olmv1.ClusterCatalogSpec{
 			Source: olmv1.CatalogSource{
 				Type: olmv1.SourceTypeImage,

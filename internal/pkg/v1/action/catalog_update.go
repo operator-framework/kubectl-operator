@@ -3,6 +3,7 @@ package action
 import (
 	"context"
 	"fmt"
+	"regexp"
 
 	"k8s.io/apimachinery/pkg/types"
 
@@ -47,6 +48,10 @@ func (cu *CatalogUpdate) Run(ctx context.Context) (*olmv1.ClusterCatalog, error)
 		return nil, fmt.Errorf("unrecognized source type: %q", catalog.Spec.Source.Type)
 	}
 
+	if cu.ImageRef != "" && !isValidImageRef(cu.ImageRef) {
+		return nil, fmt.Errorf("invalid image reference: %q, it must be a valid image reference format", cu.ImageRef)
+	}
+
 	cu.setDefaults(catalog)
 
 	cu.setUpdatedCatalog(&catalog)
@@ -77,7 +82,7 @@ func (cu *CatalogUpdate) setUpdatedCatalog(catalog *olmv1.ClusterCatalog) {
 
 func (cu *CatalogUpdate) setDefaults(catalog olmv1.ClusterCatalog) {
 	catalogSrc := catalog.Spec.Source
-	if cu.ImageRef != "" && catalogSrc.Image != nil {
+	if cu.ImageRef == "" && catalogSrc.Image != nil {
 		{
 			cu.ImageRef = catalogSrc.Image.Ref
 		}
@@ -91,4 +96,9 @@ func (cu *CatalogUpdate) setDefaults(catalog olmv1.ClusterCatalog) {
 			cu.Labels = catalog.Labels
 		}
 	}
+}
+
+func isValidImageRef(imageRef string) bool {
+	re := regexp.MustCompile(`^[a-zA-Z0-9-_\.]+(?:\/[a-zA-Z0-9-_\.]+)+(:[a-zA-Z0-9-_\.]+)?$`)
+	return re.MatchString(imageRef)
 }
