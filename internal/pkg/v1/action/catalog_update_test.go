@@ -2,7 +2,6 @@ package action_test
 
 import (
 	"context"
-	"maps"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -60,8 +59,8 @@ var _ = Describe("CatalogUpdate", func() {
 		testCatalog := buildCatalog(
 			"testCatalog",
 			withCatalogSourceType(olmv1.SourceTypeImage),
-			withCatalogPollInterval(5, "testCatalog"),
-			withCatalogSourcePriority(1),
+			withCatalogPollInterval(pointerToInt(5)),
+			withCatalogSourcePriority(pointerToInt32(1)),
 			withCatalogImageRef("quay.io/myrepo/myimage"),
 			withCatalogAvailabilityMode(olmv1.AvailabilityModeAvailable),
 			withCatalogLabels(map[string]string{"foo": "bar"}),
@@ -70,18 +69,19 @@ var _ = Describe("CatalogUpdate", func() {
 
 		updater := internalaction.NewCatalogUpdate(&cfg)
 		updater.CatalogName = "testCatalog"
-		updater.Priority = int32(1)
+		updater.Priority = pointerToInt32(1)
 		updater.Labels = map[string]string{"abc": "xyz"}
 		updater.AvailabilityMode = string(olmv1.AvailabilityModeAvailable)
-		updater.PollIntervalMinutes = int(5)
+		updater.PollIntervalMinutes = pointerToInt(5)
 		catalog, err := updater.Run(context.TODO())
 
 		Expect(err).To(BeNil())
 		Expect(testCatalog).NotTo(BeNil())
-		Expect(maps.Equal(catalog.Labels, updater.Labels)).To(BeTrue())
-		Expect(catalog.Spec.Priority).To(Equal(updater.Priority))
+		Expect(catalog.Labels).To(HaveKeyWithValue("foo", "bar")) //existing
+		Expect(catalog.Labels).To(HaveKeyWithValue("abc", "xyz")) //newly added
+		Expect(catalog.Spec.Priority).To(Equal(*updater.Priority))
 		Expect(catalog.Spec.Source.Image.PollIntervalMinutes).ToNot(BeNil())
-		Expect(*catalog.Spec.Source.Image.PollIntervalMinutes).To(Equal(int(5)))
+		Expect(*catalog.Spec.Source.Image.PollIntervalMinutes).To(Equal(*updater.PollIntervalMinutes))
 		Expect(catalog.Spec.AvailabilityMode).To(Equal(olmv1.AvailabilityMode(updater.AvailabilityMode)))
 	})
 
@@ -89,16 +89,33 @@ var _ = Describe("CatalogUpdate", func() {
 		testCatalog := buildCatalog(
 			"test",
 			withCatalogSourceType(olmv1.SourceTypeImage),
-			withCatalogPollInterval(7, "test"),
+			withCatalogPollInterval(pointerToInt(7)),
 			withCatalogImageRef("quay.io/myrepo/myimage"),
-			withCatalogAvailabilityMode(olmv1.AvailabilityModeAvailable),
-			withCatalogLabels(map[string]string{"foo": "bar"}),
 		)
 		cfg := setupEnv(testCatalog)
 
 		updater := internalaction.NewCatalogUpdate(&cfg)
 		updater.CatalogName = "test"
-		updater.PollIntervalMinutes = 0
+		updater.PollIntervalMinutes = pointerToInt(-1)
+		catalog, err := updater.Run(context.TODO())
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(catalog.Spec.Source.Image.PollIntervalMinutes).To(BeNil())
+	})
+
+	It("unsets the poll interval field when set to 0", func() {
+		testCatalog := buildCatalog(
+			"test",
+			withCatalogSourceType(olmv1.SourceTypeImage),
+			withCatalogPollInterval(pointerToInt(10)),
+			withCatalogImageRef("quay.io/myrepo/myimage"),
+		)
+		cfg := setupEnv(testCatalog)
+
+		updater := internalaction.NewCatalogUpdate(&cfg)
+		updater.CatalogName = "test"
+		updater.PollIntervalMinutes = pointerToInt(0)
+
 		catalog, err := updater.Run(context.TODO())
 
 		Expect(err).NotTo(HaveOccurred())
@@ -110,8 +127,8 @@ var _ = Describe("CatalogUpdate", func() {
 			"test",
 			withCatalogSourceType(olmv1.SourceTypeImage),
 			withCatalogImageRef("quay.io/myrepo/myimage"),
-			withCatalogPollInterval(10, "my-catalog"),
-			withCatalogSourcePriority(5),
+			withCatalogPollInterval(pointerToInt(10)),
+			withCatalogSourcePriority(pointerToInt32(5)),
 			withCatalogAvailabilityMode(olmv1.AvailabilityModeAvailable),
 			withCatalogLabels(map[string]string{"foo": "bar"}),
 		)
@@ -143,4 +160,59 @@ var _ = Describe("CatalogUpdate", func() {
 		Expect(err.Error()).To(ContainSubstring("invalid image reference"))
 	})
 
+	It("preserves existing catalog values if Priority and PollIntervalMinutes are nil", func() {
+		testCatalog := buildCatalog(
+			"test",
+			withCatalogSourceType(olmv1.SourceTypeImage),
+			withCatalogPollInterval(pointerToInt(15)),
+			withCatalogSourcePriority(pointerToInt32(10)),
+			withCatalogImageRef("quay.io/myrepo/image"),
+		)
+
+		cfg := setupEnv(testCatalog)
+
+		updater := internalaction.NewCatalogUpdate(&cfg)
+		updater.CatalogName = "test"
+		updater.Priority = nil
+		updater.PollIntervalMinutes = nil
+
+		catalog, err := updater.Run(context.TODO())
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(catalog.Spec.Priority).To(Equal(int32(10)))
+		Expect(*catalog.Spec.Source.Image.PollIntervalMinutes).To(Equal(15))
+	})
+
+	It("removes labels with empty values and merges the rest", func() {
+		initial := map[string]string{"foo": "bar", "remove": "yes"}
+		testCatalog := buildCatalog(
+			"test",
+			withCatalogSourceType(olmv1.SourceTypeImage),
+			withCatalogLabels(initial),
+		)
+		cfg := setupEnv(testCatalog)
+
+		updater := internalaction.NewCatalogUpdate(&cfg)
+		updater.CatalogName = "test"
+		updater.Labels = map[string]string{
+			"remove": "",
+			"new":    "label",
+		}
+		catalog, err := updater.Run(context.TODO())
+		Expect(err).NotTo(HaveOccurred())
+
+		Expect(catalog.Labels).To(Equal(map[string]string{
+			"foo": "bar",
+			"new": "label",
+		}))
+	})
+
 })
+
+func pointerToInt32(i int32) *int32 {
+	return &i
+}
+
+func pointerToInt(i int) *int {
+	return &i
+}

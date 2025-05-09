@@ -149,19 +149,18 @@ func withCatalogSourceType(sourceType olmv1.SourceType) catalogOpt {
 	}
 }
 
-func withCatalogSourcePriority(priority int32) catalogOpt {
+func withCatalogSourcePriority(priority *int32) catalogOpt {
 	return func(catalog *olmv1.ClusterCatalog) {
-		catalog.Spec.Priority = priority
+		catalog.Spec.Priority = *priority
 	}
 }
 
-func withCatalogPollInterval(pollInterval int, ref string) catalogOpt {
+func withCatalogPollInterval(pollInterval *int) catalogOpt {
 	return func(catalog *olmv1.ClusterCatalog) {
 		if catalog.Spec.Source.Image == nil {
 			catalog.Spec.Source.Image = &olmv1.ImageSource{}
 		}
-		catalog.Spec.Source.Image.Ref = ref
-		catalog.Spec.Source.Image.PollIntervalMinutes = &pollInterval
+		catalog.Spec.Source.Image.PollIntervalMinutes = pollInterval
 	}
 }
 

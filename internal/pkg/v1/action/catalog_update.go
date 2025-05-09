@@ -16,8 +16,8 @@ type CatalogUpdate struct {
 	config      *action.Configuration
 	CatalogName string
 
-	Priority            int32
-	PollIntervalMinutes int
+	Priority            *int32
+	PollIntervalMinutes *int
 	Labels              map[string]string
 	AvailabilityMode    string
 	ImageRef            string
@@ -63,38 +63,67 @@ func (cu *CatalogUpdate) Run(ctx context.Context) (*olmv1.ClusterCatalog, error)
 }
 
 func (cu *CatalogUpdate) setUpdatedCatalog(catalog *olmv1.ClusterCatalog) {
-	catalog.SetLabels(cu.Labels)
-	catalog.Spec.Priority = cu.Priority
+	existingLabels := catalog.GetLabels()
+	if existingLabels == nil {
+		existingLabels = make(map[string]string)
+	}
+
+	if cu.Labels != nil {
+		for k, v := range cu.Labels {
+			if v == "" {
+				delete(existingLabels, k) // remove keys with empty values
+			} else {
+				existingLabels[k] = v
+			}
+		}
+		catalog.SetLabels(existingLabels)
+	}
+
+	if cu.Priority != nil {
+		catalog.Spec.Priority = *cu.Priority
+	}
+
 	if catalog.Spec.Source.Image != nil {
-		switch {
-		case cu.PollIntervalMinutes <= 0:
+		if cu.PollIntervalMinutes != nil {
+			// Set PollIntervalMinutes to the value if it's not nil
+			catalog.Spec.Source.Image.PollIntervalMinutes = cu.PollIntervalMinutes
+		} else {
+			// If it's nil, explicitly unset it
 			catalog.Spec.Source.Image.PollIntervalMinutes = nil
-		default:
-			catalog.Spec.Source.Image.PollIntervalMinutes = &cu.PollIntervalMinutes
 		}
 
 		if cu.ImageRef != "" {
 			catalog.Spec.Source.Image.Ref = cu.ImageRef
 		}
 	}
-	catalog.Spec.AvailabilityMode = olmv1.AvailabilityMode(cu.AvailabilityMode)
+
+	if cu.AvailabilityMode != "" {
+		catalog.Spec.AvailabilityMode = olmv1.AvailabilityMode(cu.AvailabilityMode)
+	}
+
 }
 
 func (cu *CatalogUpdate) setDefaults(catalog olmv1.ClusterCatalog) {
 	catalogSrc := catalog.Spec.Source
+
+	if cu.PollIntervalMinutes != nil && (*cu.PollIntervalMinutes == 0 || *cu.PollIntervalMinutes == -1) {
+		cu.PollIntervalMinutes = nil
+	} else if cu.PollIntervalMinutes == nil && catalogSrc.Image != nil && catalogSrc.Image.PollIntervalMinutes != nil {
+		// Only default if user didn’t explicitly set anything
+		cu.PollIntervalMinutes = catalogSrc.Image.PollIntervalMinutes
+	}
+
 	if cu.ImageRef == "" && catalogSrc.Image != nil {
-		{
-			cu.ImageRef = catalogSrc.Image.Ref
-		}
-		if cu.AvailabilityMode == "" {
-			cu.AvailabilityMode = string(catalog.Spec.AvailabilityMode)
-		}
-		if cu.Priority == 1 {
-			cu.Priority = catalog.Spec.Priority
-		}
-		if len(cu.Labels) == 0 {
-			cu.Labels = catalog.Labels
-		}
+		cu.ImageRef = catalogSrc.Image.Ref
+	}
+	if cu.AvailabilityMode == "" {
+		cu.AvailabilityMode = string(catalog.Spec.AvailabilityMode)
+	}
+	if cu.Priority == nil {
+		cu.Priority = &catalog.Spec.Priority
+	}
+	if len(cu.Labels) == 0 {
+		cu.Labels = catalog.Labels
 	}
 }
 
