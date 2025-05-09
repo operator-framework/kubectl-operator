@@ -207,6 +207,23 @@ var _ = Describe("CatalogUpdate", func() {
 		}))
 	})
 
+	It("preserves labels when Labels field is nil", func() {
+		testCatalog := buildCatalog(
+			"test",
+			withCatalogSourceType(olmv1.SourceTypeImage),
+			withCatalogLabels(map[string]string{"retain": "this"}),
+		)
+		cfg := setupEnv(testCatalog)
+
+		updater := internalaction.NewCatalogUpdate(&cfg)
+		updater.CatalogName = "test"
+		updater.Labels = nil
+
+		catalog, err := updater.Run(context.TODO())
+		Expect(err).NotTo(HaveOccurred())
+		Expect(catalog.Labels).To(Equal(map[string]string{"retain": "this"}))
+	})
+
 })
 
 func pointerToInt32(i int32) *int32 {

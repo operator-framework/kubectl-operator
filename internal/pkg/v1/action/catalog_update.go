@@ -27,8 +27,11 @@ type CatalogUpdate struct {
 
 func NewCatalogUpdate(config *action.Configuration) *CatalogUpdate {
 	return &CatalogUpdate{
-		config: config,
-		Logf:   func(string, ...interface{}) {},
+		config:              config,
+		Logf:                func(string, ...interface{}) {},
+		Priority:            new(int32),
+		PollIntervalMinutes: new(int),
+		Labels:              make(map[string]string),
 	}
 }
 
@@ -100,7 +103,6 @@ func (cu *CatalogUpdate) setUpdatedCatalog(catalog *olmv1.ClusterCatalog) {
 	if cu.AvailabilityMode != "" {
 		catalog.Spec.AvailabilityMode = olmv1.AvailabilityMode(cu.AvailabilityMode)
 	}
-
 }
 
 func (cu *CatalogUpdate) setDefaults(catalog olmv1.ClusterCatalog) {
