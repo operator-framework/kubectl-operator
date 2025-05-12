@@ -6,6 +6,8 @@ import (
 	"github.com/spf13/pflag"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -32,6 +34,7 @@ func NewScheme() (*runtime.Scheme, error) {
 }
 
 type Configuration struct {
+	Config    *rest.Config
 	Client    client.Client
 	Namespace string
 	Scheme    *runtime.Scheme
@@ -79,6 +82,9 @@ func (c *Configuration) Load() error {
 	if err != nil {
 		return err
 	}
+	if err = scheme.AddToScheme(sch); err != nil {
+		return err
+	}
 	cl, err := client.New(cc, client.Options{
 		Scheme: sch,
 	})
@@ -86,6 +92,7 @@ func (c *Configuration) Load() error {
 		return err
 	}
 
+	c.Config = cc
 	c.Scheme = sch
 	c.Client = &operatorClient{cl}
 	c.Namespace = ns

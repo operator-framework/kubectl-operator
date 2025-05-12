@@ -110,6 +110,8 @@ func newClusterCatalog(name string) *olmv1.ClusterCatalog {
 
 type extensionOpt func(*olmv1.ClusterExtension)
 
+type catalogOpt func(*olmv1.ClusterCatalog)
+
 func withVersion(version string) extensionOpt {
 	return func(ext *olmv1.ClusterExtension) {
 		ext.Spec.Source.Catalog.Version = version
@@ -138,6 +140,48 @@ func withChannels(channels ...string) extensionOpt {
 func withLabels(labels map[string]string) extensionOpt {
 	return func(ext *olmv1.ClusterExtension) {
 		ext.SetLabels(labels)
+	}
+}
+
+func withCatalogSourceType(sourceType olmv1.SourceType) catalogOpt {
+	return func(catalog *olmv1.ClusterCatalog) {
+		catalog.Spec.Source.Type = sourceType
+	}
+}
+
+func withCatalogSourcePriority(priority *int32) catalogOpt {
+	return func(catalog *olmv1.ClusterCatalog) {
+		catalog.Spec.Priority = *priority
+	}
+}
+
+func withCatalogPollInterval(pollInterval *int) catalogOpt {
+	return func(catalog *olmv1.ClusterCatalog) {
+		if catalog.Spec.Source.Image == nil {
+			catalog.Spec.Source.Image = &olmv1.ImageSource{}
+		}
+		catalog.Spec.Source.Image.PollIntervalMinutes = pollInterval
+	}
+}
+
+func withCatalogImageRef(ref string) catalogOpt {
+	return func(catalog *olmv1.ClusterCatalog) {
+		if catalog.Spec.Source.Image == nil {
+			catalog.Spec.Source.Image = &olmv1.ImageSource{}
+		}
+		catalog.Spec.Source.Image.Ref = ref
+	}
+}
+
+func withCatalogAvailabilityMode(mode olmv1.AvailabilityMode) catalogOpt {
+	return func(catalog *olmv1.ClusterCatalog) {
+		catalog.Spec.AvailabilityMode = mode
+	}
+}
+
+func withCatalogLabels(labels map[string]string) catalogOpt {
+	return func(catalog *olmv1.ClusterCatalog) {
+		catalog.Labels = labels
 	}
 }
 
@@ -172,4 +216,23 @@ func updateExtensionConditionStatus(name string, cl client.Client, typ string, s
 	})
 
 	return cl.Update(context.TODO(), &ext)
+}
+
+func buildCatalog(catalogName string, opts ...catalogOpt) *olmv1.ClusterCatalog {
+	catalog := &olmv1.ClusterCatalog{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: catalogName,
+		},
+		Spec: olmv1.ClusterCatalogSpec{
+			Source: olmv1.CatalogSource{
+				Type: olmv1.SourceTypeImage,
+			},
+		},
+	}
+	catalog.SetName(catalogName)
+	for _, opt := range opts {
+		opt(catalog)
+	}
+
+	return catalog
 }
