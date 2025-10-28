@@ -58,12 +58,20 @@ func newOlmV1Cmd(cfg *action.Configuration) *cobra.Command {
 	}
 	installCmd.AddCommand(olmv1.NewExtensionInstallCmd(cfg))
 
+	searchCmd := &cobra.Command{
+		Use:   "search",
+		Short: "Search for packages",
+		Long:  "Search one or all available catalogs for packages or versions",
+	}
+	searchCmd.AddCommand(olmv1.NewCatalogSearchCmd(cfg))
+
 	cmd.AddCommand(
 		installCmd,
 		getCmd,
 		createCmd,
 		deleteCmd,
 		updateCmd,
+		searchCmd,
 	)
 
 	return cmd

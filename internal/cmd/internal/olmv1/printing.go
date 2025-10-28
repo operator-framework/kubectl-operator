@@ -3,14 +3,20 @@ package olmv1
 import (
 	"cmp"
 	"fmt"
+	"io"
 	"os"
 	"slices"
+	"sort"
+	"strings"
 	"text/tabwriter"
 	"time"
 
 	"github.com/blang/semver/v4"
+	"github.com/operator-framework/operator-registry/alpha/declcfg"
+	"github.com/operator-framework/operator-registry/alpha/property"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/duration"
+	"k8s.io/apimachinery/pkg/util/json"
 
 	olmv1 "github.com/operator-framework/operator-controller/api/v1"
 )
@@ -61,6 +67,107 @@ func printFormattedCatalogs(catalogs ...olmv1.ClusterCatalog) {
 		)
 	}
 	_ = tw.Flush()
+}
+
+func printFormattedDeclCfg(w io.Writer, catalogDcfg map[string]*declcfg.DeclarativeConfig, listVersions bool) {
+	tw := tabwriter.NewWriter(w, 3, 4, 2, ' ', 0)
+	if listVersions {
+		_, _ = fmt.Fprint(tw, "PACKAGE\tCATALOG\tPROVIDER\tVERSION\n")
+	} else {
+		_, _ = fmt.Fprint(tw, "PACKAGE\tCATALOG\tPROVIDER\tCHANNELS\n")
+	}
+	sortedCatalogs := []string{}
+	for catalogName := range catalogDcfg {
+		sortedCatalogs = append(sortedCatalogs, catalogName)
+	}
+	sort.Strings(sortedCatalogs)
+	for _, catalogName := range sortedCatalogs {
+		dcfg := catalogDcfg[catalogName]
+		type dcfgPrintMeta struct {
+			provider string
+			channels []string
+			versions []semver.Version
+		}
+		pkgProviders := map[string]*dcfgPrintMeta{}
+		sort.SliceStable(dcfg.Packages, func(i, j int) bool {
+			return dcfg.Packages[i].Name < dcfg.Packages[j].Name
+		})
+
+		if listVersions {
+			for _, b := range dcfg.Bundles {
+				if pkgProviders[b.Package] == nil {
+					pkgProviders[b.Package] = &dcfgPrintMeta{}
+				}
+				if pkgProviders[b.Package].versions == nil {
+					pkgProviders[b.Package].versions = []semver.Version{}
+				}
+				for _, versionProp := range b.Properties {
+					if versionProp.Type == property.TypePackage {
+						var pkgProp property.Package
+						if err := json.Unmarshal(versionProp.Value, &pkgProp); err == nil && len(pkgProp.Version) > 0 {
+							if parsedVersion, err := semver.Parse(pkgProp.Version); err == nil {
+								pkgProviders[b.Package].versions = append(pkgProviders[b.Package].versions, parsedVersion)
+							}
+						}
+						continue
+					}
+					if versionProp.Type == property.TypeCSVMetadata {
+						var pkgProp property.CSVMetadata
+						if err := json.Unmarshal(versionProp.Value, &pkgProp); err == nil && len(pkgProp.Provider.Name) > 0 {
+							pkgProviders[b.Package].provider = pkgProp.Provider.Name
+						}
+						continue
+					}
+				}
+			}
+		} else {
+			for _, c := range dcfg.Channels {
+				if pkgProviders[c.Package] == nil {
+					pkgProviders[c.Package] = &dcfgPrintMeta{}
+				}
+				if pkgProviders[c.Package].channels == nil {
+					pkgProviders[c.Package].channels = []string{}
+				}
+				pkgProviders[c.Package].channels = append(pkgProviders[c.Package].channels, c.Name)
+			}
+		}
+
+		for _, p := range dcfg.Packages {
+			if listVersions {
+				sort.SliceStable(pkgProviders[p.Name].versions, func(i, j int) bool {
+					return pkgProviders[p.Name].versions[i].GT(pkgProviders[p.Name].versions[j])
+				})
+				for _, v := range pkgProviders[p.Name].versions {
+					_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\n",
+						p.Name,
+						catalogName,
+						pkgProviders[p.Name].provider,
+						v)
+				}
+			} else {
+				sort.Strings(pkgProviders[p.Name].channels)
+				_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\n",
+					p.Name,
+					catalogName,
+					pkgProviders[p.Name].provider,
+					strings.Join(pkgProviders[p.Name].channels, ","))
+			}
+		}
+	}
+	_ = tw.Flush()
+}
+
+func printDeclCfgJSON(w io.Writer, catalogDcfg map[string]*declcfg.DeclarativeConfig) {
+	for _, dcfg := range catalogDcfg {
+		_ = declcfg.WriteJSON(*dcfg, w)
+	}
+}
+
+func printDeclCfgYAML(w io.Writer, catalogDcfg map[string]*declcfg.DeclarativeConfig) {
+	for _, dcfg := range catalogDcfg {
+		_ = declcfg.WriteYAML(*dcfg, w)
+		_, _ = w.Write([]byte("---\n"))
+	}
 }
 
 // sortExtensions sorts extensions in place and uses the following sorting order:
