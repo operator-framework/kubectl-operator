@@ -15,13 +15,45 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/duration"
 	"k8s.io/apimachinery/pkg/util/json"
+	"k8s.io/cli-runtime/pkg/printers"
 
 	olmv1 "github.com/operator-framework/operator-controller/api/v1"
 	"github.com/operator-framework/operator-registry/alpha/declcfg"
 	"github.com/operator-framework/operator-registry/alpha/property"
 )
 
-func printFormattedExtensions(extensions ...olmv1.ClusterExtension) {
+func printFormattedExtensions(outputFormat string, extensions ...olmv1.ClusterExtension) {
+	if len(extensions) == 0 {
+		fmt.Println("No resources found")
+		return
+	}
+	switch outputFormat {
+	case "yaml":
+		printer := printers.YAMLPrinter{}
+		if len(extensions) > 1 {
+			if err := printer.PrintObj(&olmv1.ClusterExtensionList{Items: extensions}, os.Stdout); err != nil {
+				fmt.Printf("failed to marshal response to YAML: %v\n", err)
+			}
+			return
+		}
+		if err := printer.PrintObj(&extensions[0], os.Stdout); err != nil {
+			fmt.Printf("failed to marshal response to YAML: %v\n", err)
+		}
+		return
+	case "json":
+		printer := printers.JSONPrinter{}
+		if len(extensions) > 1 {
+			if err := printer.PrintObj(&olmv1.ClusterExtensionList{Items: extensions}, os.Stdout); err != nil {
+				fmt.Printf("failed to marshal response to JSON: %v\n", err)
+			}
+			return
+		}
+		if err := printer.PrintObj(&extensions[0], os.Stdout); err != nil {
+			fmt.Printf("failed to marshal response to JSON: %v\n", err)
+		}
+		return
+	default:
+	}
 	tw := tabwriter.NewWriter(os.Stdout, 3, 4, 2, ' ', 0)
 	_, _ = fmt.Fprint(tw, "NAME\tINSTALLED BUNDLE\tVERSION\tSOURCE TYPE\tINSTALLED\tPROGRESSING\tAGE\n")
 
@@ -46,7 +78,38 @@ func printFormattedExtensions(extensions ...olmv1.ClusterExtension) {
 	_ = tw.Flush()
 }
 
-func printFormattedCatalogs(catalogs ...olmv1.ClusterCatalog) {
+func printFormattedCatalogs(outputFormat string, catalogs ...olmv1.ClusterCatalog) {
+	if len(catalogs) == 0 {
+		fmt.Println("No resources found")
+		return
+	}
+	switch outputFormat {
+	case "yaml":
+		printer := printers.YAMLPrinter{}
+		if len(catalogs) > 1 {
+			if err := printer.PrintObj(&olmv1.ClusterCatalogList{Items: catalogs}, os.Stdout); err != nil {
+				fmt.Printf("failed to marshal response to YAML: %v\n", err)
+			}
+			return
+		}
+		if err := printer.PrintObj(&catalogs[0], os.Stdout); err != nil {
+			fmt.Printf("failed to marshal response to YAML: %v\n", err)
+		}
+		return
+	case "json":
+		printer := printers.JSONPrinter{}
+		if len(catalogs) > 1 {
+			if err := printer.PrintObj(&olmv1.ClusterCatalogList{Items: catalogs}, os.Stdout); err != nil {
+				fmt.Printf("failed to marshal response to JSON: %v\n", err)
+			}
+			return
+		}
+		if err := printer.PrintObj(&catalogs[0], os.Stdout); err != nil {
+			fmt.Printf("failed to marshal response to JSON: %v\n", err)
+		}
+		return
+	default:
+	}
 	tw := tabwriter.NewWriter(os.Stdout, 3, 4, 2, ' ', 0)
 	_, _ = fmt.Fprint(tw, "NAME\tAVAILABILITY\tPRIORITY\tLASTUNPACKED\tSERVING\tAGE\n")
 

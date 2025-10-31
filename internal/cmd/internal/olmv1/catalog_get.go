@@ -6,6 +6,7 @@ import (
 	"github.com/operator-framework/kubectl-operator/internal/cmd/internal/log"
 	v1action "github.com/operator-framework/kubectl-operator/internal/pkg/v1/action"
 	"github.com/operator-framework/kubectl-operator/pkg/action"
+	"k8s.io/apimachinery/pkg/labels"
 )
 
 // NewCatalogInstalledGetCmd handles get commands in the form of:
@@ -15,6 +16,7 @@ import (
 func NewCatalogInstalledGetCmd(cfg *action.Configuration) *cobra.Command {
 	i := v1action.NewCatalogInstalledGet(cfg)
 	i.Logf = log.Printf
+	catalogGetOptions := getOptions{}
 
 	cmd := &cobra.Command{
 		Use:     "catalog [catalog_name]",
@@ -25,14 +27,26 @@ func NewCatalogInstalledGetCmd(cfg *action.Configuration) *cobra.Command {
 			if len(args) == 1 {
 				i.CatalogName = args[0]
 			}
+			var err error
+			switch catalogGetOptions.Output {
+			case "yaml", "json", "":
+			default:
+				log.Fatalf("unrecognized output format %s", catalogGetOptions.Output)
+			}
+			if len(catalogGetOptions.Selector) > 0 {
+				i.Selector, err = labels.Parse(catalogGetOptions.Selector)
+				if err != nil {
+					log.Fatalf("unable to parse selector %s: %v", catalogGetOptions.Selector, err)
+				}
+			}
 			installedCatalogs, err := i.Run(cmd.Context())
 			if err != nil {
 				log.Fatalf("failed getting installed catalog(s): %v", err)
 			}
-
-			printFormattedCatalogs(installedCatalogs...)
+			printFormattedCatalogs(catalogGetOptions.Output, installedCatalogs...)
 		},
 	}
+	bindGetFlags(cmd.Flags(), &catalogGetOptions)
 
 	return cmd
 }

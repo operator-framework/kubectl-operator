@@ -6,6 +6,7 @@ import (
 	"github.com/operator-framework/kubectl-operator/internal/cmd/internal/log"
 	v1action "github.com/operator-framework/kubectl-operator/internal/pkg/v1/action"
 	"github.com/operator-framework/kubectl-operator/pkg/action"
+	"k8s.io/apimachinery/pkg/labels"
 )
 
 // NewExtensionInstalledGetCmd handles get commands in the form of:
@@ -15,6 +16,7 @@ import (
 func NewExtensionInstalledGetCmd(cfg *action.Configuration) *cobra.Command {
 	i := v1action.NewExtensionInstalledGet(cfg)
 	i.Logf = log.Printf
+	extensionGetOptions := getOptions{}
 
 	cmd := &cobra.Command{
 		Use:     "extension [extension_name]",
@@ -25,14 +27,22 @@ func NewExtensionInstalledGetCmd(cfg *action.Configuration) *cobra.Command {
 			if len(args) == 1 {
 				i.ExtensionName = args[0]
 			}
+			var err error
+			if len(extensionGetOptions.Selector) > 0 {
+				i.Selector, err = labels.Parse(extensionGetOptions.Selector)
+				if err != nil {
+					log.Fatalf("unable to parse selector %s: %v", extensionGetOptions.Selector, err)
+				}
+			}
 			installedExtensions, err := i.Run(cmd.Context())
 			if err != nil {
 				log.Fatalf("failed getting installed extension(s): %v", err)
 			}
 
-			printFormattedExtensions(installedExtensions...)
+			printFormattedExtensions(extensionGetOptions.Output, installedExtensions...)
 		},
 	}
+	bindGetFlags(cmd.Flags(), &extensionGetOptions)
 
 	return cmd
 }

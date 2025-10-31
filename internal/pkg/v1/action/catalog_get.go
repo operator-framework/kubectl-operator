@@ -16,6 +16,7 @@ import (
 type CatalogInstalledGet struct {
 	config      *action.Configuration
 	CatalogName string
+	Selector    labels.Selector
 
 	Selector string
 
@@ -45,15 +46,11 @@ func (i *CatalogInstalledGet) Run(ctx context.Context) ([]olmv1.ClusterCatalog, 
 
 	// list
 	var result olmv1.ClusterCatalogList
-	listOptions := &client.ListOptions{}
-	if len(i.Selector) > 0 {
-		labelSelector, err := labels.Parse(i.Selector)
-		if err != nil {
-			return nil, fmt.Errorf("unable to parse selector %s: %v", i.Selector, err)
-		}
-		listOptions.LabelSelector = labelSelector
+	listOpts := &client.ListOptions{}
+	if i.Selector != nil {
+		listOpts.LabelSelector = i.Selector
 	}
-	err := i.config.Client.List(ctx, &result, listOptions)
+	err := i.config.Client.List(ctx, &result, listOpts)
 
 	return result.Items, err
 }
