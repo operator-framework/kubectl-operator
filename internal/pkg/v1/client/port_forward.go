@@ -2,7 +2,6 @@ package client
 
 import (
 	"context"
-	"crypto/rand"
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
@@ -202,9 +201,6 @@ func (c *portForwardClient) getPodAndPortForService(ctx context.Context, namespa
 	}
 	if len(pods) == 0 {
 		return "", -1, fmt.Errorf("no pods ready for service %q", svcKey)
-	}
-	if len(readyAddresses) == 0 {
-		return "", -1, fmt.Errorf("no endpoints ready for service %s/%s", namespace, serviceName)
 	}
 
 	// Select the first pod (or you could add load balancing logic here)
