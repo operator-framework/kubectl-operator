@@ -52,14 +52,14 @@ func NewExtensionUpdateCmd(cfg *action.Configuration) *cobra.Command {
 func bindExtensionUpdateFlags(fs *pflag.FlagSet, i *v1action.ExtensionUpdate) {
 	fs.StringArrayVar(&i.Channels, "channels", []string{}, "desired channels for extension versions. AND operation with version. Empty list means all available channels will be taken into consideration")
 	fs.StringVar(&i.Version, "version", "", "desired extension version (single or range) in semVer format. AND operation with channels")
-	fs.StringVar(&i.Selector, "catalog-selector", "", "Selector (label query) to filter catalogs to search for the package, "+
+	fs.StringVar(&i.Selector, "catalog-selector", "", "selector (label query) to filter catalogs to search for the package, "+
 		"supports '=', '==', '!=', 'in', 'notin'.(e.g. -l key1=value1,key2=value2,key3 "+
 		"in (value3)). Matching objects must satisfy all of the specified label constraints.")
 	fs.StringVar(&i.UpgradeConstraintPolicy, "upgrade-constraint-policy", "", "controls whether the upgrade path(s) defined in the catalog are enforced."+
 		" One of CatalogProvided, SelfCertified), Default: CatalogProvided")
 	fs.StringToStringVar(&i.Labels, "labels", map[string]string{}, "labels that will be set on the extension")
 	fs.BoolVar(&i.IgnoreUnset, "ignore-unset", true, "when enabled, any unset flag value will not be changed. Disabling means that for each unset value a default will be used instead")
-	fs.StringVar(&i.CRDUpgradeSafetyEnforcement, "crd-upgrade-safety-enforcement", "", "Output format for dry-run manifests. One of: (Strict, None), default: Strict")
-	fs.StringVar(&i.DryRun, "dry-run", "", "Display the object that would be sent on a request without applying it. One of: (All)")
-	fs.StringVarP(&i.Output, "output", "o", "", "Output format for dry-run manifests. One of: (json, yaml)")
+	fs.StringVar(&i.CRDUpgradeSafetyEnforcement, "crd-upgrade-safety-enforcement", "", "policy for preflight CRD Upgrade safety checks. One of: (Strict, None), default: Strict")
+	fs.StringVar(&i.DryRun, "dry-run", "", "display the object that would be sent on a request without applying it. One of: (All)")
+	fs.StringVarP(&i.Output, "output", "o", "", "output format for dry-run manifests. One of: (json, yaml)")
 }

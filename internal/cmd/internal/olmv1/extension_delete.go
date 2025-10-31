@@ -43,7 +43,7 @@ func NewExtensionDeleteCmd(cfg *action.Configuration) *cobra.Command {
 			}
 			if len(e.Output) == 0 {
 				for _, extn := range extensions {
-					log.Printf("extension %s deleted(dry run)\n", extn.Name)
+					log.Printf("extension %s deleted (dry run)\n", extn.Name)
 				}
 				return
 			}
@@ -61,6 +61,6 @@ func NewExtensionDeleteCmd(cfg *action.Configuration) *cobra.Command {
 
 func bindExtensionDeleteFlags(fs *pflag.FlagSet, e *v1action.ExtensionDeletion) {
 	fs.BoolVarP(&e.DeleteAll, "all", "a", false, "delete all extensions")
-	fs.StringVar(&e.DryRun, "dry-run", "", "Display the object that would be sent on a request without applying it. One of: (All)")
-	fs.StringVarP(&e.Output, "output", "o", "", "Output format for dry-run manifests. One of: (json, yaml)")
+	fs.StringVar(&e.DryRun, "dry-run", "", "display the object that would be sent on a request without applying it. One of: (All)")
+	fs.StringVarP(&e.Output, "output", "o", "", "output format for dry-run manifests. One of: (json, yaml)")
 }

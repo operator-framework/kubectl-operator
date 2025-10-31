@@ -13,6 +13,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/briandowns/spinner"
 	olmv1 "github.com/operator-framework/operator-controller/api/v1"
 )
 
@@ -33,6 +34,9 @@ func waitUntilCatalogStatusCondition(
 	conditionType string,
 	conditionStatus metav1.ConditionStatus,
 ) error {
+	s := spinner.New(spinner.CharSets[1], 100*time.Millisecond)
+	s.Start()
+	defer s.Stop()
 	opKey := objectKeyForObject(catalog)
 	return wait.PollUntilContextCancel(ctx, pollInterval, true, func(conditionCtx context.Context) (bool, error) {
 		if err := cl.Get(conditionCtx, opKey, catalog); err != nil {
@@ -55,6 +59,9 @@ func waitUntilExtensionStatusCondition(
 	conditionType string,
 	conditionStatus metav1.ConditionStatus,
 ) error {
+	s := spinner.New(spinner.CharSets[1], 100*time.Millisecond)
+	s.Start()
+	defer s.Stop()
 	opKey := objectKeyForObject(extension)
 	return wait.PollUntilContextCancel(ctx, pollInterval, true, func(conditionCtx context.Context) (bool, error) {
 		if err := cl.Get(conditionCtx, opKey, extension); err != nil {
@@ -71,6 +78,9 @@ func waitUntilExtensionStatusCondition(
 }
 
 func deleteWithTimeout(cl deleter, obj client.Object, timeout time.Duration) error {
+	s := spinner.New(spinner.CharSets[1], 100*time.Millisecond)
+	s.Start()
+	defer s.Stop()
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
@@ -82,6 +92,9 @@ func deleteWithTimeout(cl deleter, obj client.Object, timeout time.Duration) err
 }
 
 func waitForDeletion(ctx context.Context, cl getter, objs ...client.Object) error {
+	s := spinner.New(spinner.CharSets[1], 100*time.Millisecond)
+	s.Start()
+	defer s.Stop()
 	for _, obj := range objs {
 		lowerKind := strings.ToLower(obj.GetObjectKind().GroupVersionKind().Kind)
 		key := objectKeyForObject(obj)

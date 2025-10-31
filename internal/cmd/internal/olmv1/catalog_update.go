@@ -74,8 +74,8 @@ func NewCatalogUpdateCmd(cfg *action.Configuration) *cobra.Command {
 	cmd.Flags().StringToStringVar(&labels, "labels", map[string]string{}, "labels that will be added to the catalog")
 	cmd.Flags().StringVar(&i.ImageRef, "image", "", "Image reference for the catalog source. Leave unset to retain the current image.")
 	cmd.Flags().BoolVar(&i.IgnoreUnset, "ignore-unset", true, "when enabled, any unset flag value will not be changed. Disabling means that for each unset value a default will be used instead")
-	cmd.Flags().StringVar(&i.DryRun, "dry-run", "", "Display the object that would be sent on a request without applying it if non-empty. One of: (All)")
-	cmd.Flags().StringVarP(&i.Output, "output", "o", "", "Output format for dry-run manifests. One of: (json, yaml)")
+	cmd.Flags().StringVar(&i.DryRun, "dry-run", "", "display the object that would be sent on a request without applying it if non-empty. One of: (All)")
+	cmd.Flags().StringVarP(&i.Output, "output", "o", "", "output format for dry-run manifests. One of: (json, yaml)")
 
 	return cmd
 }

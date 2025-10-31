@@ -13,6 +13,7 @@ import (
 
 	"github.com/blang/semver/v4"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/duration"
 	"k8s.io/apimachinery/pkg/util/json"
 	"k8s.io/cli-runtime/pkg/printers"
@@ -31,7 +32,10 @@ func printFormattedExtensions(outputFormat string, extensions ...olmv1.ClusterEx
 	case "yaml":
 		printer := printers.YAMLPrinter{}
 		if len(extensions) > 1 {
-			if err := printer.PrintObj(&olmv1.ClusterExtensionList{Items: extensions}, os.Stdout); err != nil {
+			obj := &olmv1.ClusterExtensionList{Items: extensions}
+			obj.GetObjectKind().SetGroupVersionKind(schema.GroupVersionKind{Group: olmv1.GroupVersion.Group,
+				Version: olmv1.GroupVersion.Version, Kind: olmv1.ClusterExtensionKind})
+			if err := printer.PrintObj(obj, os.Stdout); err != nil {
 				fmt.Printf("failed to marshal response to YAML: %v\n", err)
 			}
 			return
@@ -43,7 +47,11 @@ func printFormattedExtensions(outputFormat string, extensions ...olmv1.ClusterEx
 	case "json":
 		printer := printers.JSONPrinter{}
 		if len(extensions) > 1 {
-			if err := printer.PrintObj(&olmv1.ClusterExtensionList{Items: extensions}, os.Stdout); err != nil {
+			obj := &olmv1.ClusterExtensionList{Items: extensions}
+			obj.GetObjectKind().SetGroupVersionKind(schema.GroupVersionKind{Group: olmv1.GroupVersion.Group,
+				Version: olmv1.GroupVersion.Version, Kind: olmv1.ClusterExtensionKind})
+
+			if err := printer.PrintObj(obj, os.Stdout); err != nil {
 				fmt.Printf("failed to marshal response to JSON: %v\n", err)
 			}
 			return
@@ -87,7 +95,10 @@ func printFormattedCatalogs(outputFormat string, catalogs ...olmv1.ClusterCatalo
 	case "yaml":
 		printer := printers.YAMLPrinter{}
 		if len(catalogs) > 1 {
-			if err := printer.PrintObj(&olmv1.ClusterCatalogList{Items: catalogs}, os.Stdout); err != nil {
+			obj := &olmv1.ClusterCatalogList{Items: catalogs}
+			obj.GetObjectKind().SetGroupVersionKind(schema.GroupVersionKind{Group: olmv1.GroupVersion.Group,
+				Version: olmv1.GroupVersion.Version, Kind: "ClusterCatalog"})
+			if err := printer.PrintObj(obj, os.Stdout); err != nil {
 				fmt.Printf("failed to marshal response to YAML: %v\n", err)
 			}
 			return
@@ -99,7 +110,10 @@ func printFormattedCatalogs(outputFormat string, catalogs ...olmv1.ClusterCatalo
 	case "json":
 		printer := printers.JSONPrinter{}
 		if len(catalogs) > 1 {
-			if err := printer.PrintObj(&olmv1.ClusterCatalogList{Items: catalogs}, os.Stdout); err != nil {
+			obj := &olmv1.ClusterCatalogList{Items: catalogs}
+			obj.GetObjectKind().SetGroupVersionKind(schema.GroupVersionKind{Group: olmv1.GroupVersion.Group,
+				Version: olmv1.GroupVersion.Version, Kind: "ClusterCatalog"})
+			if err := printer.PrintObj(obj, os.Stdout); err != nil {
 				fmt.Printf("failed to marshal response to JSON: %v\n", err)
 			}
 			return

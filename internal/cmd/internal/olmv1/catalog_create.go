@@ -61,6 +61,6 @@ func bindCatalogCreateFlags(fs *pflag.FlagSet, i *v1action.CatalogCreate) {
 	fs.StringToStringVar(&i.Labels, "labels", map[string]string{}, "labels to add to the new catalog")
 	fs.DurationVar(&i.CleanupTimeout, "cleanup-timeout", time.Minute, "the amount of time to wait before cancelling cleanup after a failed creation attempt")
 	// sigs.k8s.io/controller-runtime/pkg/client supported dry-run values only.
-	fs.StringVar(&i.DryRun, "dry-run", "", "Display the object that would be sent on a request without applying it if non-empty. One of: (All)")
-	fs.StringVarP(&i.Output, "output", "o", "", "Output format for dry-run manifests. One of: (json, yaml)")
+	fs.StringVar(&i.DryRun, "dry-run", "", "display the object that would be sent on a request without applying it if non-empty. One of: (All)")
+	fs.StringVarP(&i.Output, "output", "o", "", "output format for dry-run manifests. One of: (json, yaml)")
 }

@@ -88,12 +88,12 @@ func bindExtensionInstallFlags(fs *pflag.FlagSet, i *v1action.ExtensionInstall, 
 	fs.StringVarP(&i.ServiceAccount, "service-account", "s", "default", "service account name to use for the extension installation")
 	fs.DurationVarP(&i.CleanupTimeout, "cleanup-timeout", "d", time.Minute, "the amount of time to wait before cancelling cleanup after a failed creation attempt")
 	fs.StringToStringVar(&i.Labels, "labels", map[string]string{}, "labels to add to the new extension")
-	fs.StringVar(&i.DryRun, "dry-run", "", "Display the object that would be sent on a request without applying it. One of: (All)")
-	fs.StringVarP(&i.Output, "output", "o", "", "Output format for dry-run manifests. One of: (json, yaml)")
-	fs.StringVar(&o.CatalogSelector, "catalog-selector", "", "Selector (label query) to filter catalogs to search for the package, "+
+	fs.StringVar(&i.DryRun, "dry-run", "", "display the object that would be sent on a request without applying it. One of: (All)")
+	fs.StringVarP(&i.Output, "output", "o", "", "output format for dry-run manifests. One of: (json, yaml)")
+	fs.StringVar(&o.CatalogSelector, "catalog-selector", "", "selector (label query) to filter catalogs to search for the package, "+
 		"supports '=', '==', '!=', 'in', 'notin'.(e.g. -l key1=value1,key2=value2,key3 "+
 		"in (value3)). Matching objects must satisfy all of the specified label constraints.")
 	fs.StringVar(&i.UpgradeConstraintPolicy, "upgrade-constraint-policy", "CatalogProvided", "controls whether the upgrade path(s) defined in the catalog are enforced."+
 		" One of CatalogProvided, SelfCertified), Default: CatalogProvided")
-	fs.StringVar(&i.CRDUpgradeSafetyEnforcement, "crd-upgrade-safety-enforcement", "Strict", "Output format for dry-run manifests. One of: (Strict, None), default: Strict")
+	fs.StringVar(&i.CRDUpgradeSafetyEnforcement, "crd-upgrade-safety-enforcement", "Strict", "policy for preflight CRD Upgrade safety checks. One of: (Strict, None), default: Strict")
 }
