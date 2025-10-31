@@ -11,7 +11,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	ocv1 "github.com/operator-framework/operator-controller/api/v1"
+	olmv1 "github.com/operator-framework/operator-controller/api/v1"
 
 	"github.com/operator-framework/kubectl-operator/pkg/action"
 )
@@ -26,6 +26,14 @@ type ExtensionInstall struct {
 	ServiceAccount string
 	CleanupTimeout time.Duration
 	Logf           func(string, ...interface{})
+
+	DryRun                               string
+	Output                               string
+	CatalogSelector                      *metav1.LabelSelector
+	UpgradeConstraintPolicy              string
+	PreflightCRDUpgradeSafetyEnforcement string
+	CRDUpgradeSafetyEnforcement          string
+	Labels                               map[string]string
 }
 type NamespaceConfig struct {
 	Name string
@@ -38,30 +46,40 @@ func NewExtensionInstall(cfg *action.Configuration) *ExtensionInstall {
 	}
 }
 
-func (i *ExtensionInstall) buildClusterExtension() ocv1.ClusterExtension {
-	extension := ocv1.ClusterExtension{
+func (i *ExtensionInstall) buildClusterExtension() olmv1.ClusterExtension {
+	extension := olmv1.ClusterExtension{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: i.ExtensionName,
+			Name:   i.ExtensionName,
+			Labels: i.Labels,
 		},
-		Spec: ocv1.ClusterExtensionSpec{
-			Source: ocv1.SourceConfig{
-				SourceType: ocv1.SourceTypeCatalog,
-				Catalog: &ocv1.CatalogFilter{
+		Spec: olmv1.ClusterExtensionSpec{
+			Source: olmv1.SourceConfig{
+				SourceType: olmv1.SourceTypeCatalog,
+				Catalog: &olmv1.CatalogFilter{
 					PackageName: i.PackageName,
 					Version:     i.Version,
 				},
 			},
 			Namespace: i.Namespace.Name,
-			ServiceAccount: ocv1.ServiceAccountReference{
+			ServiceAccount: olmv1.ServiceAccountReference{
 				Name: i.ServiceAccount,
 			},
 		},
+	}
+	if i.CatalogSelector != nil {
+		extension.Spec.Source.Catalog.Selector = i.CatalogSelector
+	}
+	if len(i.UpgradeConstraintPolicy) > 0 {
+		extension.Spec.Source.Catalog.UpgradeConstraintPolicy = olmv1.UpgradeConstraintPolicy(i.UpgradeConstraintPolicy)
+	}
+	if len(i.CRDUpgradeSafetyEnforcement) > 0 {
+		extension.Spec.Install.Preflight.CRDUpgradeSafety.Enforcement = olmv1.CRDUpgradeSafetyEnforcement(i.CRDUpgradeSafetyEnforcement)
 	}
 
 	return extension
 }
 
-func (i *ExtensionInstall) Run(ctx context.Context) (*ocv1.ClusterExtension, error) {
+func (i *ExtensionInstall) Run(ctx context.Context) (*olmv1.ClusterExtension, error) {
 	extension := i.buildClusterExtension()
 
 	// Add Channels to extension
@@ -69,8 +87,12 @@ func (i *ExtensionInstall) Run(ctx context.Context) (*ocv1.ClusterExtension, err
 		extension.Spec.Source.Catalog.Channels = i.Channels
 	}
 
-	// TODO: Add CatalogSelector to extension
-
+	if i.DryRun == DryRunAll {
+		if err := i.config.Client.Create(ctx, &extension, client.DryRunAll); err != nil {
+			return nil, err
+		}
+		return &extension, nil
+	}
 	// Create the extension
 	if err := i.config.Client.Create(ctx, &extension); err != nil {
 		return nil, err
@@ -87,8 +109,8 @@ func (i *ExtensionInstall) Run(ctx context.Context) (*ocv1.ClusterExtension, err
 
 // waitForClusterExtensionInstalled waits for the ClusterExtension to be installed
 // and returns the ClusterExtension object
-func (i *ExtensionInstall) waitForExtensionInstall(ctx context.Context) (*ocv1.ClusterExtension, error) {
-	clusterExtension := &ocv1.ClusterExtension{
+func (i *ExtensionInstall) waitForExtensionInstall(ctx context.Context) (*olmv1.ClusterExtension, error) {
+	clusterExtension := &olmv1.ClusterExtension{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: i.ExtensionName,
 		},
@@ -99,12 +121,12 @@ func (i *ExtensionInstall) waitForExtensionInstall(ctx context.Context) (*ocv1.C
 		if err := i.config.Client.Get(conditionCtx, key, clusterExtension); err != nil {
 			return false, err
 		}
-		progressingCondition := meta.FindStatusCondition(clusterExtension.Status.Conditions, ocv1.TypeProgressing)
-		if progressingCondition != nil && progressingCondition.Reason != ocv1.ReasonSucceeded {
+		progressingCondition := meta.FindStatusCondition(clusterExtension.Status.Conditions, olmv1.TypeProgressing)
+		if progressingCondition != nil && progressingCondition.Reason != olmv1.ReasonSucceeded {
 			errMsg = progressingCondition.Message
 			return false, nil
 		}
-		if !meta.IsStatusConditionPresentAndEqual(clusterExtension.Status.Conditions, ocv1.TypeInstalled, metav1.ConditionTrue) {
+		if !meta.IsStatusConditionPresentAndEqual(clusterExtension.Status.Conditions, olmv1.TypeInstalled, metav1.ConditionTrue) {
 			return false, nil
 		}
 		return true, nil
@@ -118,7 +140,7 @@ func (i *ExtensionInstall) waitForExtensionInstall(ctx context.Context) (*ocv1.C
 }
 
 func (i *ExtensionInstall) cleanup(ctx context.Context) error {
-	clusterExtension := &ocv1.ClusterExtension{
+	clusterExtension := &olmv1.ClusterExtension{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: i.ExtensionName,
 		},

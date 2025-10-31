@@ -50,7 +50,7 @@ var _ = Describe("CatalogCreate", func() {
 		creator.Priority = expectedCatalog.Spec.Priority
 		creator.Labels = expectedCatalog.Labels
 		creator.PollIntervalMinutes = *expectedCatalog.Spec.Source.Image.PollIntervalMinutes
-		err := creator.Run(context.TODO())
+		_, err := creator.Run(context.TODO())
 
 		Expect(err).NotTo(BeNil())
 		Expect(err).To(MatchError(expectedErr))
@@ -65,7 +65,7 @@ var _ = Describe("CatalogCreate", func() {
 		creator := internalaction.NewCatalogCreate(&action.Configuration{Client: testClient})
 		// fakeClient requires at least the catalogName to be set to run
 		creator.CatalogName = expectedCatalog.Name
-		err := creator.Run(context.TODO())
+		_, err := creator.Run(context.TODO())
 
 		Expect(err).NotTo(BeNil())
 		Expect(err).To(MatchError(expectedErr))
@@ -83,7 +83,7 @@ var _ = Describe("CatalogCreate", func() {
 		creator := internalaction.NewCatalogCreate(&action.Configuration{Client: testClient})
 		// fakeClient requires at least the catalogName to be set to run
 		creator.CatalogName = expectedCatalog.Name
-		err := creator.Run(context.TODO())
+		_, err := creator.Run(context.TODO())
 
 		Expect(err).NotTo(BeNil())
 		Expect(err).To(MatchError(getErr))

@@ -9,6 +9,8 @@ import (
 	olmv1 "github.com/operator-framework/operator-controller/api/v1"
 
 	"github.com/operator-framework/kubectl-operator/pkg/action"
+
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 type CatalogCreate struct {
@@ -22,6 +24,9 @@ type CatalogCreate struct {
 	Available           bool
 	CleanupTimeout      time.Duration
 
+	DryRun string
+	Output string
+
 	Logf func(string, ...interface{})
 }
 
@@ -32,10 +37,16 @@ func NewCatalogCreate(config *action.Configuration) *CatalogCreate {
 	}
 }
 
-func (i *CatalogCreate) Run(ctx context.Context) error {
+func (i *CatalogCreate) Run(ctx context.Context) (*olmv1.ClusterCatalog, error) {
 	catalog := i.buildCatalog()
+	if i.DryRun == DryRunAll {
+		if err := i.config.Client.Create(ctx, &catalog, client.DryRunAll); err != nil {
+			return nil, err
+		}
+		return &catalog, nil
+	}
 	if err := i.config.Client.Create(ctx, &catalog); err != nil {
-		return err
+		return nil, err
 	}
 
 	var err error
@@ -49,10 +60,10 @@ func (i *CatalogCreate) Run(ctx context.Context) error {
 		if cleanupErr := deleteWithTimeout(i.config.Client, &catalog, i.CleanupTimeout); cleanupErr != nil {
 			i.Logf("cleaning up failed catalog: %v", cleanupErr)
 		}
-		return err
+		return nil, err
 	}
 
-	return nil
+	return &catalog, nil
 }
 
 func (i *CatalogCreate) buildCatalog() olmv1.ClusterCatalog {

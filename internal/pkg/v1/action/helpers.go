@@ -17,6 +17,7 @@ import (
 )
 
 const pollInterval = 250 * time.Millisecond
+const DryRunAll = "All"
 
 func objectKeyForObject(obj client.Object) types.NamespacedName {
 	return types.NamespacedName{
