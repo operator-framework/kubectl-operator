@@ -10,6 +10,7 @@ import (
 	olmv1 "github.com/operator-framework/operator-controller/api/v1"
 
 	"github.com/operator-framework/kubectl-operator/pkg/action"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 type CatalogUpdate struct {
@@ -24,6 +25,9 @@ type CatalogUpdate struct {
 	IgnoreUnset         bool
 
 	Logf func(string, ...interface{})
+
+	DryRun string
+	Output string
 }
 
 func NewCatalogUpdate(config *action.Configuration) *CatalogUpdate {
@@ -56,6 +60,13 @@ func (cu *CatalogUpdate) Run(ctx context.Context) (*olmv1.ClusterCatalog, error)
 	cu.setDefaults(&catalog)
 
 	cu.setUpdatedCatalog(&catalog)
+	if cu.DryRun == DryRunAll {
+		if err := cu.config.Client.Update(ctx, &catalog, client.DryRunAll); err != nil {
+			return nil, err
+		}
+		return &catalog, nil
+	}
+
 	if err := cu.config.Client.Update(ctx, &catalog); err != nil {
 		return nil, err
 	}

@@ -10,6 +10,7 @@ import (
 	"github.com/blang/semver/v4"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	olmv1 "github.com/operator-framework/operator-controller/api/v1"
 
@@ -17,9 +18,9 @@ import (
 )
 
 type ExtensionUpdate struct {
-	cfg *action.Configuration
+	config *action.Configuration
 
-	Package string
+	ExtensionName string
 
 	Version  string
 	Channels []string
@@ -34,12 +35,16 @@ type ExtensionUpdate struct {
 	CleanupTimeout time.Duration
 
 	Logf func(string, ...interface{})
+
+	CRDUpgradeSafetyEnforcement string
+	DryRun                      string
+	Output                      string
 }
 
 func NewExtensionUpdate(cfg *action.Configuration) *ExtensionUpdate {
 	return &ExtensionUpdate{
-		cfg:  cfg,
-		Logf: func(string, ...interface{}) {},
+		config: cfg,
+		Logf:   func(string, ...interface{}) {},
 	}
 }
 
@@ -47,8 +52,8 @@ func (ou *ExtensionUpdate) Run(ctx context.Context) (*olmv1.ClusterExtension, er
 	var ext olmv1.ClusterExtension
 	var err error
 
-	opKey := types.NamespacedName{Name: ou.Package}
-	if err = ou.cfg.Client.Get(ctx, opKey, &ext); err != nil {
+	opKey := types.NamespacedName{Name: ou.ExtensionName}
+	if err = ou.config.Client.Get(ctx, opKey, &ext); err != nil {
 		return nil, err
 	}
 
@@ -76,11 +81,18 @@ func (ou *ExtensionUpdate) Run(ctx context.Context) (*olmv1.ClusterExtension, er
 	}
 
 	ou.prepareUpdatedExtension(&ext, constraintPolicy)
-	if err := ou.cfg.Client.Update(ctx, &ext); err != nil {
+	if ou.DryRun == DryRunAll {
+		if err := ou.config.Client.Update(ctx, &ext, client.DryRunAll); err != nil {
+			return nil, err
+		}
+		return &ext, nil
+	}
+
+	if err := ou.config.Client.Update(ctx, &ext); err != nil {
 		return nil, err
 	}
 
-	if err := waitUntilExtensionStatusCondition(ctx, ou.cfg.Client, &ext, olmv1.TypeInstalled, metav1.ConditionTrue); err != nil {
+	if err := waitUntilExtensionStatusCondition(ctx, ou.config.Client, &ext, olmv1.TypeInstalled, metav1.ConditionTrue); err != nil {
 		return nil, fmt.Errorf("timed out waiting for extension: %w", err)
 	}
 
@@ -91,6 +103,9 @@ func (ou *ExtensionUpdate) setDefaults(ext olmv1.ClusterExtension) {
 	if !ou.IgnoreUnset {
 		if ou.UpgradeConstraintPolicy == "" {
 			ou.UpgradeConstraintPolicy = string(olmv1.UpgradeConstraintPolicyCatalogProvided)
+		}
+		if ou.CRDUpgradeSafetyEnforcement == "" {
+			ou.CRDUpgradeSafetyEnforcement = string(olmv1.CRDUpgradeSafetyEnforcementStrict)
 		}
 
 		return
@@ -107,6 +122,9 @@ func (ou *ExtensionUpdate) setDefaults(ext olmv1.ClusterExtension) {
 	}
 	if ou.UpgradeConstraintPolicy == "" {
 		ou.UpgradeConstraintPolicy = string(catalogSrc.UpgradeConstraintPolicy)
+	}
+	if ou.CRDUpgradeSafetyEnforcement == "" {
+		ou.CRDUpgradeSafetyEnforcement = string(ext.Spec.Install.Preflight.CRDUpgradeSafety.Enforcement)
 	}
 	if len(ou.Labels) == 0 {
 		ou.Labels = ext.Labels
@@ -130,6 +148,7 @@ func (ou *ExtensionUpdate) needsUpdate(ext olmv1.ClusterExtension, constraintPol
 		slices.Equal(catalogSrc.Channels, ou.Channels) &&
 		catalogSrc.UpgradeConstraintPolicy == constraintPolicy &&
 		maps.Equal(ext.Labels, ou.Labels) &&
+		string(ext.Spec.Install.Preflight.CRDUpgradeSafety.Enforcement) == ou.CRDUpgradeSafetyEnforcement &&
 		sameSelectors {
 		return false
 	}
@@ -143,4 +162,5 @@ func (ou *ExtensionUpdate) prepareUpdatedExtension(ext *olmv1.ClusterExtension, 
 	ext.Spec.Source.Catalog.Selector = ou.parsedSelector
 	ext.Spec.Source.Catalog.Channels = ou.Channels
 	ext.Spec.Source.Catalog.UpgradeConstraintPolicy = constraintPolicy
+	ext.Spec.Install.Preflight.CRDUpgradeSafety.Enforcement = olmv1.CRDUpgradeSafetyEnforcement(ou.CRDUpgradeSafetyEnforcement)
 }
