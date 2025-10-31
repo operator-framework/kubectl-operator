@@ -2,7 +2,6 @@ package action
 
 import (
 	"context"
-	"fmt"
 
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
