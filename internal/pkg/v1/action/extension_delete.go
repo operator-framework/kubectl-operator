@@ -4,13 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
-
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 
 	olmv1 "github.com/operator-framework/operator-controller/api/v1"
 
 	"github.com/operator-framework/kubectl-operator/pkg/action"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // ExtensionDeletion deletes an extension or all extensions in the cluster
@@ -19,6 +17,9 @@ type ExtensionDeletion struct {
 	ExtensionName string
 	DeleteAll     bool
 	Logf          func(string, ...interface{})
+
+	DryRun string
+	Output string
 }
 
 // NewExtensionDelete creates a new ExtensionDeletion action
@@ -31,12 +32,13 @@ func NewExtensionDelete(cfg *action.Configuration) *ExtensionDeletion {
 	}
 }
 
-func (u *ExtensionDeletion) Run(ctx context.Context) ([]string, error) {
+func (u *ExtensionDeletion) Run(ctx context.Context) ([]olmv1.ClusterExtension, error) {
 	if u.DeleteAll && u.ExtensionName != "" {
 		return nil, fmt.Errorf("cannot specify both --all and an extension name")
 	}
 	if !u.DeleteAll {
-		return u.deleteExtension(ctx, u.ExtensionName)
+		ext, err := u.deleteExtension(ctx, u.ExtensionName)
+		return []olmv1.ClusterExtension{ext}, err
 	}
 
 	// delete all existing extensions
@@ -44,24 +46,26 @@ func (u *ExtensionDeletion) Run(ctx context.Context) ([]string, error) {
 }
 
 // deleteExtension deletes a single extension in the cluster
-func (u *ExtensionDeletion) deleteExtension(ctx context.Context, extName string) ([]string, error) {
+func (u *ExtensionDeletion) deleteExtension(ctx context.Context, extName string) (olmv1.ClusterExtension, error) {
 	op := &olmv1.ClusterExtension{}
 	op.SetName(extName)
 	op.SetGroupVersionKind(olmv1.GroupVersion.WithKind("ClusterExtension"))
-	lowerKind := strings.ToLower(op.GetObjectKind().GroupVersionKind().Kind)
+
+	if u.DryRun == DryRunAll {
+		err := u.config.Client.Delete(ctx, op, client.DryRunAll)
+		return *op, err
+	}
+
 	err := u.config.Client.Delete(ctx, op)
 	if err != nil {
-		if !apierrors.IsNotFound(err) {
-			return []string{u.ExtensionName}, fmt.Errorf("delete %s %q: %v", lowerKind, op.GetName(), err)
-		}
-		return nil, err
+		return *op, err
 	}
 	// wait for deletion
-	return []string{u.ExtensionName}, waitForDeletion(ctx, u.config.Client, op)
+	return *op, waitForDeletion(ctx, u.config.Client, op)
 }
 
 // deleteAllExtensions deletes all extensions in the cluster
-func (u *ExtensionDeletion) deleteAllExtensions(ctx context.Context) ([]string, error) {
+func (u *ExtensionDeletion) deleteAllExtensions(ctx context.Context) ([]olmv1.ClusterExtension, error) {
 	var extensionList olmv1.ClusterExtensionList
 	if err := u.config.Client.List(ctx, &extensionList); err != nil {
 		return nil, err
@@ -70,12 +74,13 @@ func (u *ExtensionDeletion) deleteAllExtensions(ctx context.Context) ([]string, 
 		return nil, ErrNoResourcesFound
 	}
 	errs := make([]error, 0, len(extensionList.Items))
-	names := make([]string, 0, len(extensionList.Items))
+	result := []olmv1.ClusterExtension{}
 	for _, extension := range extensionList.Items {
-		names = append(names, extension.Name)
-		if _, err := u.deleteExtension(ctx, extension.Name); err != nil {
+		if op, err := u.deleteExtension(ctx, extension.Name); err != nil {
 			errs = append(errs, fmt.Errorf("failed deleting extension %q: %w", extension.Name, err))
+		} else {
+			result = append(result, op)
 		}
 	}
-	return names, errors.Join(errs...)
+	return result, errors.Join(errs...)
 }

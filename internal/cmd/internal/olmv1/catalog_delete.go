@@ -47,4 +47,6 @@ func NewCatalogDeleteCmd(cfg *action.Configuration) *cobra.Command {
 
 func bindCatalogDeleteFlags(fs *pflag.FlagSet, d *v1action.CatalogDelete) {
 	fs.BoolVar(&d.DeleteAll, "all", false, "delete all catalogs")
+	fs.StringVar(&d.DryRun, "dry-run", "", "Display the object that would be sent on a request without applying it. One of: (All)")
+	fs.StringVarP(&d.Output, "output", "o", "", "Output format for dry-run manifests. One of: (json, yaml)")
 }
