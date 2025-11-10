@@ -2,24 +2,26 @@ package client
 
 import (
 	"context"
+	"crypto/rand"
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
 	"io"
-	"math/rand"
+	"math/big"
 	"net/http"
 	"net/url"
 	"os"
 	"strconv"
 	"strings"
 
-	olmv1 "github.com/operator-framework/operator-controller/api/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/portforward"
 	"k8s.io/client-go/transport/spdy"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	olmv1 "github.com/operator-framework/operator-controller/api/v1"
 )
 
 type Client interface {
@@ -67,7 +69,8 @@ func NewK8sClient(cfg *rest.Config, cl client.Client, caNamespace string) Client
 	c.httpClient = &http.Client{
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{
-				RootCAs: c.loadKnownCAs(caNamespace),
+				MinVersion: tls.VersionTLS12,
+				RootCAs:    c.loadKnownCAs(caNamespace),
 			},
 		},
 	}
@@ -97,7 +100,7 @@ func (c *portForwardClientV1) All(ctx context.Context, cc *olmv1.ClusterCatalog)
 	}
 	baseURL, err := url.Parse(cc.Status.URLs.Base)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to parse ClusterCatalog URL %q: %w", cc.Status.URLs.Base, err)
 	}
 	serviceHostname := baseURL.Hostname()
 	servicePortStr := baseURL.Port()
@@ -109,7 +112,7 @@ func (c *portForwardClientV1) All(ctx context.Context, cc *olmv1.ClusterCatalog)
 			servicePortStr = "443"
 		}
 	}
-	servicePort, err := strconv.Atoi(servicePortStr)
+	servicePort, err := strconv.ParseInt(servicePortStr, 10, 32)
 	if err != nil {
 		return nil, err
 	}
@@ -122,7 +125,7 @@ func (c *portForwardClientV1) All(ctx context.Context, cc *olmv1.ClusterCatalog)
 	namespace := labels[1]
 
 	// Find a pod and pod port for the given service
-	podName, podPort, err := c.getPodAndPortForService(ctx, namespace, serviceName, int32(servicePort))
+	podName, podPort, err := c.getPodAndPortForService(ctx, namespace, serviceName, servicePort)
 	if err != nil {
 		return nil, err
 	}
@@ -167,7 +170,7 @@ func (c *portForwardClientV1) All(ctx context.Context, cc *olmv1.ClusterCatalog)
 }
 
 // Get a pod for a given service
-func (c *portForwardClient) getPodAndPortForService(ctx context.Context, namespace, serviceName string, servicePort int32) (string, int32, error) {
+func (c *portForwardClient) getPodAndPortForService(ctx context.Context, namespace, serviceName string, servicePort int64) (string, int, error) {
 	svc := corev1.Service{}
 	if err := c.cl.Get(ctx, client.ObjectKey{Name: serviceName, Namespace: namespace}, &svc); err != nil {
 		return "", -1, err
@@ -175,7 +178,7 @@ func (c *portForwardClient) getPodAndPortForService(ctx context.Context, namespa
 
 	podPort := -1
 	for _, port := range svc.Spec.Ports {
-		if port.Port == servicePort {
+		if int64(port.Port) == servicePort {
 			podPort = port.TargetPort.IntValue()
 			break
 		}
@@ -193,17 +196,24 @@ func (c *portForwardClient) getPodAndPortForService(ctx context.Context, namespa
 	for _, subset := range endpoints.Subsets {
 		readyAddresses = append(readyAddresses, subset.Addresses...)
 	}
+	if len(readyAddresses) == 0 {
+		return "", -1, fmt.Errorf("no endpoints ready for service %s/%s", namespace, serviceName)
+	}
 
-	randAddress := rand.Int31n(int32(len(readyAddresses)))
-	address := readyAddresses[randAddress]
+	randAddress, err := rand.Int(rand.Reader, big.NewInt(int64(len(readyAddresses))))
+	if err != nil {
+		return "", -1, err
+	}
+
+	address := readyAddresses[randAddress.Int64()]
 	podName := address.TargetRef.Name
 
 	// Select the first pod (or you could add load balancing logic here)
-	return podName, int32(podPort), nil
+	return podName, podPort, nil
 }
 
 // Port forwarding logic to connect to a pod
-func (c *portForwardClient) getPortForwarder(namespace, podName string, podPort int32) (*portforward.PortForwarder, error) {
+func (c *portForwardClient) getPortForwarder(namespace, podName string, podPort int) (*portforward.PortForwarder, error) {
 	apiserverURL, err := url.Parse(c.cfg.Host)
 	if err != nil {
 		return nil, err

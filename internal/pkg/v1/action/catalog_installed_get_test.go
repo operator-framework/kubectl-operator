@@ -79,4 +79,23 @@ var _ = Describe("CatalogInstalledGet", func() {
 		Expect(err).NotTo(BeNil())
 		Expect(catalogs).To(BeEmpty())
 	})
+
+	It("returns catalogs matching labels when specified", func() {
+		initCatalogs := []client.Object{
+			newClusterCatalog("cat-a1"),
+			newClusterCatalog("cat-a2"),
+			newClusterCatalog("cat-b1"),
+			newClusterCatalog("cat-b2"),
+		}
+		initCatalogs[0].SetLabels(map[string]string{"foo": "bar"})
+		initCatalogs[1].SetLabels(map[string]string{"foo": "bar"})
+
+		cfg := setupEnv(initCatalogs...)
+
+		getter := internalaction.NewCatalogInstalledGet(&cfg)
+		getter.Selector = "foo=bar"
+		catalogs, err := getter.Run(context.TODO())
+		Expect(err).To(BeNil())
+		Expect(catalogs).To(HaveLen(2))
+	})
 })

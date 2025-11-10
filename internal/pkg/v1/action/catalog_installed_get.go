@@ -2,7 +2,9 @@ package action
 
 import (
 	"context"
+	"fmt"
 
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -14,6 +16,8 @@ import (
 type CatalogInstalledGet struct {
 	config      *action.Configuration
 	CatalogName string
+
+	Selector string
 
 	Logf func(string, ...interface{})
 }
@@ -41,7 +45,15 @@ func (i *CatalogInstalledGet) Run(ctx context.Context) ([]olmv1.ClusterCatalog, 
 
 	// list
 	var result olmv1.ClusterCatalogList
-	err := i.config.Client.List(ctx, &result, &client.ListOptions{})
+	listOptions := &client.ListOptions{}
+	if len(i.Selector) > 0 {
+		labelSelector, err := labels.Parse(i.Selector)
+		if err != nil {
+			return nil, fmt.Errorf("unable to parse selector %s: %v", i.Selector, err)
+		}
+		listOptions.LabelSelector = labelSelector
+	}
+	err := i.config.Client.List(ctx, &result, listOptions)
 
 	return result.Items, err
 }

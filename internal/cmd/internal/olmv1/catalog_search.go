@@ -3,17 +3,21 @@ package olmv1
 import (
 	"os"
 
+	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
+
 	"github.com/operator-framework/kubectl-operator/internal/cmd/internal/log"
 	v1action "github.com/operator-framework/kubectl-operator/internal/pkg/v1/action"
 	"github.com/operator-framework/kubectl-operator/pkg/action"
-	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
 )
 
-// NewCatalogInstalledGetCmd handles get commands in the form of:
-// catalog(s) [catalog_name] - this will either list all the installed operators
-// if no catalog_name has been provided or display the details of the specific
-// one otherwise
+// NewCatalogSearchCmd handles get commands in the form of:
+// catalog(s) - this will either list all packages
+// from available catalogs if no catalog has been provided.
+// The results are restricted to only the contents of specific
+// catalogs if either specified by name or label selector.
+// results may also be restricted to the contents of a single
+// package by name across one or more catalogs.
 func NewCatalogSearchCmd(cfg *action.Configuration) *cobra.Command {
 	i := v1action.NewCatalogSearch(cfg)
 	i.Logf = log.Printf
@@ -46,7 +50,7 @@ func NewCatalogSearchCmd(cfg *action.Configuration) *cobra.Command {
 }
 
 func bindCatalogSearchFlags(fs *pflag.FlagSet, i *v1action.CatalogSearch) {
-	fs.StringVar(&i.Catalog, "catalog", "", "Catalog to search on. If not provided, all available catalogs are searched.")
+	fs.StringVar(&i.CatalogName, "catalog", "", "Catalog to search on. If not provided, all available catalogs are searched.")
 	fs.StringVarP(&i.Selector, "selector", "l", "", "Selector (label query) to filter catalogs on, supports '=', '==', and '!='")
 	fs.StringVarP(&i.OutputFormat, "output", "o", "", "output format. One of: (yaml|json)")
 	fs.BoolVar(&i.ListVersions, "list-versions", false, "List all versions available for each package")
