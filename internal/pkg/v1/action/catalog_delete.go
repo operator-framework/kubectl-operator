@@ -14,12 +14,12 @@ import (
 type CatalogDelete struct {
 	config      *action.Configuration
 	CatalogName string
-	DeleteAll   bool
 
-	Logf func(string, ...interface{})
+	DeleteAll bool
 
 	DryRun string
 	Output string
+	Logf   func(string, ...interface{})
 }
 
 func NewCatalogDelete(cfg *action.Configuration) *CatalogDelete {
@@ -29,21 +29,21 @@ func NewCatalogDelete(cfg *action.Configuration) *CatalogDelete {
 	}
 }
 
-func (cd *CatalogDelete) Run(ctx context.Context) ([]olmv1.ClusterCatalog, error) {
+func (i *CatalogDelete) Run(ctx context.Context) ([]olmv1.ClusterCatalog, error) {
 	// validate
-	if cd.DeleteAll && cd.CatalogName != "" {
+	if i.DeleteAll && i.CatalogName != "" {
 		return nil, ErrNameAndSelector
 	}
 
 	// delete single, specified catalog
-	if !cd.DeleteAll {
-		obj, err := cd.deleteCatalog(ctx, cd.CatalogName)
+	if !i.DeleteAll {
+		obj, err := i.deleteCatalog(ctx, i.CatalogName)
 		return []olmv1.ClusterCatalog{obj}, err
 	}
 
 	// delete all existing catalogs
 	var catatalogList olmv1.ClusterCatalogList
-	if err := cd.config.Client.List(ctx, &catatalogList); err != nil {
+	if err := i.config.Client.List(ctx, &catatalogList); err != nil {
 		return nil, err
 	}
 	if len(catatalogList.Items) == 0 {
@@ -53,7 +53,7 @@ func (cd *CatalogDelete) Run(ctx context.Context) ([]olmv1.ClusterCatalog, error
 	errs := make([]error, 0, len(catatalogList.Items))
 	result := []olmv1.ClusterCatalog{}
 	for _, catalog := range catatalogList.Items {
-		if obj, err := cd.deleteCatalog(ctx, catalog.Name); err != nil {
+		if obj, err := i.deleteCatalog(ctx, catalog.Name); err != nil {
 			errs = append(errs, fmt.Errorf("failed deleting catalog %q: %w", catalog.Name, err))
 		} else {
 			result = append(result, obj)
@@ -63,17 +63,17 @@ func (cd *CatalogDelete) Run(ctx context.Context) ([]olmv1.ClusterCatalog, error
 	return result, errors.Join(errs...)
 }
 
-func (cd *CatalogDelete) deleteCatalog(ctx context.Context, name string) (olmv1.ClusterCatalog, error) {
+func (i *CatalogDelete) deleteCatalog(ctx context.Context, name string) (olmv1.ClusterCatalog, error) {
 	op := &olmv1.ClusterCatalog{}
 	op.SetName(name)
 
-	if cd.DryRun == DryRunAll {
-		err := cd.config.Client.Delete(ctx, op, client.DryRunAll)
+	if i.DryRun == DryRunAll {
+		err := i.config.Client.Delete(ctx, op, client.DryRunAll)
 		return *op, err
 	}
-	if err := cd.config.Client.Delete(ctx, op); err != nil {
+	if err := i.config.Client.Delete(ctx, op); err != nil {
 		return *op, err
 	}
 
-	return *op, waitForDeletion(ctx, cd.config.Client, op)
+	return *op, waitForDeletion(ctx, i.config.Client, op)
 }

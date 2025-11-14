@@ -7,6 +7,9 @@ import (
 	v1action "github.com/operator-framework/kubectl-operator/internal/pkg/v1/action"
 	"github.com/operator-framework/kubectl-operator/pkg/action"
 	"k8s.io/apimachinery/pkg/labels"
+
+	olmv1 "github.com/operator-framework/operator-controller/api/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 // NewExtensionInstalledGetCmd handles get commands in the form of:
@@ -39,6 +42,10 @@ func NewExtensionInstalledGetCmd(cfg *action.Configuration) *cobra.Command {
 				log.Fatalf("failed getting installed extension(s): %v", err)
 			}
 
+			for i := range installedExtensions {
+				installedExtensions[i].GetObjectKind().SetGroupVersionKind(schema.GroupVersionKind{Group: olmv1.GroupVersion.Group,
+					Version: olmv1.GroupVersion.Version, Kind: olmv1.ClusterExtensionKind})
+			}
 			printFormattedExtensions(extensionGetOptions.Output, installedExtensions...)
 		},
 	}

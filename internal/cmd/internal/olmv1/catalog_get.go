@@ -6,7 +6,9 @@ import (
 	"github.com/operator-framework/kubectl-operator/internal/cmd/internal/log"
 	v1action "github.com/operator-framework/kubectl-operator/internal/pkg/v1/action"
 	"github.com/operator-framework/kubectl-operator/pkg/action"
-	"k8s.io/apimachinery/pkg/labels"
+
+	olmv1 "github.com/operator-framework/operator-controller/api/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 // NewCatalogInstalledGetCmd handles get commands in the form of:
@@ -33,15 +35,15 @@ func NewCatalogInstalledGetCmd(cfg *action.Configuration) *cobra.Command {
 			default:
 				log.Fatalf("unrecognized output format %s", catalogGetOptions.Output)
 			}
-			if len(catalogGetOptions.Selector) > 0 {
-				i.Selector, err = labels.Parse(catalogGetOptions.Selector)
-				if err != nil {
-					log.Fatalf("unable to parse selector %s: %v", catalogGetOptions.Selector, err)
-				}
-			}
+			i.Selector = catalogGetOptions.Selector
 			installedCatalogs, err := i.Run(cmd.Context())
 			if err != nil {
 				log.Fatalf("failed getting installed catalog(s): %v", err)
+			}
+
+			for i := range installedCatalogs {
+				installedCatalogs[i].GetObjectKind().SetGroupVersionKind(schema.GroupVersionKind{Group: olmv1.GroupVersion.Group,
+					Version: olmv1.GroupVersion.Version, Kind: "ClusterCatalog"})
 			}
 			printFormattedCatalogs(catalogGetOptions.Output, installedCatalogs...)
 		},

@@ -15,11 +15,12 @@ import (
 type ExtensionDeletion struct {
 	config        *action.Configuration
 	ExtensionName string
-	DeleteAll     bool
-	Logf          func(string, ...interface{})
+
+	DeleteAll bool
 
 	DryRun string
 	Output string
+	Logf   func(string, ...interface{})
 }
 
 // NewExtensionDelete creates a new ExtensionDeletion action
@@ -32,42 +33,42 @@ func NewExtensionDelete(cfg *action.Configuration) *ExtensionDeletion {
 	}
 }
 
-func (u *ExtensionDeletion) Run(ctx context.Context) ([]olmv1.ClusterExtension, error) {
-	if u.DeleteAll && u.ExtensionName != "" {
+func (i *ExtensionDeletion) Run(ctx context.Context) ([]olmv1.ClusterExtension, error) {
+	if i.DeleteAll && i.ExtensionName != "" {
 		return nil, fmt.Errorf("cannot specify both --all and an extension name")
 	}
-	if !u.DeleteAll {
-		ext, err := u.deleteExtension(ctx, u.ExtensionName)
+	if !i.DeleteAll {
+		ext, err := i.deleteExtension(ctx, i.ExtensionName)
 		return []olmv1.ClusterExtension{ext}, err
 	}
 
 	// delete all existing extensions
-	return u.deleteAllExtensions(ctx)
+	return i.deleteAllExtensions(ctx)
 }
 
 // deleteExtension deletes a single extension in the cluster
-func (u *ExtensionDeletion) deleteExtension(ctx context.Context, extName string) (olmv1.ClusterExtension, error) {
+func (i *ExtensionDeletion) deleteExtension(ctx context.Context, extName string) (olmv1.ClusterExtension, error) {
 	op := &olmv1.ClusterExtension{}
 	op.SetName(extName)
 	op.SetGroupVersionKind(olmv1.GroupVersion.WithKind("ClusterExtension"))
 
-	if u.DryRun == DryRunAll {
-		err := u.config.Client.Delete(ctx, op, client.DryRunAll)
+	if i.DryRun == DryRunAll {
+		err := i.config.Client.Delete(ctx, op, client.DryRunAll)
 		return *op, err
 	}
 
-	err := u.config.Client.Delete(ctx, op)
+	err := i.config.Client.Delete(ctx, op)
 	if err != nil {
 		return *op, err
 	}
 	// wait for deletion
-	return *op, waitForDeletion(ctx, u.config.Client, op)
+	return *op, waitForDeletion(ctx, i.config.Client, op)
 }
 
 // deleteAllExtensions deletes all extensions in the cluster
-func (u *ExtensionDeletion) deleteAllExtensions(ctx context.Context) ([]olmv1.ClusterExtension, error) {
+func (i *ExtensionDeletion) deleteAllExtensions(ctx context.Context) ([]olmv1.ClusterExtension, error) {
 	var extensionList olmv1.ClusterExtensionList
-	if err := u.config.Client.List(ctx, &extensionList); err != nil {
+	if err := i.config.Client.List(ctx, &extensionList); err != nil {
 		return nil, err
 	}
 	if len(extensionList.Items) == 0 {
@@ -76,7 +77,7 @@ func (u *ExtensionDeletion) deleteAllExtensions(ctx context.Context) ([]olmv1.Cl
 	errs := make([]error, 0, len(extensionList.Items))
 	result := []olmv1.ClusterExtension{}
 	for _, extension := range extensionList.Items {
-		if op, err := u.deleteExtension(ctx, extension.Name); err != nil {
+		if op, err := i.deleteExtension(ctx, extension.Name); err != nil {
 			errs = append(errs, fmt.Errorf("failed deleting extension %q: %w", extension.Name, err))
 		} else {
 			result = append(result, op)

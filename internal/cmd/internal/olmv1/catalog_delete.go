@@ -25,6 +25,9 @@ func NewCatalogDeleteCmd(cfg *action.Configuration) *cobra.Command {
 		Short:   "Delete either a single or all of the existing catalogs",
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) > 0 {
+				if d.DeleteAll {
+					log.Fatalf("failed to delete catalog: cannot specify both --all and a catalog name")
+				}
 				d.CatalogName = args[0]
 			}
 			catalogs, err := d.Run(cmd.Context())
@@ -33,14 +36,14 @@ func NewCatalogDeleteCmd(cfg *action.Configuration) *cobra.Command {
 			}
 
 			if len(d.DryRun) == 0 {
-				for _, extn := range catalogs {
-					log.Printf("extension %s deleted", extn.Name)
+				for _, catn := range catalogs {
+					log.Printf("catalog %s deleted", catn.Name)
 				}
 				return
 			}
 			if len(d.Output) == 0 {
-				for _, extn := range catalogs {
-					log.Printf("extension %s deleted (dry run)\n", extn.Name)
+				for _, catn := range catalogs {
+					log.Printf("catalog %s deleted (dry run)\n", catn.Name)
 				}
 				return
 			}
@@ -51,7 +54,7 @@ func NewCatalogDeleteCmd(cfg *action.Configuration) *cobra.Command {
 			}
 			printFormattedCatalogs(d.Output, catalogs...)
 			for _, catalog := range catalogs {
-				log.Printf("catalog %q deleted", catalog)
+				log.Printf("catalog %q deleted", catalog.Name)
 			}
 		},
 	}
@@ -61,7 +64,7 @@ func NewCatalogDeleteCmd(cfg *action.Configuration) *cobra.Command {
 }
 
 func bindCatalogDeleteFlags(fs *pflag.FlagSet, d *v1action.CatalogDelete) {
-	fs.BoolVar(&d.DeleteAll, "all", false, "delete all catalogs")
+	fs.BoolVarP(&d.DeleteAll, "all", "a", false, "delete all catalogs")
 	fs.StringVar(&d.DryRun, "dry-run", "", "display the object that would be sent on a request without applying it. One of: (All)")
 	fs.StringVarP(&d.Output, "output", "o", "", "output format for dry-run manifests. One of: (json, yaml)")
 }

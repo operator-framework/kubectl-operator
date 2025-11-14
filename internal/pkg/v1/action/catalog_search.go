@@ -1,7 +1,7 @@
 package action
 
 import (
-	"contz"
+	"context"
 	"fmt"
 	"time"
 
@@ -16,8 +16,9 @@ import (
 )
 
 type CatalogSearch struct {
-	config            *action.Configuration
-	CatalogName       string
+	config      *action.Configuration
+	CatalogName string
+
 	OutputFormat      string
 	Selector          string
 	ListVersions      bool

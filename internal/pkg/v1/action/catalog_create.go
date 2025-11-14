@@ -14,10 +14,10 @@ import (
 )
 
 type CatalogCreate struct {
-	config         *action.Configuration
-	CatalogName    string
-	ImageSourceRef string
+	config      *action.Configuration
+	CatalogName string
 
+	ImageSourceRef      string
 	Priority            int32
 	PollIntervalMinutes int
 	Labels              map[string]string
@@ -26,8 +26,7 @@ type CatalogCreate struct {
 
 	DryRun string
 	Output string
-
-	Logf func(string, ...interface{})
+	Logf   func(string, ...interface{})
 }
 
 func NewCatalogCreate(config *action.Configuration) *CatalogCreate {

@@ -2,7 +2,6 @@ package action
 
 import (
 	"context"
-	"fmt"
 
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
@@ -16,7 +15,6 @@ import (
 type CatalogInstalledGet struct {
 	config      *action.Configuration
 	CatalogName string
-	Selector    labels.Selector
 
 	Selector string
 
@@ -47,8 +45,12 @@ func (i *CatalogInstalledGet) Run(ctx context.Context) ([]olmv1.ClusterCatalog, 
 	// list
 	var result olmv1.ClusterCatalogList
 	listOpts := &client.ListOptions{}
-	if i.Selector != nil {
-		listOpts.LabelSelector = i.Selector
+	if len(i.Selector) > 0 {
+		selector, err := labels.Parse(i.Selector)
+		if err != nil {
+			return nil, err
+		}
+		listOpts.LabelSelector = selector
 	}
 	err := i.config.Client.List(ctx, &result, listOpts)
 

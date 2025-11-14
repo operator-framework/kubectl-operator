@@ -34,6 +34,7 @@ func waitUntilCatalogStatusCondition(
 	conditionType string,
 	conditionStatus metav1.ConditionStatus,
 ) error {
+	fmt.Printf("waiting for ClusterCatalog %s to become healthy...\n", catalog.Name)
 	s := spinner.New(spinner.CharSets[1], 100*time.Millisecond)
 	s.Start()
 	defer s.Stop()
@@ -60,6 +61,7 @@ func waitUntilExtensionStatusCondition(
 	conditionStatus metav1.ConditionStatus,
 ) error {
 	s := spinner.New(spinner.CharSets[1], 100*time.Millisecond)
+	s.Prefix = fmt.Sprintf("waiting for ClusterExtension %s to become healthy...", extension.Name)
 	s.Start()
 	defer s.Stop()
 	opKey := objectKeyForObject(extension)
@@ -79,6 +81,7 @@ func waitUntilExtensionStatusCondition(
 
 func deleteWithTimeout(cl deleter, obj client.Object, timeout time.Duration) error {
 	s := spinner.New(spinner.CharSets[1], 100*time.Millisecond)
+	s.Prefix = fmt.Sprintf("deleting %s...", obj.GetObjectKind().GroupVersionKind().Kind)
 	s.Start()
 	defer s.Stop()
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
@@ -93,6 +96,7 @@ func deleteWithTimeout(cl deleter, obj client.Object, timeout time.Duration) err
 
 func waitForDeletion(ctx context.Context, cl getter, objs ...client.Object) error {
 	s := spinner.New(spinner.CharSets[1], 100*time.Millisecond)
+	s.Prefix = fmt.Sprintf("waiting for delete %s...", objs[0].GetObjectKind().GroupVersionKind().Kind)
 	s.Start()
 	defer s.Stop()
 	for _, obj := range objs {

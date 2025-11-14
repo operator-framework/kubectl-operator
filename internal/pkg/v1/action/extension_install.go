@@ -17,23 +17,24 @@ import (
 )
 
 type ExtensionInstall struct {
-	config         *action.Configuration
-	ExtensionName  string
-	Namespace      NamespaceConfig
-	PackageName    string
-	Channels       []string
-	Version        string
-	ServiceAccount string
-	CleanupTimeout time.Duration
-	Logf           func(string, ...interface{})
+	config        *action.Configuration
+	ExtensionName string
 
-	DryRun                               string
-	Output                               string
+	Namespace                            NamespaceConfig
+	PackageName                          string
+	Channels                             []string
+	Version                              string
 	CatalogSelector                      *metav1.LabelSelector
+	ServiceAccount                       string
+	CleanupTimeout                       time.Duration
 	UpgradeConstraintPolicy              string
 	PreflightCRDUpgradeSafetyEnforcement string
 	CRDUpgradeSafetyEnforcement          string
 	Labels                               map[string]string
+
+	DryRun string
+	Output string
+	Logf   func(string, ...interface{})
 }
 type NamespaceConfig struct {
 	Name string
@@ -73,7 +74,13 @@ func (i *ExtensionInstall) buildClusterExtension() olmv1.ClusterExtension {
 		extension.Spec.Source.Catalog.UpgradeConstraintPolicy = olmv1.UpgradeConstraintPolicy(i.UpgradeConstraintPolicy)
 	}
 	if len(i.CRDUpgradeSafetyEnforcement) > 0 {
-		extension.Spec.Install.Preflight.CRDUpgradeSafety.Enforcement = olmv1.CRDUpgradeSafetyEnforcement(i.CRDUpgradeSafetyEnforcement)
+		extension.Spec.Install = &olmv1.ClusterExtensionInstallConfig{
+			Preflight: &olmv1.PreflightConfig{
+				CRDUpgradeSafety: &olmv1.CRDUpgradeSafetyPreflightConfig{
+					Enforcement: olmv1.CRDUpgradeSafetyEnforcement(i.CRDUpgradeSafetyEnforcement),
+				},
+			},
+		}
 	}
 
 	return extension
@@ -99,6 +106,7 @@ func (i *ExtensionInstall) Run(ctx context.Context) (*olmv1.ClusterExtension, er
 	}
 	clusterExtension, err := i.waitForExtensionInstall(ctx)
 	if err != nil {
+		i.Logf("failed to install extension %s: %w; cleaning up extension", i.PackageName, err)
 		cleanupCtx, cancelCleanup := context.WithTimeout(context.Background(), i.CleanupTimeout)
 		defer cancelCleanup()
 		cleanupErr := i.cleanup(cleanupCtx)

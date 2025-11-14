@@ -15,14 +15,14 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-type extentionInstallOptions struct {
+type extensionInstallOptions struct {
 	CatalogSelector string
 }
 
 func NewExtensionInstallCmd(cfg *action.Configuration) *cobra.Command {
 	i := v1action.NewExtensionInstall(cfg)
 	i.Logf = log.Printf
-	var extentionInstallOpts extentionInstallOptions
+	var extentionInstallOpts extensionInstallOptions
 	var err error
 
 	cmd := &cobra.Command{
@@ -53,12 +53,7 @@ func NewExtensionInstallCmd(cfg *action.Configuration) *cobra.Command {
 			}
 			extObj, err := i.Run(cmd.Context())
 			if err != nil {
-				log.Fatalf("failed to install extension: %v", err)
-			}
-			log.Printf("extension %q created", i.ExtensionName)
-
-			if err != nil {
-				log.Fatalf("failed to install extension %q: %v\n", i.ExtensionName, err)
+				log.Fatalf("failed to install extension %q: %w\n", i.ExtensionName, err)
 			}
 			if len(i.DryRun) == 0 {
 				log.Printf("extension %q created\n", i.ExtensionName)
@@ -80,10 +75,10 @@ func NewExtensionInstallCmd(cfg *action.Configuration) *cobra.Command {
 	return cmd
 }
 
-func bindExtensionInstallFlags(fs *pflag.FlagSet, i *v1action.ExtensionInstall, o *extentionInstallOptions) {
-	fs.StringVarP(&i.Namespace.Name, "namespace", "n", "", "namespace to install the operator in") //infer?
+func bindExtensionInstallFlags(fs *pflag.FlagSet, i *v1action.ExtensionInstall, o *extensionInstallOptions) {
+	fs.StringVarP(&i.Namespace.Name, "namespace", "n", "olmv1-system", "namespace to install the operator in") //infer?
 	fs.StringVarP(&i.PackageName, "package-name", "p", "", "package name of the operator to install. Required.")
-	fs.StringSliceVarP(&i.Channels, "channels", "c", []string{}, "channels which would be to used for getting updates e.g --channels \"stable,dev-preview,preview\"")
+	fs.StringSliceVarP(&i.Channels, "channels", "c", []string{}, "channels to be used for getting updates e.g --channels \"stable,dev-preview,preview\"")
 	fs.StringVarP(&i.Version, "version", "v", "", "version (or version range) from which to resolve bundles")
 	fs.StringVarP(&i.ServiceAccount, "service-account", "s", "default", "service account name to use for the extension installation")
 	fs.DurationVarP(&i.CleanupTimeout, "cleanup-timeout", "d", time.Minute, "the amount of time to wait before cancelling cleanup after a failed creation attempt")

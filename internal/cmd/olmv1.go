@@ -10,8 +10,8 @@ import (
 func newOlmV1Cmd(cfg *action.Configuration) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "olmv1",
-		Short: "Manage extensions via OLMv1 in a cluster from the command line",
-		Long:  "Manage extensions via OLMv1 in a cluster from the command line.",
+		Short: "Manage OLMv1 extensions and catalogs",
+		Long:  "Manage OLMv1 resources like clusterextensions and clustercatalogs from the command line.",
 	}
 
 	getCmd := &cobra.Command{

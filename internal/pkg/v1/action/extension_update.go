@@ -18,8 +18,7 @@ import (
 )
 
 type ExtensionUpdate struct {
-	config *action.Configuration
-
+	config        *action.Configuration
 	ExtensionName string
 
 	Version  string
@@ -32,13 +31,12 @@ type ExtensionUpdate struct {
 	Labels                  map[string]string
 	IgnoreUnset             bool
 
-	CleanupTimeout time.Duration
-
-	Logf func(string, ...interface{})
-
+	CleanupTimeout              time.Duration
 	CRDUpgradeSafetyEnforcement string
-	DryRun                      string
-	Output                      string
+
+	DryRun string
+	Output string
+	Logf   func(string, ...interface{})
 }
 
 func NewExtensionUpdate(cfg *action.Configuration) *ExtensionUpdate {
@@ -48,12 +46,12 @@ func NewExtensionUpdate(cfg *action.Configuration) *ExtensionUpdate {
 	}
 }
 
-func (ou *ExtensionUpdate) Run(ctx context.Context) (*olmv1.ClusterExtension, error) {
+func (i *ExtensionUpdate) Run(ctx context.Context) (*olmv1.ClusterExtension, error) {
 	var ext olmv1.ClusterExtension
 	var err error
 
-	opKey := types.NamespacedName{Name: ou.ExtensionName}
-	if err = ou.config.Client.Get(ctx, opKey, &ext); err != nil {
+	opKey := types.NamespacedName{Name: i.ExtensionName}
+	if err = i.config.Client.Get(ctx, opKey, &ext); err != nil {
 		return nil, err
 	}
 
@@ -61,51 +59,51 @@ func (ou *ExtensionUpdate) Run(ctx context.Context) (*olmv1.ClusterExtension, er
 		return nil, fmt.Errorf("unrecognized source type: %q", ext.Spec.Source.SourceType)
 	}
 
-	ou.setDefaults(ext)
+	i.setDefaults(ext)
 
-	if ou.Version != "" {
-		if _, err = semver.ParseRange(ou.Version); err != nil {
+	if i.Version != "" {
+		if _, err = semver.ParseRange(i.Version); err != nil {
 			return nil, fmt.Errorf("failed parsing version: %w", err)
 		}
 	}
-	if ou.Selector != "" && ou.parsedSelector == nil {
-		ou.parsedSelector, err = metav1.ParseToLabelSelector(ou.Selector)
+	if i.Selector != "" && i.parsedSelector == nil {
+		i.parsedSelector, err = metav1.ParseToLabelSelector(i.Selector)
 		if err != nil {
 			return nil, fmt.Errorf("failed parsing selector: %w", err)
 		}
 	}
 
-	constraintPolicy := olmv1.UpgradeConstraintPolicy(ou.UpgradeConstraintPolicy)
-	if !ou.needsUpdate(ext, constraintPolicy) {
+	constraintPolicy := olmv1.UpgradeConstraintPolicy(i.UpgradeConstraintPolicy)
+	if !i.needsUpdate(ext, constraintPolicy) {
 		return nil, ErrNoChange
 	}
 
-	ou.prepareUpdatedExtension(&ext, constraintPolicy)
-	if ou.DryRun == DryRunAll {
-		if err := ou.config.Client.Update(ctx, &ext, client.DryRunAll); err != nil {
+	i.prepareUpdatedExtension(&ext, constraintPolicy)
+	if i.DryRun == DryRunAll {
+		if err := i.config.Client.Update(ctx, &ext, client.DryRunAll); err != nil {
 			return nil, err
 		}
 		return &ext, nil
 	}
 
-	if err := ou.config.Client.Update(ctx, &ext); err != nil {
+	if err := i.config.Client.Update(ctx, &ext); err != nil {
 		return nil, err
 	}
 
-	if err := waitUntilExtensionStatusCondition(ctx, ou.config.Client, &ext, olmv1.TypeInstalled, metav1.ConditionTrue); err != nil {
+	if err := waitUntilExtensionStatusCondition(ctx, i.config.Client, &ext, olmv1.TypeInstalled, metav1.ConditionTrue); err != nil {
 		return nil, fmt.Errorf("timed out waiting for extension: %w", err)
 	}
 
 	return &ext, nil
 }
 
-func (ou *ExtensionUpdate) setDefaults(ext olmv1.ClusterExtension) {
-	if !ou.IgnoreUnset {
-		if ou.UpgradeConstraintPolicy == "" {
-			ou.UpgradeConstraintPolicy = string(olmv1.UpgradeConstraintPolicyCatalogProvided)
+func (i *ExtensionUpdate) setDefaults(ext olmv1.ClusterExtension) {
+	if !i.IgnoreUnset {
+		if i.UpgradeConstraintPolicy == "" {
+			i.UpgradeConstraintPolicy = string(olmv1.UpgradeConstraintPolicyCatalogProvided)
 		}
-		if ou.CRDUpgradeSafetyEnforcement == "" {
-			ou.CRDUpgradeSafetyEnforcement = string(olmv1.CRDUpgradeSafetyEnforcementStrict)
+		if i.CRDUpgradeSafetyEnforcement == "" {
+			i.CRDUpgradeSafetyEnforcement = string(olmv1.CRDUpgradeSafetyEnforcementStrict)
 		}
 
 		return
@@ -114,41 +112,41 @@ func (ou *ExtensionUpdate) setDefaults(ext olmv1.ClusterExtension) {
 	// IgnoreUnset is enabled
 	// set all unset values to what they are on the current object
 	catalogSrc := ext.Spec.Source.Catalog
-	if ou.Version == "" {
-		ou.Version = catalogSrc.Version
+	if i.Version == "" {
+		i.Version = catalogSrc.Version
 	}
-	if len(ou.Channels) == 0 {
-		ou.Channels = catalogSrc.Channels
+	if len(i.Channels) == 0 {
+		i.Channels = catalogSrc.Channels
 	}
-	if ou.UpgradeConstraintPolicy == "" {
-		ou.UpgradeConstraintPolicy = string(catalogSrc.UpgradeConstraintPolicy)
+	if i.UpgradeConstraintPolicy == "" {
+		i.UpgradeConstraintPolicy = string(catalogSrc.UpgradeConstraintPolicy)
 	}
-	if ou.CRDUpgradeSafetyEnforcement == "" {
-		ou.CRDUpgradeSafetyEnforcement = string(ext.Spec.Install.Preflight.CRDUpgradeSafety.Enforcement)
+	if i.CRDUpgradeSafetyEnforcement == "" {
+		i.CRDUpgradeSafetyEnforcement = string(ext.Spec.Install.Preflight.CRDUpgradeSafety.Enforcement)
 	}
-	if len(ou.Labels) == 0 {
-		ou.Labels = ext.Labels
+	if len(i.Labels) == 0 {
+		i.Labels = ext.Labels
 	}
-	if ou.Selector == "" && catalogSrc.Selector != nil {
-		ou.parsedSelector = catalogSrc.Selector
+	if i.Selector == "" && catalogSrc.Selector != nil {
+		i.parsedSelector = catalogSrc.Selector
 	}
 }
 
-func (ou *ExtensionUpdate) needsUpdate(ext olmv1.ClusterExtension, constraintPolicy olmv1.UpgradeConstraintPolicy) bool {
+func (i *ExtensionUpdate) needsUpdate(ext olmv1.ClusterExtension, constraintPolicy olmv1.UpgradeConstraintPolicy) bool {
 	catalogSrc := ext.Spec.Source.Catalog
 
 	// object string form is used for comparison to:
 	// - remove the need for potentially costly metav1.FormatLabelSelector calls
 	// - avoid having to handle potential reordering of items from on cluster state
-	sameSelectors := (catalogSrc.Selector == nil && ou.parsedSelector == nil) ||
-		(catalogSrc.Selector != nil && ou.parsedSelector != nil &&
-			catalogSrc.Selector.String() == ou.parsedSelector.String())
+	sameSelectors := (catalogSrc.Selector == nil && i.parsedSelector == nil) ||
+		(catalogSrc.Selector != nil && i.parsedSelector != nil &&
+			catalogSrc.Selector.String() == i.parsedSelector.String())
 
-	if catalogSrc.Version == ou.Version &&
-		slices.Equal(catalogSrc.Channels, ou.Channels) &&
+	if catalogSrc.Version == i.Version &&
+		slices.Equal(catalogSrc.Channels, i.Channels) &&
 		catalogSrc.UpgradeConstraintPolicy == constraintPolicy &&
-		maps.Equal(ext.Labels, ou.Labels) &&
-		string(ext.Spec.Install.Preflight.CRDUpgradeSafety.Enforcement) == ou.CRDUpgradeSafetyEnforcement &&
+		maps.Equal(ext.Labels, i.Labels) &&
+		string(ext.Spec.Install.Preflight.CRDUpgradeSafety.Enforcement) == i.CRDUpgradeSafetyEnforcement &&
 		sameSelectors {
 		return false
 	}
@@ -156,11 +154,11 @@ func (ou *ExtensionUpdate) needsUpdate(ext olmv1.ClusterExtension, constraintPol
 	return true
 }
 
-func (ou *ExtensionUpdate) prepareUpdatedExtension(ext *olmv1.ClusterExtension, constraintPolicy olmv1.UpgradeConstraintPolicy) {
-	ext.SetLabels(ou.Labels)
-	ext.Spec.Source.Catalog.Version = ou.Version
-	ext.Spec.Source.Catalog.Selector = ou.parsedSelector
-	ext.Spec.Source.Catalog.Channels = ou.Channels
+func (i *ExtensionUpdate) prepareUpdatedExtension(ext *olmv1.ClusterExtension, constraintPolicy olmv1.UpgradeConstraintPolicy) {
+	ext.SetLabels(i.Labels)
+	ext.Spec.Source.Catalog.Version = i.Version
+	ext.Spec.Source.Catalog.Selector = i.parsedSelector
+	ext.Spec.Source.Catalog.Channels = i.Channels
 	ext.Spec.Source.Catalog.UpgradeConstraintPolicy = constraintPolicy
-	ext.Spec.Install.Preflight.CRDUpgradeSafety.Enforcement = olmv1.CRDUpgradeSafetyEnforcement(ou.CRDUpgradeSafetyEnforcement)
+	ext.Spec.Install.Preflight.CRDUpgradeSafety.Enforcement = olmv1.CRDUpgradeSafetyEnforcement(i.CRDUpgradeSafetyEnforcement)
 }

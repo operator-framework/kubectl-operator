@@ -15,7 +15,8 @@ import (
 type ExtensionInstalledGet struct {
 	config        *action.Configuration
 	ExtensionName string
-	Selector      labels.Selector
+
+	Selector labels.Selector
 
 	Logf func(string, ...interface{})
 }
