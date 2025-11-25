@@ -10,12 +10,19 @@ import (
 
 	olmv1 "github.com/operator-framework/operator-controller/api/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/util/errors"
 )
+
+type extensionUpdateOptions struct {
+	dryRunOptions
+	mutableExtensionOptions
+}
 
 // NewExtensionUpdateCmd allows updating a selected operator
 func NewExtensionUpdateCmd(cfg *action.Configuration) *cobra.Command {
 	i := v1action.NewExtensionUpdate(cfg)
 	i.Logf = log.Printf
+	var opts extensionUpdateOptions
 
 	cmd := &cobra.Command{
 		Use:   "extension <extension name>",
@@ -23,9 +30,17 @@ func NewExtensionUpdateCmd(cfg *action.Configuration) *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			i.ExtensionName = args[0]
-			if len(i.DryRun) > 0 && i.DryRun != v1action.DryRunAll {
-				log.Fatalf("invalid value for `--dry-run` %s, must be one of (%s)\n", i.DryRun, v1action.DryRunAll)
+			if err := opts.validate(); err != nil {
+				log.Fatalf("failed to parse flags: %s", err.Error())
 			}
+			i.Version = opts.Version
+			i.Channels = opts.Channels
+			i.Labels = opts.Labels
+			i.UpgradeConstraintPolicy = opts.UpgradeConstraintPolicy
+			i.CRDUpgradeSafetyEnforcement = opts.CRDUpgradeSafetyEnforcement
+			i.CatalogSelector = opts.ParsedSelector
+			i.DryRun = opts.DryRun
+			i.Output = opts.Output
 			extObj, err := i.Run(cmd.Context())
 			if err != nil {
 				log.Fatalf("failed to update extension: %v", err)
@@ -45,21 +60,23 @@ func NewExtensionUpdateCmd(cfg *action.Configuration) *cobra.Command {
 		},
 	}
 	bindExtensionUpdateFlags(cmd.Flags(), i)
+	bindMutableExtensionFlags(cmd.Flags(), &opts.mutableExtensionOptions)
+	bindDryRunFlags(cmd.Flags(), &opts.dryRunOptions)
 
 	return cmd
 }
 
 func bindExtensionUpdateFlags(fs *pflag.FlagSet, i *v1action.ExtensionUpdate) {
-	fs.StringArrayVar(&i.Channels, "channels", []string{}, "desired channels for extension versions. AND operation with version. Empty list means all available channels will be taken into consideration")
-	fs.StringVar(&i.Version, "version", "", "desired extension version (single or range) in semVer format. AND operation with channels")
-	fs.StringVar(&i.Selector, "catalog-selector", "", "selector (label query) to filter catalogs to search for the package, "+
-		"supports '=', '==', '!=', 'in', 'notin'.(e.g. -l key1=value1,key2=value2,key3 "+
-		"in (value3)). Matching objects must satisfy all of the specified label constraints.")
-	fs.StringVar(&i.UpgradeConstraintPolicy, "upgrade-constraint-policy", "", "controls whether the upgrade path(s) defined in the catalog are enforced."+
-		" One of CatalogProvided, SelfCertified), Default: CatalogProvided")
-	fs.StringToStringVar(&i.Labels, "labels", map[string]string{}, "labels that will be set on the extension")
-	fs.BoolVar(&i.IgnoreUnset, "ignore-unset", true, "when enabled, any unset flag value will not be changed. Disabling means that for each unset value a default will be used instead")
-	fs.StringVar(&i.CRDUpgradeSafetyEnforcement, "crd-upgrade-safety-enforcement", "", "policy for preflight CRD Upgrade safety checks. One of: (Strict, None), default: Strict")
-	fs.StringVar(&i.DryRun, "dry-run", "", "display the object that would be sent on a request without applying it. One of: (All)")
-	fs.StringVarP(&i.Output, "output", "o", "", "output format for dry-run manifests. One of: (json, yaml)")
+	fs.BoolVar(&i.IgnoreUnset, "ignore-unset", true, "set to false to revert all values not specifically set with flags in the command to their default as defined by the clusterextension customresoucedefinition.")
+}
+
+func (o *extensionUpdateOptions) validate() error {
+	var errs []error
+	if err := o.dryRunOptions.validate(); err != nil {
+		errs = append(errs, err)
+	}
+	if err := o.mutableExtensionOptions.validate(); err != nil {
+		errs = append(errs, err)
+	}
+	return errors.NewAggregate(errs)
 }

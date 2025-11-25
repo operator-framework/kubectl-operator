@@ -2,6 +2,7 @@ package olmv1
 
 import (
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 
 	"github.com/operator-framework/kubectl-operator/internal/cmd/internal/log"
 	v1action "github.com/operator-framework/kubectl-operator/internal/pkg/v1/action"
@@ -9,17 +10,19 @@ import (
 
 	olmv1 "github.com/operator-framework/operator-controller/api/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/util/errors"
 )
+
+type catalogUpdateOptions struct {
+	mutableCatalogOptions
+	dryRunOptions
+}
 
 // NewCatalogUpdateCmd allows updating a selected clustercatalog
 func NewCatalogUpdateCmd(cfg *action.Configuration) *cobra.Command {
 	i := v1action.NewCatalogUpdate(cfg)
 	i.Logf = log.Printf
-
-	var priority int32
-	var pollInterval int
-	var labels map[string]string
-	var available string
+	var opts catalogUpdateOptions
 
 	cmd := &cobra.Command{
 		Use:   "catalog <catalog>",
@@ -27,28 +30,21 @@ func NewCatalogUpdateCmd(cfg *action.Configuration) *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			i.CatalogName = args[0]
+			if err := opts.validate(); err != nil {
+				log.Fatalf("failed to parse flags: %s", err.Error())
+			}
 			if cmd.Flags().Changed("priority") {
-				i.Priority = &priority
+				i.Priority = &opts.Priority
 			}
 			if cmd.Flags().Changed("source-poll-interval-minutes") {
-				i.PollIntervalMinutes = &pollInterval
+				i.PollIntervalMinutes = &opts.PollIntervalMinutes
 			}
 			if cmd.Flags().Changed("labels") {
-				i.Labels = labels
+				i.Labels = opts.Labels
 			}
-			if len(available) > 0 {
-				switch available {
-				case "true":
-					i.AvailabilityMode = "Available"
-				case "false":
-					i.AvailabilityMode = "Unavailable"
-				default:
-					log.Fatalf("invalid value for `--available` %s; must be one of (true, false)\n", available)
-				}
-			}
-			if len(i.DryRun) > 0 && i.DryRun != v1action.DryRunAll {
-				log.Fatalf("invalid value for `--dry-run` %s, must be one of (%s)\n", i.DryRun, v1action.DryRunAll)
-			}
+			i.AvailabilityMode = opts.AvailabilityMode
+			i.DryRun = opts.DryRun
+			i.Output = opts.Output
 			catalogObj, err := i.Run(cmd.Context())
 			if err != nil {
 				log.Fatalf("failed to update catalog: %v", err)
@@ -68,14 +64,25 @@ func NewCatalogUpdateCmd(cfg *action.Configuration) *cobra.Command {
 			printFormattedCatalogs(i.Output, *catalogObj)
 		},
 	}
-	cmd.Flags().Int32Var(&priority, "priority", 0, "priority determines the likelihood of a catalog being selected in conflict scenarios")
-	cmd.Flags().StringVar(&available, "available", "", "determines whether a catalog should be active and serving data. default: true, meaning new catalogs serve their contents by default.")
-	cmd.Flags().IntVar(&pollInterval, "source-poll-interval-minutes", 5, "catalog source polling interval [in minutes]. Set to 0 or -1 to remove the polling interval.")
-	cmd.Flags().StringToStringVar(&labels, "labels", map[string]string{}, "labels that will be added to the catalog")
-	cmd.Flags().StringVar(&i.ImageRef, "image", "", "Image reference for the catalog source. Leave unset to retain the current image.")
-	cmd.Flags().BoolVar(&i.IgnoreUnset, "ignore-unset", true, "when enabled, any unset flag value will not be changed. Disabling means that for each unset value a default will be used instead")
-	cmd.Flags().StringVar(&i.DryRun, "dry-run", "", "display the object that would be sent on a request without applying it if non-empty. One of: (All)")
-	cmd.Flags().StringVarP(&i.Output, "output", "o", "", "output format for dry-run manifests. One of: (json, yaml)")
+	bindCatalogUpdateFlags(cmd.Flags(), i)
+	bindMutableCatalogFlags(cmd.Flags(), &opts.mutableCatalogOptions)
+	bindDryRunFlags(cmd.Flags(), &opts.dryRunOptions)
 
 	return cmd
+}
+
+func bindCatalogUpdateFlags(fs *pflag.FlagSet, i *v1action.CatalogUpdate) {
+	fs.StringVar(&i.ImageRef, "image", "", "image reference for the catalog source. Leave unset to retain the current image.")
+	fs.BoolVar(&i.IgnoreUnset, "ignore-unset", true, "set to false to revert all values not specifically set with flags in the command to their default as defined by the clustercatalog customresoucedefinition.")
+}
+
+func (o *catalogUpdateOptions) validate() error {
+	var errs []error
+	if err := o.dryRunOptions.validate(); err != nil {
+		errs = append(errs, err)
+	}
+	if err := o.mutableCatalogOptions.validate(); err != nil {
+		errs = append(errs, err)
+	}
+	return errors.NewAggregate(errs)
 }

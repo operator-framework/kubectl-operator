@@ -75,8 +75,7 @@ func (i *CatalogCreate) buildCatalog() olmv1.ClusterCatalog {
 			Source: olmv1.CatalogSource{
 				Type: olmv1.SourceTypeImage,
 				Image: &olmv1.ImageSource{
-					Ref:                 i.ImageSourceRef,
-					PollIntervalMinutes: &i.PollIntervalMinutes,
+					Ref: i.ImageSourceRef,
 				},
 			},
 			Priority:         i.Priority,
@@ -85,6 +84,9 @@ func (i *CatalogCreate) buildCatalog() olmv1.ClusterCatalog {
 	}
 	if !i.Available {
 		catalog.Spec.AvailabilityMode = olmv1.AvailabilityModeUnavailable
+	}
+	if i.PollIntervalMinutes > 0 {
+		catalog.Spec.Source.Image.PollIntervalMinutes = &i.PollIntervalMinutes
 	}
 
 	return catalog

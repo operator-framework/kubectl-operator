@@ -12,12 +12,19 @@ import (
 
 	olmv1 "github.com/operator-framework/operator-controller/api/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/util/errors"
 )
+
+type catalogCreateOptions struct {
+	mutableCatalogOptions
+	dryRunOptions
+}
 
 // NewCatalogCreateCmd allows creating a new catalog
 func NewCatalogCreateCmd(cfg *action.Configuration) *cobra.Command {
 	i := v1action.NewCatalogCreate(cfg)
 	i.Logf = log.Printf
+	var opts catalogCreateOptions
 
 	cmd := &cobra.Command{
 		Use:     "catalog <catalog_name> <image_source_ref>",
@@ -27,10 +34,12 @@ func NewCatalogCreateCmd(cfg *action.Configuration) *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			i.CatalogName = args[0]
 			i.ImageSourceRef = args[1]
-			if len(i.DryRun) > 0 && i.DryRun != v1action.DryRunAll {
-				log.Fatalf("invalid value for `--dry-run` %s, must be one of (%s)\n", i.DryRun, v1action.DryRunAll)
+			opts.Image = i.ImageSourceRef
+			if err := opts.validate(); err != nil {
+				log.Fatalf("failed to parse flags: %s", err.Error())
 			}
-
+			i.DryRun = opts.DryRun
+			i.Output = opts.Output
 			catalogObj, err := i.Run(cmd.Context())
 			if err != nil {
 				log.Fatalf("failed to create catalog %q: %v\n", i.CatalogName, err)
@@ -50,17 +59,23 @@ func NewCatalogCreateCmd(cfg *action.Configuration) *cobra.Command {
 		},
 	}
 	bindCatalogCreateFlags(cmd.Flags(), i)
+	bindMutableCatalogFlags(cmd.Flags(), &opts.mutableCatalogOptions)
+	bindDryRunFlags(cmd.Flags(), &opts.dryRunOptions)
 
 	return cmd
 }
 
 func bindCatalogCreateFlags(fs *pflag.FlagSet, i *v1action.CatalogCreate) {
-	fs.Int32Var(&i.Priority, "priority", 0, "priority determines the likelihood of a catalog being selected in conflict scenarios")
-	fs.BoolVar(&i.Available, "available", true, "determines whether a catalog should be active and serving data. default: true, meaning new catalogs serve their contents by default.")
-	fs.IntVar(&i.PollIntervalMinutes, "source-poll-interval-minutes", 10, "catalog source polling interval [in minutes]")
-	fs.StringToStringVar(&i.Labels, "labels", map[string]string{}, "labels to add to the new catalog")
-	fs.DurationVar(&i.CleanupTimeout, "cleanup-timeout", time.Minute, "the amount of time to wait before cancelling cleanup after a failed creation attempt")
-	// sigs.k8s.io/controller-runtime/pkg/client supported dry-run values only.
-	fs.StringVar(&i.DryRun, "dry-run", "", "display the object that would be sent on a request without applying it if non-empty. One of: (All)")
-	fs.StringVarP(&i.Output, "output", "o", "", "output format for dry-run manifests. One of: (json, yaml)")
+	fs.DurationVar(&i.CleanupTimeout, "cleanup-timeout", time.Minute, "the amount of time to wait before cancelling cleanup after a failed creation attempt.")
+}
+
+func (o *catalogCreateOptions) validate() error {
+	var errs []error
+	if err := o.dryRunOptions.validate(); err != nil {
+		errs = append(errs, err)
+	}
+	if err := o.mutableCatalogOptions.validate(); err != nil {
+		errs = append(errs, err)
+	}
+	return errors.NewAggregate(errs)
 }

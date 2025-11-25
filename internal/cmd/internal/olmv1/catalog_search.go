@@ -26,7 +26,7 @@ func NewCatalogSearchCmd(cfg *action.Configuration) *cobra.Command {
 		Use:     "catalog",
 		Aliases: []string{"catalogs"},
 		Args:    cobra.RangeArgs(0, 1),
-		Short:   "Search catalogs for installable operators matching parameters",
+		Short:   "Search catalogs for installable packages matching parameters",
 		Run: func(cmd *cobra.Command, args []string) {
 			catalogContents, err := i.Run(cmd.Context())
 			if err != nil {
@@ -40,7 +40,7 @@ func NewCatalogSearchCmd(cfg *action.Configuration) *cobra.Command {
 			case "yaml":
 				printDeclCfgYAML(os.Stdout, catalogContents)
 			default:
-				log.Fatalf("unsupported output format %s: allwed formats are (json|yaml|table)", i.OutputFormat)
+				log.Fatalf("unsupported output format %s: allowed formats are (json|yaml|table)", i.OutputFormat)
 			}
 		},
 	}
@@ -50,13 +50,11 @@ func NewCatalogSearchCmd(cfg *action.Configuration) *cobra.Command {
 }
 
 func bindCatalogSearchFlags(fs *pflag.FlagSet, i *v1action.CatalogSearch) {
-	fs.StringVar(&i.CatalogName, "catalog", "", "Catalog to search on. If not provided, all available catalogs are searched.")
-	fs.StringVarP(&i.Selector, "selector", "l", "", "Selector (label query) to filter catalogs on, supports '=', '==', and '!='")
+	fs.StringVar(&i.CatalogName, "catalog", "", "name of the catalog to search. If not provided, all available catalogs are searched.")
+	fs.StringVarP(&i.Selector, "selector", "l", "", "selector (label query) to filter catalogs on, supports '=', '==', and '!='")
 	fs.StringVarP(&i.OutputFormat, "output", "o", "", "output format. One of: (yaml|json)")
-	fs.BoolVar(&i.ListVersions, "list-versions", false, "List all versions available for each package")
-	fs.StringVar(&i.Package, "package", "", "Search for package by name. If empty, all available packages will be listed")
-	fs.StringVar(&i.CatalogdNamespace, "catalogd-namespace", "olmv1-system", "Namespace for the catalogd controller")
-	fs.StringVar(&i.Timeout, "timeout", "5m", "Timeout for fetching catalog contents")
-	//	installable vs uninstallable, all versions, channels
-	//	fs.StringVar(&i.showAll, "image", "", "Image reference for the catalog source. Leave unset to retain the current image.")
+	fs.BoolVar(&i.ListVersions, "list-versions", false, "list all versions available for each package")
+	fs.StringVar(&i.Package, "package", "", "search for package by name. If empty, all available packages will be listed")
+	fs.StringVar(&i.CatalogdNamespace, "catalogd-namespace", "olmv1-system", "namespace for the catalogd controller")
+	fs.StringVar(&i.Timeout, "timeout", "5m", "timeout for fetching catalog contents")
 }

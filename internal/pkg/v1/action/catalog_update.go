@@ -6,6 +6,7 @@ import (
 	"regexp"
 
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/utils/ptr"
 
 	olmv1 "github.com/operator-framework/operator-controller/api/v1"
 
@@ -31,8 +32,10 @@ type CatalogUpdate struct {
 
 func NewCatalogUpdate(config *action.Configuration) *CatalogUpdate {
 	return &CatalogUpdate{
-		config: config,
-		Logf:   func(string, ...interface{}) {},
+		config:              config,
+		Logf:                func(string, ...interface{}) {},
+		PollIntervalMinutes: ptr.To(0),
+		Priority:            ptr.To(int32(0)),
 	}
 }
 
@@ -111,9 +114,7 @@ func (i *CatalogUpdate) setUpdatedCatalog(catalog *olmv1.ClusterCatalog) {
 		catalog.Spec.Source.Image.Ref = i.ImageRef
 	}
 
-	if i.AvailabilityMode != "" {
-		catalog.Spec.AvailabilityMode = olmv1.AvailabilityMode(i.AvailabilityMode)
-	}
+	catalog.Spec.AvailabilityMode = olmv1.AvailabilityMode(i.AvailabilityMode)
 }
 
 func (i *CatalogUpdate) setDefaults(catalog *olmv1.ClusterCatalog) {
