@@ -154,7 +154,7 @@ func (i *ExtensionInstall) cleanup(ctx context.Context) error {
 		},
 	}
 	if err := waitForDeletion(ctx, i.config.Client, clusterExtension); err != nil {
-		return fmt.Errorf("delete clusterextension %q: %v", i.ExtensionName, err)
+		return fmt.Errorf("delete clusterextension %q: %w", i.ExtensionName, err)
 	}
 	return nil
 }

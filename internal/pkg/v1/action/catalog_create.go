@@ -5,12 +5,11 @@ import (
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	olmv1 "github.com/operator-framework/operator-controller/api/v1"
 
 	"github.com/operator-framework/kubectl-operator/pkg/action"
-
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 type CatalogCreate struct {
@@ -21,7 +20,7 @@ type CatalogCreate struct {
 	Priority            int32
 	PollIntervalMinutes int
 	Labels              map[string]string
-	Available           bool
+	AvailabilityMode    string
 	CleanupTimeout      time.Duration
 
 	DryRun string
@@ -49,7 +48,7 @@ func (i *CatalogCreate) Run(ctx context.Context) (*olmv1.ClusterCatalog, error) 
 	}
 
 	var err error
-	if i.Available {
+	if i.AvailabilityMode == string(olmv1.AvailabilityModeAvailable) {
 		err = waitUntilCatalogStatusCondition(ctx, i.config.Client, &catalog, olmv1.TypeServing, metav1.ConditionTrue)
 	} else {
 		err = waitUntilCatalogStatusCondition(ctx, i.config.Client, &catalog, olmv1.TypeServing, metav1.ConditionFalse)
@@ -82,8 +81,8 @@ func (i *CatalogCreate) buildCatalog() olmv1.ClusterCatalog {
 			AvailabilityMode: olmv1.AvailabilityModeAvailable,
 		},
 	}
-	if !i.Available {
-		catalog.Spec.AvailabilityMode = olmv1.AvailabilityModeUnavailable
+	if len(i.AvailabilityMode) != 0 {
+		catalog.Spec.AvailabilityMode = olmv1.AvailabilityMode(i.AvailabilityMode)
 	}
 	if i.PollIntervalMinutes > 0 {
 		catalog.Spec.Source.Image.PollIntervalMinutes = &i.PollIntervalMinutes

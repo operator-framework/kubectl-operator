@@ -143,6 +143,21 @@ func withLabels(labels map[string]string) extensionOpt {
 	}
 }
 
+func withCRDUpgradePolicy(policy string) extensionOpt {
+	return func(ext *olmv1.ClusterExtension) {
+		if ext.Spec.Install == nil {
+			ext.Spec.Install = &olmv1.ClusterExtensionInstallConfig{}
+		}
+		if ext.Spec.Install.Preflight == nil {
+			ext.Spec.Install.Preflight = &olmv1.PreflightConfig{}
+		}
+		if ext.Spec.Install.Preflight.CRDUpgradeSafety == nil {
+			ext.Spec.Install.Preflight.CRDUpgradeSafety = &olmv1.CRDUpgradeSafetyPreflightConfig{}
+		}
+		ext.Spec.Install.Preflight.CRDUpgradeSafety.Enforcement = olmv1.CRDUpgradeSafetyEnforcement(policy)
+	}
+}
+
 func withCatalogSourceType(sourceType olmv1.SourceType) catalogOpt {
 	return func(catalog *olmv1.ClusterCatalog) {
 		catalog.Spec.Source.Type = sourceType

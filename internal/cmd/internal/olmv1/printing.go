@@ -24,17 +24,13 @@ import (
 )
 
 func printFormattedExtensions(outputFormat string, extensions ...olmv1.ClusterExtension) {
-	if len(extensions) == 0 {
-		fmt.Println("No resources found")
-		return
-	}
 	switch outputFormat {
 	case "yaml":
 		printer := printers.YAMLPrinter{}
-		if len(extensions) > 1 {
+		if len(extensions) != 1 {
 			obj := &olmv1.ClusterExtensionList{Items: extensions}
 			obj.GetObjectKind().SetGroupVersionKind(schema.GroupVersionKind{Group: olmv1.GroupVersion.Group,
-				Version: olmv1.GroupVersion.Version, Kind: olmv1.ClusterExtensionKind})
+				Version: olmv1.GroupVersion.Version, Kind: olmv1.ClusterExtensionKind + "List"})
 			if err := printer.PrintObj(obj, os.Stdout); err != nil {
 				fmt.Printf("failed to marshal response to YAML: %v\n", err)
 			}
@@ -46,10 +42,10 @@ func printFormattedExtensions(outputFormat string, extensions ...olmv1.ClusterEx
 		return
 	case "json":
 		printer := printers.JSONPrinter{}
-		if len(extensions) > 1 {
+		if len(extensions) != 1 {
 			obj := &olmv1.ClusterExtensionList{Items: extensions}
 			obj.GetObjectKind().SetGroupVersionKind(schema.GroupVersionKind{Group: olmv1.GroupVersion.Group,
-				Version: olmv1.GroupVersion.Version, Kind: olmv1.ClusterExtensionKind})
+				Version: olmv1.GroupVersion.Version, Kind: olmv1.ClusterExtensionKind + "List"})
 
 			if err := printer.PrintObj(obj, os.Stdout); err != nil {
 				fmt.Printf("failed to marshal response to JSON: %v\n", err)
@@ -61,6 +57,10 @@ func printFormattedExtensions(outputFormat string, extensions ...olmv1.ClusterEx
 		}
 		return
 	default:
+	}
+	if len(extensions) == 0 {
+		fmt.Println("No resources found")
+		return
 	}
 	tw := tabwriter.NewWriter(os.Stdout, 3, 4, 2, ' ', 0)
 	_, _ = fmt.Fprint(tw, "NAME\tINSTALLED BUNDLE\tVERSION\tSOURCE TYPE\tINSTALLED\tPROGRESSING\tAGE\n")
@@ -87,17 +87,13 @@ func printFormattedExtensions(outputFormat string, extensions ...olmv1.ClusterEx
 }
 
 func printFormattedCatalogs(outputFormat string, catalogs ...olmv1.ClusterCatalog) {
-	if len(catalogs) == 0 {
-		fmt.Println("No resources found")
-		return
-	}
 	switch outputFormat {
 	case "yaml":
 		printer := printers.YAMLPrinter{}
-		if len(catalogs) > 1 {
+		if len(catalogs) != 1 {
 			obj := &olmv1.ClusterCatalogList{Items: catalogs}
 			obj.GetObjectKind().SetGroupVersionKind(schema.GroupVersionKind{Group: olmv1.GroupVersion.Group,
-				Version: olmv1.GroupVersion.Version, Kind: "ClusterCatalog"})
+				Version: olmv1.GroupVersion.Version, Kind: "ClusterCatalogList"})
 			if err := printer.PrintObj(obj, os.Stdout); err != nil {
 				fmt.Printf("failed to marshal response to YAML: %v\n", err)
 			}
@@ -109,10 +105,10 @@ func printFormattedCatalogs(outputFormat string, catalogs ...olmv1.ClusterCatalo
 		return
 	case "json":
 		printer := printers.JSONPrinter{}
-		if len(catalogs) > 1 {
+		if len(catalogs) != 1 {
 			obj := &olmv1.ClusterCatalogList{Items: catalogs}
 			obj.GetObjectKind().SetGroupVersionKind(schema.GroupVersionKind{Group: olmv1.GroupVersion.Group,
-				Version: olmv1.GroupVersion.Version, Kind: "ClusterCatalog"})
+				Version: olmv1.GroupVersion.Version, Kind: "ClusterCatalogList"})
 			if err := printer.PrintObj(obj, os.Stdout); err != nil {
 				fmt.Printf("failed to marshal response to JSON: %v\n", err)
 			}
@@ -124,6 +120,10 @@ func printFormattedCatalogs(outputFormat string, catalogs ...olmv1.ClusterCatalo
 		return
 	default:
 	}
+	if len(catalogs) == 0 {
+		fmt.Println("No resources found")
+		return
+	}
 	tw := tabwriter.NewWriter(os.Stdout, 3, 4, 2, ' ', 0)
 	_, _ = fmt.Fprint(tw, "NAME\tAVAILABILITY\tPRIORITY\tLASTUNPACKED\tSERVING\tAGE\n")
 
@@ -131,7 +131,7 @@ func printFormattedCatalogs(outputFormat string, catalogs ...olmv1.ClusterCatalo
 	for _, cat := range catalogs {
 		var lastUnpacked string
 		if cat.Status.LastUnpacked != nil {
-			duration.HumanDuration(time.Since(cat.Status.LastUnpacked.Time))
+			lastUnpacked = duration.HumanDuration(time.Since(cat.Status.LastUnpacked.Time))
 		}
 		age := time.Since(cat.CreationTimestamp.Time)
 		_, _ = fmt.Fprintf(tw, "%s\t%s\t%d\t%s\t%s\t%s\n",
@@ -219,7 +219,7 @@ func printFormattedDeclCfg(w io.Writer, catalogDcfg map[string]*declcfg.Declarat
 		}
 	}
 	if !printedHeaders {
-		_, _ = fmt.Fprint(tw, "No resources found.\n")
+		_, _ = fmt.Fprintln(tw, "No resources found")
 	}
 	_ = tw.Flush()
 }

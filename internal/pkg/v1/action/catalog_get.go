@@ -16,7 +16,7 @@ type CatalogInstalledGet struct {
 	config      *action.Configuration
 	CatalogName string
 
-	Selector string
+	Selector labels.Selector
 
 	Logf func(string, ...interface{})
 }
@@ -45,12 +45,8 @@ func (i *CatalogInstalledGet) Run(ctx context.Context) ([]olmv1.ClusterCatalog, 
 	// list
 	var result olmv1.ClusterCatalogList
 	listOpts := &client.ListOptions{}
-	if len(i.Selector) > 0 {
-		selector, err := labels.Parse(i.Selector)
-		if err != nil {
-			return nil, err
-		}
-		listOpts.LabelSelector = selector
+	if i.Selector != nil {
+		listOpts.LabelSelector = i.Selector
 	}
 	err := i.config.Client.List(ctx, &result, listOpts)
 

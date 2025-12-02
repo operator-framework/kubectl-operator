@@ -2,36 +2,38 @@ package olmv1
 
 import (
 	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/util/errors"
+
+	olmv1 "github.com/operator-framework/operator-controller/api/v1"
 
 	"github.com/operator-framework/kubectl-operator/internal/cmd/internal/log"
 	v1action "github.com/operator-framework/kubectl-operator/internal/pkg/v1/action"
 	"github.com/operator-framework/kubectl-operator/pkg/action"
-
-	olmv1 "github.com/operator-framework/operator-controller/api/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/util/errors"
 )
 
 type extensionUpdateOptions struct {
 	dryRunOptions
 	mutableExtensionOptions
+	updateDefaultFieldOptions
 }
 
-// NewExtensionUpdateCmd allows updating a selected operator
+// NewExtensionUpdateCmd updates one or more mutable fields
+// of an extension specified by name
 func NewExtensionUpdateCmd(cfg *action.Configuration) *cobra.Command {
 	i := v1action.NewExtensionUpdate(cfg)
 	i.Logf = log.Printf
 	var opts extensionUpdateOptions
 
 	cmd := &cobra.Command{
-		Use:   "extension <extension name>",
-		Short: "Update an extension",
-		Args:  cobra.ExactArgs(1),
+		Use:     "extension <extension_name>",
+		Aliases: []string{"extensions <extension_name>"},
+		Short:   "Update an extension",
+		Args:    cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			i.ExtensionName = args[0]
 			if err := opts.validate(); err != nil {
-				log.Fatalf("failed to parse flags: %s", err.Error())
+				log.Fatalf("failed to parse flags: %w", err)
 			}
 			i.Version = opts.Version
 			i.Channels = opts.Channels
@@ -39,18 +41,19 @@ func NewExtensionUpdateCmd(cfg *action.Configuration) *cobra.Command {
 			i.UpgradeConstraintPolicy = opts.UpgradeConstraintPolicy
 			i.CRDUpgradeSafetyEnforcement = opts.CRDUpgradeSafetyEnforcement
 			i.CatalogSelector = opts.ParsedSelector
+			i.IgnoreUnset = opts.IgnoreUnset
 			i.DryRun = opts.DryRun
 			i.Output = opts.Output
 			extObj, err := i.Run(cmd.Context())
 			if err != nil {
-				log.Fatalf("failed to update extension: %v", err)
+				log.Fatalf("failed to update extension: %w", err)
 			}
 			if len(i.DryRun) == 0 {
-				log.Printf("extension %q updated\n", i.ExtensionName)
+				log.Printf("extension %q updated", i.ExtensionName)
 				return
 			}
 			if len(i.Output) == 0 {
-				log.Printf("extension %q updated (dry run)\n", i.ExtensionName)
+				log.Printf("extension %q updated (dry run)", i.ExtensionName)
 				return
 			}
 
@@ -59,15 +62,11 @@ func NewExtensionUpdateCmd(cfg *action.Configuration) *cobra.Command {
 			printFormattedExtensions(i.Output, *extObj)
 		},
 	}
-	bindExtensionUpdateFlags(cmd.Flags(), i)
 	bindMutableExtensionFlags(cmd.Flags(), &opts.mutableExtensionOptions)
+	bindUpdateFieldOptions(cmd.Flags(), &opts.updateDefaultFieldOptions, "clusterextension")
 	bindDryRunFlags(cmd.Flags(), &opts.dryRunOptions)
 
 	return cmd
-}
-
-func bindExtensionUpdateFlags(fs *pflag.FlagSet, i *v1action.ExtensionUpdate) {
-	fs.BoolVar(&i.IgnoreUnset, "ignore-unset", true, "set to false to revert all values not specifically set with flags in the command to their default as defined by the clusterextension customresoucedefinition.")
 }
 
 func (o *extensionUpdateOptions) validate() error {

@@ -39,9 +39,9 @@ var _ = Describe("CatalogDelete", func() {
 		deleter := internalaction.NewCatalogDelete(&cfg)
 		deleter.CatalogName = "name"
 		deleter.DeleteAll = true
-		catNames, err := deleter.Run(context.TODO())
+		catalogs, err := deleter.Run(context.TODO())
 		Expect(err).NotTo(BeNil())
-		Expect(catNames).To(BeEmpty())
+		Expect(catalogs).To(BeEmpty())
 
 		validateExistingCatalogs(cfg.Client, []string{"cat1", "cat2"})
 	})
@@ -51,9 +51,9 @@ var _ = Describe("CatalogDelete", func() {
 
 		deleter := internalaction.NewCatalogDelete(&cfg)
 		deleter.CatalogName = "does-not-exist"
-		catNames, err := deleter.Run(context.TODO())
+		catalogs, err := deleter.Run(context.TODO())
 		Expect(err).NotTo(BeNil())
-		Expect(catNames).To(BeEmpty())
+		Expect(catalogs).To(BeEmpty())
 
 		validateExistingCatalogs(cfg.Client, []string{"cat1", "cat2"})
 	})
@@ -63,9 +63,10 @@ var _ = Describe("CatalogDelete", func() {
 
 		deleter := internalaction.NewCatalogDelete(&cfg)
 		deleter.CatalogName = "cat2"
-		catNames, err := deleter.Run(context.TODO())
+		catalogs, err := deleter.Run(context.TODO())
 		Expect(err).To(BeNil())
-		Expect(catNames).To(BeEmpty())
+		Expect(catalogs).To(HaveLen(1))
+		validateCatalogList(catalogs, []string{deleter.CatalogName})
 
 		validateExistingCatalogs(cfg.Client, []string{"cat1", "cat3"})
 	})
@@ -75,9 +76,9 @@ var _ = Describe("CatalogDelete", func() {
 
 		deleter := internalaction.NewCatalogDelete(&cfg)
 		deleter.DeleteAll = true
-		catNames, err := deleter.Run(context.TODO())
+		catalogs, err := deleter.Run(context.TODO())
 		Expect(err).NotTo(BeNil())
-		Expect(catNames).To(BeEmpty())
+		Expect(catalogs).To(BeEmpty())
 
 		validateExistingCatalogs(cfg.Client, []string{})
 	})
@@ -87,9 +88,9 @@ var _ = Describe("CatalogDelete", func() {
 
 		deleter := internalaction.NewCatalogDelete(&cfg)
 		deleter.DeleteAll = true
-		catNames, err := deleter.Run(context.TODO())
+		catalogs, err := deleter.Run(context.TODO())
 		Expect(err).To(BeNil())
-		Expect(catNames).To(ContainElements([]string{"cat1", "cat2", "cat3"}))
+		validateCatalogList(catalogs, []string{"cat1", "cat2", "cat3"})
 
 		validateExistingCatalogs(cfg.Client, []string{})
 	})
@@ -102,6 +103,10 @@ func validateExistingCatalogs(c client.Client, wantedNames []string) {
 
 	catalogs := catalogsList.Items
 	Expect(catalogs).To(HaveLen(len(wantedNames)))
+	validateCatalogList(catalogs, wantedNames)
+}
+
+func validateCatalogList(catalogs []olmv1.ClusterCatalog, wantedNames []string) {
 	for _, wantedName := range wantedNames {
 		Expect(slices.ContainsFunc(catalogs, func(cat olmv1.ClusterCatalog) bool {
 			return cat.Name == wantedName

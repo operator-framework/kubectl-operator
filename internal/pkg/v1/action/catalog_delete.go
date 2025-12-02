@@ -5,10 +5,11 @@ import (
 	"errors"
 	"fmt"
 
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	olmv1 "github.com/operator-framework/operator-controller/api/v1"
 
 	"github.com/operator-framework/kubectl-operator/pkg/action"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 type CatalogDelete struct {
@@ -38,7 +39,10 @@ func (i *CatalogDelete) Run(ctx context.Context) ([]olmv1.ClusterCatalog, error)
 	// delete single, specified catalog
 	if !i.DeleteAll {
 		obj, err := i.deleteCatalog(ctx, i.CatalogName)
-		return []olmv1.ClusterCatalog{obj}, err
+		if err != nil {
+			return nil, err
+		}
+		return []olmv1.ClusterCatalog{obj}, nil
 	}
 
 	// delete all existing catalogs

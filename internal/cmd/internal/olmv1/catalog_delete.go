@@ -3,21 +3,21 @@ package olmv1
 import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+
+	olmv1 "github.com/operator-framework/operator-controller/api/v1"
 
 	"github.com/operator-framework/kubectl-operator/internal/cmd/internal/log"
 	v1action "github.com/operator-framework/kubectl-operator/internal/pkg/v1/action"
 	"github.com/operator-framework/kubectl-operator/pkg/action"
-
-	olmv1 "github.com/operator-framework/operator-controller/api/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 type catalogDeleteOptions struct {
 	dryRunOptions
 }
 
-// NewCatalogDeleteCmd allows deleting either a single or all
-// existing catalogs
+// NewCatalogDeleteCmd deletes either a specific catalog by name
+// or all catalogs on cluster.
 func NewCatalogDeleteCmd(cfg *action.Configuration) *cobra.Command {
 	i := v1action.NewCatalogDelete(cfg)
 	i.Logf = log.Printf
@@ -36,7 +36,7 @@ func NewCatalogDeleteCmd(cfg *action.Configuration) *cobra.Command {
 				i.CatalogName = args[0]
 			}
 			if err := opts.validate(); err != nil {
-				log.Fatalf("failed to parse flags: %s", err.Error())
+				log.Fatalf("failed to parse flags: %w", err)
 			}
 			i.DryRun = opts.DryRun
 			i.Output = opts.Output
@@ -45,14 +45,14 @@ func NewCatalogDeleteCmd(cfg *action.Configuration) *cobra.Command {
 				log.Fatalf("failed to delete catalog(s): %v", err)
 			}
 			if len(i.DryRun) == 0 {
-				for _, catn := range catalogs {
-					log.Printf("catalog %s deleted", catn.Name)
+				for _, c := range catalogs {
+					log.Printf("catalog %q deleted", c.Name)
 				}
 				return
 			}
 			if len(i.Output) == 0 {
-				for _, catn := range catalogs {
-					log.Printf("catalog %s deleted (dry run)\n", catn.Name)
+				for _, c := range catalogs {
+					log.Printf("catalog %q deleted (dry run)", c.Name)
 				}
 				return
 			}

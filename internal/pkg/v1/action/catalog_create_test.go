@@ -44,7 +44,7 @@ var _ = Describe("CatalogCreate", func() {
 		Expect(testClient.Initialize()).To(Succeed())
 
 		creator := internalaction.NewCatalogCreate(&action.Configuration{Client: testClient})
-		creator.Available = true
+		creator.AvailabilityMode = string(olmv1.AvailabilityModeAvailable)
 		creator.CatalogName = expectedCatalog.Name
 		creator.ImageSourceRef = expectedCatalog.Spec.Source.Image.Ref
 		creator.Priority = expectedCatalog.Spec.Priority
@@ -113,17 +113,18 @@ var _ = Describe("CatalogCreate", func() {
 		Expect(testClient.Initialize()).To(Succeed())
 
 		creator := internalaction.NewCatalogCreate(&action.Configuration{Client: testClient})
-		creator.Available = true
+		creator.AvailabilityMode = string(olmv1.AvailabilityModeAvailable)
 		creator.CatalogName = expectedCatalog.Name
 		creator.ImageSourceRef = expectedCatalog.Spec.Source.Image.Ref
 		creator.Priority = expectedCatalog.Spec.Priority
 		creator.Labels = expectedCatalog.Labels
 		creator.PollIntervalMinutes = *expectedCatalog.Spec.Source.Image.PollIntervalMinutes
-		Expect(creator.Run(context.TODO())).To(Succeed())
+		_, err := creator.Run(context.TODO())
+		Expect(err).ToNot(HaveOccurred())
 
 		Expect(testClient.createCalled).To(Equal(1))
 
-		actualCatalog := &olmv1.ClusterCatalog{TypeMeta: metav1.TypeMeta{Kind: "ClusterCatalog", APIVersion: "olm.operatorframework.io/v1"}}
+		actualCatalog := &olmv1.ClusterCatalog{TypeMeta: metav1.TypeMeta{Kind: "ClusterCatalog", APIVersion: olmv1.GroupVersion.String()}}
 		Expect(testClient.Client.Get(context.TODO(), types.NamespacedName{Name: catalogName}, actualCatalog)).To(Succeed())
 		validateCreateCatalog(actualCatalog, &expectedCatalog)
 	})

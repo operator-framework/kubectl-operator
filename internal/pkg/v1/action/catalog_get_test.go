@@ -7,6 +7,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
+	"k8s.io/apimachinery/pkg/labels"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
@@ -93,7 +94,9 @@ var _ = Describe("CatalogInstalledGet", func() {
 		cfg := setupEnv(initCatalogs...)
 
 		getter := internalaction.NewCatalogInstalledGet(&cfg)
-		getter.Selector = "foo=bar"
+		var err error
+		getter.Selector, err = labels.Parse("foo=bar")
+		Expect(err).To(BeNil())
 		catalogs, err := getter.Run(context.TODO())
 		Expect(err).To(BeNil())
 		Expect(catalogs).To(HaveLen(2))

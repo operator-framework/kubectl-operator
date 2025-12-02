@@ -5,10 +5,11 @@ import (
 	"errors"
 	"fmt"
 
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	olmv1 "github.com/operator-framework/operator-controller/api/v1"
 
 	"github.com/operator-framework/kubectl-operator/pkg/action"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // ExtensionDeletion deletes an extension or all extensions in the cluster

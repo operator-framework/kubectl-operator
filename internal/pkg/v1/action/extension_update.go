@@ -7,6 +7,7 @@ import (
 	"slices"
 	"time"
 
+	"github.com/blang/semver/v4"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -57,12 +58,17 @@ func (i *ExtensionUpdate) Run(ctx context.Context) (*olmv1.ClusterExtension, err
 
 	i.setDefaults(ext)
 
-	constraintPolicy := olmv1.UpgradeConstraintPolicy(i.UpgradeConstraintPolicy)
-	if !i.needsUpdate(ext, constraintPolicy) {
+	if i.Version != "" {
+		if _, err = semver.ParseRange(i.Version); err != nil {
+			return nil, fmt.Errorf("failed parsing version: %w", err)
+		}
+	}
+
+	if !i.needsUpdate(ext) {
 		return nil, ErrNoChange
 	}
 
-	i.prepareUpdatedExtension(&ext, constraintPolicy)
+	i.prepareUpdatedExtension(&ext)
 	if i.DryRun == DryRunAll {
 		if err := i.config.Client.Update(ctx, &ext, client.DryRunAll); err != nil {
 			return nil, err
@@ -105,7 +111,8 @@ func (i *ExtensionUpdate) setDefaults(ext olmv1.ClusterExtension) {
 	if i.UpgradeConstraintPolicy == "" {
 		i.UpgradeConstraintPolicy = string(catalogSrc.UpgradeConstraintPolicy)
 	}
-	if i.CRDUpgradeSafetyEnforcement == "" {
+	if i.CRDUpgradeSafetyEnforcement == "" && ext.Spec.Install != nil && ext.Spec.Install.Preflight != nil &&
+		ext.Spec.Install.Preflight.CRDUpgradeSafety != nil {
 		i.CRDUpgradeSafetyEnforcement = string(ext.Spec.Install.Preflight.CRDUpgradeSafety.Enforcement)
 	}
 	if len(i.Labels) == 0 {
@@ -116,7 +123,7 @@ func (i *ExtensionUpdate) setDefaults(ext olmv1.ClusterExtension) {
 	}
 }
 
-func (i *ExtensionUpdate) needsUpdate(ext olmv1.ClusterExtension, constraintPolicy olmv1.UpgradeConstraintPolicy) bool {
+func (i *ExtensionUpdate) needsUpdate(ext olmv1.ClusterExtension) bool {
 	catalogSrc := ext.Spec.Source.Catalog
 
 	// object string form is used for comparison to:
@@ -126,11 +133,17 @@ func (i *ExtensionUpdate) needsUpdate(ext olmv1.ClusterExtension, constraintPoli
 		(catalogSrc.Selector != nil && i.CatalogSelector != nil &&
 			catalogSrc.Selector.String() == i.CatalogSelector.String())
 
+	var crdUpgradeSafetyEnforcement string
+	if ext.Spec.Install != nil && ext.Spec.Install.Preflight != nil &&
+		ext.Spec.Install.Preflight.CRDUpgradeSafety != nil {
+		crdUpgradeSafetyEnforcement = string(ext.Spec.Install.Preflight.CRDUpgradeSafety.Enforcement)
+	}
+
 	if catalogSrc.Version == i.Version &&
 		slices.Equal(catalogSrc.Channels, i.Channels) &&
-		catalogSrc.UpgradeConstraintPolicy == constraintPolicy &&
+		string(catalogSrc.UpgradeConstraintPolicy) == i.UpgradeConstraintPolicy &&
 		maps.Equal(ext.Labels, i.Labels) &&
-		string(ext.Spec.Install.Preflight.CRDUpgradeSafety.Enforcement) == i.CRDUpgradeSafetyEnforcement &&
+		crdUpgradeSafetyEnforcement == i.CRDUpgradeSafetyEnforcement &&
 		sameSelectors {
 		return false
 	}
@@ -138,11 +151,24 @@ func (i *ExtensionUpdate) needsUpdate(ext olmv1.ClusterExtension, constraintPoli
 	return true
 }
 
-func (i *ExtensionUpdate) prepareUpdatedExtension(ext *olmv1.ClusterExtension, constraintPolicy olmv1.UpgradeConstraintPolicy) {
-	ext.SetLabels(i.Labels)
+func (i *ExtensionUpdate) prepareUpdatedExtension(ext *olmv1.ClusterExtension) {
+	existingLabels := ext.GetLabels()
+	if existingLabels == nil {
+		existingLabels = make(map[string]string)
+	}
+	if i.Labels != nil {
+		for k, v := range i.Labels {
+			if v == "" {
+				delete(existingLabels, k)
+			} else {
+				existingLabels[k] = v
+			}
+		}
+		ext.SetLabels(existingLabels)
+	}
 	ext.Spec.Source.Catalog.Version = i.Version
 	ext.Spec.Source.Catalog.Selector = i.CatalogSelector
 	ext.Spec.Source.Catalog.Channels = i.Channels
-	ext.Spec.Source.Catalog.UpgradeConstraintPolicy = constraintPolicy
+	ext.Spec.Source.Catalog.UpgradeConstraintPolicy = olmv1.UpgradeConstraintPolicy(i.UpgradeConstraintPolicy)
 	ext.Spec.Install.Preflight.CRDUpgradeSafety.Enforcement = olmv1.CRDUpgradeSafetyEnforcement(i.CRDUpgradeSafetyEnforcement)
 }

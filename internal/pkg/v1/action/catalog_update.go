@@ -6,12 +6,11 @@ import (
 	"regexp"
 
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/utils/ptr"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	olmv1 "github.com/operator-framework/operator-controller/api/v1"
 
 	"github.com/operator-framework/kubectl-operator/pkg/action"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 type CatalogUpdate struct {
@@ -32,10 +31,8 @@ type CatalogUpdate struct {
 
 func NewCatalogUpdate(config *action.Configuration) *CatalogUpdate {
 	return &CatalogUpdate{
-		config:              config,
-		Logf:                func(string, ...interface{}) {},
-		PollIntervalMinutes: ptr.To(0),
-		Priority:            ptr.To(int32(0)),
+		config: config,
+		Logf:   func(string, ...interface{}) {},
 	}
 }
 

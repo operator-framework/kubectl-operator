@@ -63,6 +63,7 @@ var _ = Describe("ExtensionUpdate", func() {
 		cfg := setupEnv(buildExtension(
 			"test",
 			withSourceType(olmv1.SourceTypeCatalog),
+			withCRDUpgradePolicy(string(olmv1.CRDUpgradeSafetyEnforcementStrict)),
 			withConstraintPolicy(string(olmv1.UpgradeConstraintPolicyCatalogProvided))),
 		)
 
@@ -80,6 +81,7 @@ var _ = Describe("ExtensionUpdate", func() {
 			"test",
 			withSourceType(olmv1.SourceTypeCatalog),
 			withConstraintPolicy(string(olmv1.UpgradeConstraintPolicyCatalogProvided)),
+			withCRDUpgradePolicy(string(olmv1.CRDUpgradeSafetyEnforcementStrict)),
 			withChannels("a", "b"),
 			withLabels(map[string]string{"c": "d"}),
 			withVersion("10.0.4"),
@@ -99,6 +101,7 @@ var _ = Describe("ExtensionUpdate", func() {
 		cfg := setupEnv(buildExtension(
 			"test",
 			withSourceType(olmv1.SourceTypeCatalog),
+			withCRDUpgradePolicy(string(olmv1.CRDUpgradeSafetyEnforcementStrict)),
 			withConstraintPolicy(string(olmv1.UpgradeConstraintPolicyCatalogProvided))),
 		)
 
@@ -116,6 +119,7 @@ var _ = Describe("ExtensionUpdate", func() {
 		testExt := buildExtension(
 			"test",
 			withSourceType(olmv1.SourceTypeCatalog),
+			withCRDUpgradePolicy(string(olmv1.CRDUpgradeSafetyEnforcementStrict)),
 			withConstraintPolicy(string(olmv1.UpgradeConstraintPolicyCatalogProvided)),
 		)
 		cfg := setupEnv(testExt)
@@ -140,6 +144,7 @@ var _ = Describe("ExtensionUpdate", func() {
 		testExt := buildExtension(
 			"test",
 			withSourceType(olmv1.SourceTypeCatalog),
+			withCRDUpgradePolicy(string(olmv1.CRDUpgradeSafetyEnforcementNone)),
 			withConstraintPolicy(string(olmv1.UpgradeConstraintPolicyCatalogProvided)),
 		)
 		cfg := setupEnv(testExt, buildExtension("test2"), buildExtension("test3"))
@@ -157,6 +162,7 @@ var _ = Describe("ExtensionUpdate", func() {
 		updater.Channels = []string{"a", "b"}
 		updater.Labels = map[string]string{"c": "d"}
 		updater.UpgradeConstraintPolicy = string(olmv1.UpgradeConstraintPolicySelfCertified)
+		updater.CRDUpgradeSafetyEnforcement = string(olmv1.CRDUpgradeSafetyEnforcementStrict)
 		ext, err := updater.Run(context.TODO())
 
 		Expect(err).To(BeNil())

@@ -39,9 +39,9 @@ var _ = Describe("ExtensionDelete", func() {
 		deleter := internalaction.NewExtensionDelete(&cfg)
 		deleter.ExtensionName = "foo"
 		deleter.DeleteAll = true
-		extNames, err := deleter.Run(context.TODO())
+		extensions, err := deleter.Run(context.TODO())
 		Expect(err).NotTo(BeNil())
-		Expect(extNames).To(BeEmpty())
+		Expect(extensions).To(BeEmpty())
 
 		validateExistingExtensions(cfg.Client, []string{"ext1", "ext2"})
 	})
@@ -51,9 +51,10 @@ var _ = Describe("ExtensionDelete", func() {
 
 		deleter := internalaction.NewExtensionDelete(&cfg)
 		deleter.ExtensionName = "does-not-exist"
-		extNames, err := deleter.Run(context.TODO())
+		extensions, err := deleter.Run(context.TODO())
 		Expect(err).NotTo(BeNil())
-		Expect(extNames).To(BeEmpty())
+		Expect(extensions).To(HaveLen(1))
+		validateExtensionList(extensions, []string{deleter.ExtensionName})
 
 		validateExistingExtensions(cfg.Client, []string{"ext1", "ext2"})
 	})
@@ -74,9 +75,9 @@ var _ = Describe("ExtensionDelete", func() {
 
 		deleter := internalaction.NewExtensionDelete(&cfg)
 		deleter.DeleteAll = true
-		extNames, err := deleter.Run(context.TODO())
+		extensions, err := deleter.Run(context.TODO())
 		Expect(err).NotTo(BeNil())
-		Expect(extNames).To(BeEmpty())
+		Expect(extensions).To(BeEmpty())
 
 		validateExistingExtensions(cfg.Client, []string{})
 	})
@@ -86,9 +87,9 @@ var _ = Describe("ExtensionDelete", func() {
 
 		deleter := internalaction.NewExtensionDelete(&cfg)
 		deleter.DeleteAll = true
-		extNames, err := deleter.Run(context.TODO())
+		extensions, err := deleter.Run(context.TODO())
 		Expect(err).To(BeNil())
-		Expect(extNames).To(ContainElements([]string{"ext1", "ext2", "ext3"}))
+		validateExtensionList(extensions, []string{"ext1", "ext2", "ext3"})
 
 		validateExistingExtensions(cfg.Client, []string{})
 	})
@@ -103,6 +104,10 @@ func validateExistingExtensions(c client.Client, wantedNames []string) {
 
 	extensions := extensionList.Items
 	Expect(extensions).To(HaveLen(len(wantedNames)))
+	validateExtensionList(extensions, wantedNames)
+}
+
+func validateExtensionList(extensions []olmv1.ClusterExtension, wantedNames []string) {
 	for _, wantedName := range wantedNames {
 		Expect(slices.ContainsFunc(extensions, func(ext olmv1.ClusterExtension) bool {
 			return ext.Name == wantedName

@@ -7,13 +7,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/briandowns/spinner"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/briandowns/spinner"
 	olmv1 "github.com/operator-framework/operator-controller/api/v1"
 )
 
@@ -34,7 +34,7 @@ func waitUntilCatalogStatusCondition(
 	conditionType string,
 	conditionStatus metav1.ConditionStatus,
 ) error {
-	fmt.Printf("waiting for ClusterCatalog %s to become healthy...\n", catalog.Name)
+	fmt.Printf("waiting for ClusterCatalog %q to become healthy...\n", catalog.Name)
 	s := spinner.New(spinner.CharSets[1], 100*time.Millisecond)
 	s.Start()
 	defer s.Stop()
@@ -61,7 +61,7 @@ func waitUntilExtensionStatusCondition(
 	conditionStatus metav1.ConditionStatus,
 ) error {
 	s := spinner.New(spinner.CharSets[1], 100*time.Millisecond)
-	s.Prefix = fmt.Sprintf("waiting for ClusterExtension %s to become healthy...", extension.Name)
+	s.Prefix = fmt.Sprintf("waiting for ClusterExtension %q to become healthy...", extension.Name)
 	s.Start()
 	defer s.Stop()
 	opKey := objectKeyForObject(extension)
@@ -110,7 +110,7 @@ func waitForDeletion(ctx context.Context, cl getter, objs ...client.Object) erro
 			}
 			return false, nil
 		}); err != nil {
-			return fmt.Errorf("wait for %s %q deleted: %v", lowerKind, key.Name, err)
+			return fmt.Errorf("wait for %s %q deleted: %w", lowerKind, key.Name, err)
 		}
 	}
 	return nil

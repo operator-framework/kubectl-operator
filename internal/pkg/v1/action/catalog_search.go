@@ -7,6 +7,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 
 	olmv1 "github.com/operator-framework/operator-controller/api/v1"
 	"github.com/operator-framework/operator-registry/alpha/declcfg"
@@ -19,8 +20,7 @@ type CatalogSearch struct {
 	config      *action.Configuration
 	CatalogName string
 
-	OutputFormat      string
-	Selector          string
+	Selector          labels.Selector
 	ListVersions      bool
 	Package           string
 	CatalogdNamespace string
@@ -40,7 +40,7 @@ func (i *CatalogSearch) Run(ctx context.Context) (map[string]*declcfg.Declarativ
 	if len(i.Timeout) > 0 {
 		catalogListTimeout, err := time.ParseDuration(i.Timeout)
 		if err != nil {
-			return nil, fmt.Errorf("failed to parse timeout %s: %w", i.Timeout, err)
+			return nil, fmt.Errorf("failed to parse timeout %q: %w", i.Timeout, err)
 		}
 		i.config.Config.Timeout = catalogListTimeout
 	}
@@ -61,8 +61,8 @@ func (i *CatalogSearch) Run(ctx context.Context) (map[string]*declcfg.Declarativ
 		if len(i.CatalogName) != 0 {
 			return nil, fmt.Errorf("failed to query for catalog contents: catalog(s) unhealthy")
 		}
-		if len(i.Selector) > 0 {
-			return nil, fmt.Errorf("no serving catalogs matching label selector %v found", i.Selector)
+		if i.Selector != nil {
+			return nil, fmt.Errorf("no serving catalogs matching label selector %q found", i.Selector)
 		}
 		return nil, fmt.Errorf("no serving catalogs found")
 	}
@@ -94,12 +94,12 @@ func (i *CatalogSearch) Run(ctx context.Context) (map[string]*declcfg.Declarativ
 	if !foundPackage {
 		// package name was specified and query was empty across all available catalogs.
 		if len(i.CatalogName) != 0 {
-			return nil, fmt.Errorf("package %s was not found in ClusterCatalog %s", i.Package, i.CatalogName)
+			return nil, fmt.Errorf("package %q was not found in ClusterCatalog %q", i.Package, i.CatalogName)
 		}
-		if len(i.Selector) > 0 {
-			return nil, fmt.Errorf("package %s was not found in ClusterCatalogs matching label %s", i.Package, i.Selector)
+		if i.Selector != nil {
+			return nil, fmt.Errorf("package %q was not found in ClusterCatalogs matching label %q", i.Package, i.Selector)
 		}
-		return nil, fmt.Errorf("package %s was not found in any serving ClusterCatalog", i.Package)
+		return nil, fmt.Errorf("package %q was not found in any serving ClusterCatalog", i.Package)
 	}
 	return catalogDeclCfg, nil
 }

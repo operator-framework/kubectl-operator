@@ -5,22 +5,23 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/util/errors"
+
+	olmv1 "github.com/operator-framework/operator-controller/api/v1"
 
 	"github.com/operator-framework/kubectl-operator/internal/cmd/internal/log"
 	v1action "github.com/operator-framework/kubectl-operator/internal/pkg/v1/action"
 	"github.com/operator-framework/kubectl-operator/pkg/action"
-
-	olmv1 "github.com/operator-framework/operator-controller/api/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/util/errors"
 )
 
 type catalogCreateOptions struct {
-	mutableCatalogOptions
 	dryRunOptions
+	mutableCatalogOptions
 }
 
-// NewCatalogCreateCmd allows creating a new catalog
+// NewCatalogCreateCmd creates a new catalog, requiring a minimum
+// of a name for the new catalog and a source image reference
 func NewCatalogCreateCmd(cfg *action.Configuration) *cobra.Command {
 	i := v1action.NewCatalogCreate(cfg)
 	i.Logf = log.Printf
@@ -36,20 +37,24 @@ func NewCatalogCreateCmd(cfg *action.Configuration) *cobra.Command {
 			i.ImageSourceRef = args[1]
 			opts.Image = i.ImageSourceRef
 			if err := opts.validate(); err != nil {
-				log.Fatalf("failed to parse flags: %s", err.Error())
+				log.Fatalf("failed to parse flags: %w", err)
 			}
 			i.DryRun = opts.DryRun
 			i.Output = opts.Output
+			i.AvailabilityMode = opts.AvailabilityMode
+			i.Priority = opts.Priority
+			i.Labels = opts.Labels
+			i.PollIntervalMinutes = opts.PollIntervalMinutes
 			catalogObj, err := i.Run(cmd.Context())
 			if err != nil {
-				log.Fatalf("failed to create catalog %q: %v\n", i.CatalogName, err)
+				log.Fatalf("failed to create catalog %q: %w", i.CatalogName, err)
 			}
 			if len(i.DryRun) == 0 {
-				log.Printf("catalog %q created\n", i.CatalogName)
+				log.Printf("catalog %q created", i.CatalogName)
 				return
 			}
 			if len(i.Output) == 0 {
-				log.Printf("catalog %q created (dry run)\n", i.CatalogName)
+				log.Printf("catalog %q created (dry run)", i.CatalogName)
 				return
 			}
 
@@ -58,8 +63,8 @@ func NewCatalogCreateCmd(cfg *action.Configuration) *cobra.Command {
 			printFormattedCatalogs(i.Output, *catalogObj)
 		},
 	}
-	bindCatalogCreateFlags(cmd.Flags(), i)
 	bindMutableCatalogFlags(cmd.Flags(), &opts.mutableCatalogOptions)
+	bindCatalogCreateFlags(cmd.Flags(), i)
 	bindDryRunFlags(cmd.Flags(), &opts.dryRunOptions)
 
 	return cmd
