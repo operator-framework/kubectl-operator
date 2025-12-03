@@ -30,12 +30,12 @@ func NewCatalogInstalledGetCmd(cfg *action.Configuration) *cobra.Command {
 				i.CatalogName = args[0]
 			}
 			if err := opts.validate(); err != nil {
-				log.Fatalf("failed to parse flags: %w", err)
+				log.Fatalf("failed to parse flags: %v", err)
 			}
 			i.Selector = opts.ParsedSelector
 			installedCatalogs, err := i.Run(cmd.Context())
 			if err != nil {
-				log.Fatalf("failed getting installed catalog(s): %w", err)
+				log.Fatalf("failed getting installed catalog(s): %v", err)
 			}
 
 			for i := range installedCatalogs {

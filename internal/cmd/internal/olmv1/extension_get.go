@@ -30,12 +30,12 @@ func NewExtensionInstalledGetCmd(cfg *action.Configuration) *cobra.Command {
 				i.ExtensionName = args[0]
 			}
 			if err := opts.validate(); err != nil {
-				log.Fatalf("failed to parse flags: %w", err)
+				log.Fatalf("failed to parse flags: %v", err)
 			}
 			i.Selector = opts.ParsedSelector
 			installedExtensions, err := i.Run(cmd.Context())
 			if err != nil {
-				log.Fatalf("failed getting installed extension(s): %w", err)
+				log.Fatalf("failed getting installed extension(s): %v", err)
 			}
 
 			for i := range installedExtensions {

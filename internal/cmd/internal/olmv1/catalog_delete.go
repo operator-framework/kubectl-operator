@@ -36,7 +36,7 @@ func NewCatalogDeleteCmd(cfg *action.Configuration) *cobra.Command {
 				i.CatalogName = args[0]
 			}
 			if err := opts.validate(); err != nil {
-				log.Fatalf("failed to parse flags: %w", err)
+				log.Fatalf("failed to parse flags: %v", err)
 			}
 			i.DryRun = opts.DryRun
 			i.Output = opts.Output

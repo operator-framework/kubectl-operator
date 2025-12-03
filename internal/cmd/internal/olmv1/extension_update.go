@@ -33,7 +33,7 @@ func NewExtensionUpdateCmd(cfg *action.Configuration) *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			i.ExtensionName = args[0]
 			if err := opts.validate(); err != nil {
-				log.Fatalf("failed to parse flags: %w", err)
+				log.Fatalf("failed to parse flags: %v", err)
 			}
 			i.Version = opts.Version
 			i.Channels = opts.Channels
@@ -46,7 +46,7 @@ func NewExtensionUpdateCmd(cfg *action.Configuration) *cobra.Command {
 			i.Output = opts.Output
 			extObj, err := i.Run(cmd.Context())
 			if err != nil {
-				log.Fatalf("failed to update extension: %w", err)
+				log.Fatalf("failed to update extension: %v", err)
 			}
 			if len(i.DryRun) == 0 {
 				log.Printf("extension %q updated", i.ExtensionName)

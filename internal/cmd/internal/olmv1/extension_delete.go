@@ -39,13 +39,13 @@ func NewExtensionDeleteCmd(cfg *action.Configuration) *cobra.Command {
 				i.ExtensionName = args[0]
 			}
 			if err := opts.validate(); err != nil {
-				log.Fatalf("failed to parse flags: %w", err)
+				log.Fatalf("failed to parse flags: %v", err)
 			}
 			i.DryRun = opts.DryRun
 			i.Output = opts.Output
 			extensions, err := i.Run(cmd.Context())
 			if err != nil {
-				log.Fatalf("failed to delete extension: %w", err)
+				log.Fatalf("failed to delete extension: %v", err)
 			}
 			if len(i.DryRun) == 0 {
 				for _, e := range extensions {

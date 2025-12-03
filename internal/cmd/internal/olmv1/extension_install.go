@@ -35,7 +35,7 @@ func NewExtensionInstallCmd(cfg *action.Configuration) *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			i.ExtensionName = args[0]
 			if err := opts.validate(); err != nil {
-				log.Fatalf("failed to parse flags: %w", err)
+				log.Fatalf("failed to parse flags: %v", err)
 			}
 			i.Version = opts.Version
 			i.Channels = opts.Channels
@@ -47,7 +47,7 @@ func NewExtensionInstallCmd(cfg *action.Configuration) *cobra.Command {
 			i.Output = opts.Output
 			extObj, err := i.Run(cmd.Context())
 			if err != nil {
-				log.Fatalf("failed to install extension %q: %w", i.ExtensionName, err)
+				log.Fatalf("failed to install extension %q: %v", i.ExtensionName, err)
 			}
 			if len(i.DryRun) == 0 {
 				log.Printf("extension %q created", i.ExtensionName)
@@ -71,13 +71,13 @@ func NewExtensionInstallCmd(cfg *action.Configuration) *cobra.Command {
 }
 
 func bindExtensionInstallFlags(fs *pflag.FlagSet, i *v1action.ExtensionInstall) {
-	fs.StringVarP(&i.Namespace.Name, "namespace", "n", "olmv1-system", "namespace to install the extension in.") //infer?
+	fs.StringVarP(&i.Namespace.Name, "namespace", "n", "olmv1-system", "namespace to install the extension in.")
 	fs.StringVarP(&i.PackageName, "package-name", "p", "", "package name of the extension to install. Required.")
 	fs.StringVarP(&i.ServiceAccount, "service-account", "s", "default", "service account name to use for the extension installation.")
 	fs.DurationVar(&i.CleanupTimeout, "cleanup-timeout", time.Minute, "the amount of time to wait before cancelling cleanup after a failed creation attempt.")
 
 	if err := cobra.MarkFlagRequired(fs, "package-name"); err != nil {
-		log.Fatalf("failed to process command flags: %w", err)
+		log.Fatalf("failed to process command flags: %v", err)
 	}
 }
 

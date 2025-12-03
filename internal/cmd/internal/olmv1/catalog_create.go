@@ -20,8 +20,8 @@ type catalogCreateOptions struct {
 	mutableCatalogOptions
 }
 
-// NewCatalogCreateCmd creates a new catalog, requiring a minimum
-// of a name for the new catalog and a source image reference
+// NewCatalogCreateCmd returns a command that creates a new catalog.
+// At minimum, the catalog name and the source image reference must be provided.
 func NewCatalogCreateCmd(cfg *action.Configuration) *cobra.Command {
 	i := v1action.NewCatalogCreate(cfg)
 	i.Logf = log.Printf
@@ -37,7 +37,7 @@ func NewCatalogCreateCmd(cfg *action.Configuration) *cobra.Command {
 			i.ImageSourceRef = args[1]
 			opts.Image = i.ImageSourceRef
 			if err := opts.validate(); err != nil {
-				log.Fatalf("failed to parse flags: %w", err)
+				log.Fatalf("failed to parse flags: %v", err)
 			}
 			i.DryRun = opts.DryRun
 			i.Output = opts.Output
@@ -47,7 +47,7 @@ func NewCatalogCreateCmd(cfg *action.Configuration) *cobra.Command {
 			i.PollIntervalMinutes = opts.PollIntervalMinutes
 			catalogObj, err := i.Run(cmd.Context())
 			if err != nil {
-				log.Fatalf("failed to create catalog %q: %w", i.CatalogName, err)
+				log.Fatalf("failed to create catalog %q: %v", i.CatalogName, err)
 			}
 			if len(i.DryRun) == 0 {
 				log.Printf("catalog %q created", i.CatalogName)

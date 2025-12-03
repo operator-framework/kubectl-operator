@@ -29,12 +29,12 @@ func NewCatalogSearchCmd(cfg *action.Configuration) *cobra.Command {
 		Short:   "Search catalogs for installable packages matching parameters",
 		Run: func(cmd *cobra.Command, args []string) {
 			if err := opts.validate(); err != nil {
-				log.Fatalf("failed to parse flags: %w", err)
+				log.Fatalf("failed to parse flags: %v", err)
 			}
 			i.Selector = opts.ParsedSelector
 			catalogContents, err := i.Run(cmd.Context())
 			if err != nil {
-				log.Fatalf("failed querying catalog(s): %w", err)
+				log.Fatalf("failed querying catalog(s): %v", err)
 			}
 			switch opts.Output {
 			case "":

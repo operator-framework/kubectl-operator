@@ -33,7 +33,7 @@ func NewCatalogUpdateCmd(cfg *action.Configuration) *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			i.CatalogName = args[0]
 			if err := opts.validate(); err != nil {
-				log.Fatalf("failed to parse flags: %w", err)
+				log.Fatalf("failed to parse flags: %v", err)
 			}
 			if cmd.Flags().Changed("priority") {
 				i.Priority = &opts.Priority
@@ -51,7 +51,7 @@ func NewCatalogUpdateCmd(cfg *action.Configuration) *cobra.Command {
 			i.Output = opts.Output
 			catalogObj, err := i.Run(cmd.Context())
 			if err != nil {
-				log.Fatalf("failed to update catalog: %w", err)
+				log.Fatalf("failed to update catalog: %v", err)
 			}
 
 			if len(i.DryRun) == 0 {
