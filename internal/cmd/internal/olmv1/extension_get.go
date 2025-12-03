@@ -2,6 +2,9 @@ package olmv1
 
 import (
 	"github.com/spf13/cobra"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+
+	olmv1 "github.com/operator-framework/operator-controller/api/v1"
 
 	"github.com/operator-framework/kubectl-operator/internal/cmd/internal/log"
 	v1action "github.com/operator-framework/kubectl-operator/internal/pkg/v1/action"
@@ -15,6 +18,7 @@ import (
 func NewExtensionInstalledGetCmd(cfg *action.Configuration) *cobra.Command {
 	i := v1action.NewExtensionInstalledGet(cfg)
 	i.Logf = log.Printf
+	var opts getOptions
 
 	cmd := &cobra.Command{
 		Use:     "extension [extension_name]",
@@ -25,14 +29,23 @@ func NewExtensionInstalledGetCmd(cfg *action.Configuration) *cobra.Command {
 			if len(args) == 1 {
 				i.ExtensionName = args[0]
 			}
+			if err := opts.validate(); err != nil {
+				log.Fatalf("failed to parse flags: %v", err)
+			}
+			i.Selector = opts.ParsedSelector
 			installedExtensions, err := i.Run(cmd.Context())
 			if err != nil {
 				log.Fatalf("failed getting installed extension(s): %v", err)
 			}
 
-			printFormattedExtensions(installedExtensions...)
+			for i := range installedExtensions {
+				installedExtensions[i].GetObjectKind().SetGroupVersionKind(schema.GroupVersionKind{Group: olmv1.GroupVersion.Group,
+					Version: olmv1.GroupVersion.Version, Kind: olmv1.ClusterExtensionKind})
+			}
+			printFormattedExtensions(opts.Output, installedExtensions...)
 		},
 	}
+	bindGetFlags(cmd.Flags(), &opts)
 
 	return cmd
 }

@@ -39,7 +39,7 @@ var _ = Describe("ExtensionUpdate", func() {
 		cfg := setupEnv()
 
 		updater := internalaction.NewExtensionUpdate(&cfg)
-		updater.Package = "does-not-exist"
+		updater.ExtensionName = "does-not-exist"
 		ext, err := updater.Run(context.TODO())
 
 		Expect(err).NotTo(BeNil())
@@ -51,7 +51,7 @@ var _ = Describe("ExtensionUpdate", func() {
 		cfg := setupEnv(buildExtension("test", withSourceType("unknown")))
 
 		updater := internalaction.NewExtensionUpdate(&cfg)
-		updater.Package = "test"
+		updater.ExtensionName = "test"
 		ext, err := updater.Run(context.TODO())
 
 		Expect(err).NotTo(BeNil())
@@ -63,11 +63,12 @@ var _ = Describe("ExtensionUpdate", func() {
 		cfg := setupEnv(buildExtension(
 			"test",
 			withSourceType(olmv1.SourceTypeCatalog),
+			withCRDUpgradePolicy(string(olmv1.CRDUpgradeSafetyEnforcementStrict)),
 			withConstraintPolicy(string(olmv1.UpgradeConstraintPolicyCatalogProvided))),
 		)
 
 		updater := internalaction.NewExtensionUpdate(&cfg)
-		updater.Package = "test"
+		updater.ExtensionName = "test"
 		ext, err := updater.Run(context.TODO())
 
 		Expect(err).NotTo(BeNil())
@@ -80,13 +81,14 @@ var _ = Describe("ExtensionUpdate", func() {
 			"test",
 			withSourceType(olmv1.SourceTypeCatalog),
 			withConstraintPolicy(string(olmv1.UpgradeConstraintPolicyCatalogProvided)),
+			withCRDUpgradePolicy(string(olmv1.CRDUpgradeSafetyEnforcementStrict)),
 			withChannels("a", "b"),
 			withLabels(map[string]string{"c": "d"}),
 			withVersion("10.0.4"),
 		))
 
 		updater := internalaction.NewExtensionUpdate(&cfg)
-		updater.Package = "test"
+		updater.ExtensionName = "test"
 		updater.IgnoreUnset = true
 		ext, err := updater.Run(context.TODO())
 
@@ -99,11 +101,12 @@ var _ = Describe("ExtensionUpdate", func() {
 		cfg := setupEnv(buildExtension(
 			"test",
 			withSourceType(olmv1.SourceTypeCatalog),
+			withCRDUpgradePolicy(string(olmv1.CRDUpgradeSafetyEnforcementStrict)),
 			withConstraintPolicy(string(olmv1.UpgradeConstraintPolicyCatalogProvided))),
 		)
 
 		updater := internalaction.NewExtensionUpdate(&cfg)
-		updater.Package = "test"
+		updater.ExtensionName = "test"
 		updater.Version = "10-4"
 		ext, err := updater.Run(context.TODO())
 
@@ -116,6 +119,7 @@ var _ = Describe("ExtensionUpdate", func() {
 		testExt := buildExtension(
 			"test",
 			withSourceType(olmv1.SourceTypeCatalog),
+			withCRDUpgradePolicy(string(olmv1.CRDUpgradeSafetyEnforcementStrict)),
 			withConstraintPolicy(string(olmv1.UpgradeConstraintPolicyCatalogProvided)),
 		)
 		cfg := setupEnv(testExt)
@@ -124,7 +128,7 @@ var _ = Describe("ExtensionUpdate", func() {
 		cancel()
 
 		updater := internalaction.NewExtensionUpdate(&cfg)
-		updater.Package = "test"
+		updater.ExtensionName = "test"
 		updater.Version = "10.0.4"
 		updater.Channels = []string{"a", "b"}
 		updater.Labels = map[string]string{"c": "d"}
@@ -140,6 +144,7 @@ var _ = Describe("ExtensionUpdate", func() {
 		testExt := buildExtension(
 			"test",
 			withSourceType(olmv1.SourceTypeCatalog),
+			withCRDUpgradePolicy(string(olmv1.CRDUpgradeSafetyEnforcementNone)),
 			withConstraintPolicy(string(olmv1.UpgradeConstraintPolicyCatalogProvided)),
 		)
 		cfg := setupEnv(testExt, buildExtension("test2"), buildExtension("test3"))
@@ -152,11 +157,12 @@ var _ = Describe("ExtensionUpdate", func() {
 		}()
 
 		updater := internalaction.NewExtensionUpdate(&cfg)
-		updater.Package = "test"
+		updater.ExtensionName = "test"
 		updater.Version = "10.0.4"
 		updater.Channels = []string{"a", "b"}
 		updater.Labels = map[string]string{"c": "d"}
 		updater.UpgradeConstraintPolicy = string(olmv1.UpgradeConstraintPolicySelfCertified)
+		updater.CRDUpgradeSafetyEnforcement = string(olmv1.CRDUpgradeSafetyEnforcementStrict)
 		ext, err := updater.Run(context.TODO())
 
 		Expect(err).To(BeNil())

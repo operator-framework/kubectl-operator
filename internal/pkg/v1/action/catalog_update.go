@@ -6,6 +6,7 @@ import (
 	"regexp"
 
 	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	olmv1 "github.com/operator-framework/operator-controller/api/v1"
 
@@ -23,7 +24,9 @@ type CatalogUpdate struct {
 	ImageRef            string
 	IgnoreUnset         bool
 
-	Logf func(string, ...interface{})
+	DryRun string
+	Output string
+	Logf   func(string, ...interface{})
 }
 
 func NewCatalogUpdate(config *action.Configuration) *CatalogUpdate {
@@ -33,15 +36,15 @@ func NewCatalogUpdate(config *action.Configuration) *CatalogUpdate {
 	}
 }
 
-func (cu *CatalogUpdate) Run(ctx context.Context) (*olmv1.ClusterCatalog, error) {
+func (i *CatalogUpdate) Run(ctx context.Context) (*olmv1.ClusterCatalog, error) {
 	var catalog olmv1.ClusterCatalog
 	var err error
 
 	cuKey := types.NamespacedName{
-		Name:      cu.CatalogName,
-		Namespace: cu.config.Namespace,
+		Name:      i.CatalogName,
+		Namespace: i.config.Namespace,
 	}
-	if err = cu.config.Client.Get(ctx, cuKey, &catalog); err != nil {
+	if err = i.config.Client.Get(ctx, cuKey, &catalog); err != nil {
 		return nil, err
 	}
 
@@ -49,29 +52,36 @@ func (cu *CatalogUpdate) Run(ctx context.Context) (*olmv1.ClusterCatalog, error)
 		return nil, fmt.Errorf("unrecognized source type: %q", catalog.Spec.Source.Type)
 	}
 
-	if cu.ImageRef != "" && !isValidImageRef(cu.ImageRef) {
-		return nil, fmt.Errorf("invalid image reference: %q, it must be a valid image reference format", cu.ImageRef)
+	if i.ImageRef != "" && !isValidImageRef(i.ImageRef) {
+		return nil, fmt.Errorf("invalid image reference: %q, it must be a valid image reference format", i.ImageRef)
 	}
 
-	cu.setDefaults(&catalog)
+	i.setDefaults(&catalog)
 
-	cu.setUpdatedCatalog(&catalog)
-	if err := cu.config.Client.Update(ctx, &catalog); err != nil {
+	i.setUpdatedCatalog(&catalog)
+	if i.DryRun == DryRunAll {
+		if err := i.config.Client.Update(ctx, &catalog, client.DryRunAll); err != nil {
+			return nil, err
+		}
+		return &catalog, nil
+	}
+
+	if err := i.config.Client.Update(ctx, &catalog); err != nil {
 		return nil, err
 	}
 
-	cu.Logf("Updating catalog %q in namespace %q", cu.CatalogName, cu.config.Namespace)
+	i.Logf("Updating catalog %q in namespace %q", i.CatalogName, i.config.Namespace)
 
 	return &catalog, nil
 }
 
-func (cu *CatalogUpdate) setUpdatedCatalog(catalog *olmv1.ClusterCatalog) {
+func (i *CatalogUpdate) setUpdatedCatalog(catalog *olmv1.ClusterCatalog) {
 	existingLabels := catalog.GetLabels()
 	if existingLabels == nil {
 		existingLabels = make(map[string]string)
 	}
-	if cu.Labels != nil {
-		for k, v := range cu.Labels {
+	if i.Labels != nil {
+		for k, v := range i.Labels {
 			if v == "" {
 				delete(existingLabels, k)
 			} else {
@@ -81,54 +91,52 @@ func (cu *CatalogUpdate) setUpdatedCatalog(catalog *olmv1.ClusterCatalog) {
 		catalog.SetLabels(existingLabels)
 	}
 
-	if cu.Priority != nil {
-		catalog.Spec.Priority = *cu.Priority
+	if i.Priority != nil {
+		catalog.Spec.Priority = *i.Priority
 	}
 
 	if catalog.Spec.Source.Image == nil {
 		catalog.Spec.Source.Image = &olmv1.ImageSource{}
 	}
 
-	if cu.PollIntervalMinutes != nil {
-		if *cu.PollIntervalMinutes == 0 || *cu.PollIntervalMinutes == -1 {
+	if i.PollIntervalMinutes != nil {
+		if *i.PollIntervalMinutes == 0 || *i.PollIntervalMinutes == -1 {
 			catalog.Spec.Source.Image.PollIntervalMinutes = nil
 		} else {
-			catalog.Spec.Source.Image.PollIntervalMinutes = cu.PollIntervalMinutes
+			catalog.Spec.Source.Image.PollIntervalMinutes = i.PollIntervalMinutes
 		}
 	}
 
-	if cu.ImageRef != "" {
-		catalog.Spec.Source.Image.Ref = cu.ImageRef
+	if i.ImageRef != "" {
+		catalog.Spec.Source.Image.Ref = i.ImageRef
 	}
 
-	if cu.AvailabilityMode != "" {
-		catalog.Spec.AvailabilityMode = olmv1.AvailabilityMode(cu.AvailabilityMode)
-	}
+	catalog.Spec.AvailabilityMode = olmv1.AvailabilityMode(i.AvailabilityMode)
 }
 
-func (cu *CatalogUpdate) setDefaults(catalog *olmv1.ClusterCatalog) {
-	if !cu.IgnoreUnset {
+func (i *CatalogUpdate) setDefaults(catalog *olmv1.ClusterCatalog) {
+	if !i.IgnoreUnset {
 		return
 	}
 
 	catalogSrc := catalog.Spec.Source
 
-	if cu.Priority == nil {
-		cu.Priority = &catalog.Spec.Priority
+	if i.Priority == nil {
+		i.Priority = &catalog.Spec.Priority
 	}
 
-	if cu.PollIntervalMinutes == nil && catalogSrc.Image != nil && catalogSrc.Image.PollIntervalMinutes != nil {
-		cu.PollIntervalMinutes = catalogSrc.Image.PollIntervalMinutes
+	if i.PollIntervalMinutes == nil && catalogSrc.Image != nil && catalogSrc.Image.PollIntervalMinutes != nil {
+		i.PollIntervalMinutes = catalogSrc.Image.PollIntervalMinutes
 	}
 
-	if cu.ImageRef == "" && catalogSrc.Image != nil {
-		cu.ImageRef = catalogSrc.Image.Ref
+	if i.ImageRef == "" && catalogSrc.Image != nil {
+		i.ImageRef = catalogSrc.Image.Ref
 	}
-	if cu.AvailabilityMode == "" {
-		cu.AvailabilityMode = string(catalog.Spec.AvailabilityMode)
+	if i.AvailabilityMode == "" {
+		i.AvailabilityMode = string(catalog.Spec.AvailabilityMode)
 	}
-	if len(cu.Labels) == 0 {
-		cu.Labels = catalog.Labels
+	if len(i.Labels) == 0 {
+		i.Labels = catalog.Labels
 	}
 }
 

@@ -44,13 +44,13 @@ var _ = Describe("CatalogCreate", func() {
 		Expect(testClient.Initialize()).To(Succeed())
 
 		creator := internalaction.NewCatalogCreate(&action.Configuration{Client: testClient})
-		creator.Available = true
+		creator.AvailabilityMode = string(olmv1.AvailabilityModeAvailable)
 		creator.CatalogName = expectedCatalog.Name
 		creator.ImageSourceRef = expectedCatalog.Spec.Source.Image.Ref
 		creator.Priority = expectedCatalog.Spec.Priority
 		creator.Labels = expectedCatalog.Labels
 		creator.PollIntervalMinutes = *expectedCatalog.Spec.Source.Image.PollIntervalMinutes
-		err := creator.Run(context.TODO())
+		_, err := creator.Run(context.TODO())
 
 		Expect(err).NotTo(BeNil())
 		Expect(err).To(MatchError(expectedErr))
@@ -65,7 +65,7 @@ var _ = Describe("CatalogCreate", func() {
 		creator := internalaction.NewCatalogCreate(&action.Configuration{Client: testClient})
 		// fakeClient requires at least the catalogName to be set to run
 		creator.CatalogName = expectedCatalog.Name
-		err := creator.Run(context.TODO())
+		_, err := creator.Run(context.TODO())
 
 		Expect(err).NotTo(BeNil())
 		Expect(err).To(MatchError(expectedErr))
@@ -83,7 +83,7 @@ var _ = Describe("CatalogCreate", func() {
 		creator := internalaction.NewCatalogCreate(&action.Configuration{Client: testClient})
 		// fakeClient requires at least the catalogName to be set to run
 		creator.CatalogName = expectedCatalog.Name
-		err := creator.Run(context.TODO())
+		_, err := creator.Run(context.TODO())
 
 		Expect(err).NotTo(BeNil())
 		Expect(err).To(MatchError(getErr))
@@ -113,17 +113,18 @@ var _ = Describe("CatalogCreate", func() {
 		Expect(testClient.Initialize()).To(Succeed())
 
 		creator := internalaction.NewCatalogCreate(&action.Configuration{Client: testClient})
-		creator.Available = true
+		creator.AvailabilityMode = string(olmv1.AvailabilityModeAvailable)
 		creator.CatalogName = expectedCatalog.Name
 		creator.ImageSourceRef = expectedCatalog.Spec.Source.Image.Ref
 		creator.Priority = expectedCatalog.Spec.Priority
 		creator.Labels = expectedCatalog.Labels
 		creator.PollIntervalMinutes = *expectedCatalog.Spec.Source.Image.PollIntervalMinutes
-		Expect(creator.Run(context.TODO())).To(Succeed())
+		_, err := creator.Run(context.TODO())
+		Expect(err).ToNot(HaveOccurred())
 
 		Expect(testClient.createCalled).To(Equal(1))
 
-		actualCatalog := &olmv1.ClusterCatalog{TypeMeta: metav1.TypeMeta{Kind: "ClusterCatalog", APIVersion: "olm.operatorframework.io/v1"}}
+		actualCatalog := &olmv1.ClusterCatalog{TypeMeta: metav1.TypeMeta{Kind: "ClusterCatalog", APIVersion: olmv1.GroupVersion.String()}}
 		Expect(testClient.Client.Get(context.TODO(), types.NamespacedName{Name: catalogName}, actualCatalog)).To(Succeed())
 		validateCreateCatalog(actualCatalog, &expectedCatalog)
 	})

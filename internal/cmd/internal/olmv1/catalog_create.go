@@ -5,16 +5,27 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/util/errors"
+
+	olmv1 "github.com/operator-framework/operator-controller/api/v1"
 
 	"github.com/operator-framework/kubectl-operator/internal/cmd/internal/log"
 	v1action "github.com/operator-framework/kubectl-operator/internal/pkg/v1/action"
 	"github.com/operator-framework/kubectl-operator/pkg/action"
 )
 
-// NewCatalogCreateCmd allows creating a new catalog
+type catalogCreateOptions struct {
+	dryRunOptions
+	mutableCatalogOptions
+}
+
+// NewCatalogCreateCmd returns a command that creates a new catalog.
+// At minimum, the catalog name and the source image reference must be provided.
 func NewCatalogCreateCmd(cfg *action.Configuration) *cobra.Command {
 	i := v1action.NewCatalogCreate(cfg)
 	i.Logf = log.Printf
+	var opts catalogCreateOptions
 
 	cmd := &cobra.Command{
 		Use:     "catalog <catalog_name> <image_source_ref>",
@@ -24,22 +35,52 @@ func NewCatalogCreateCmd(cfg *action.Configuration) *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			i.CatalogName = args[0]
 			i.ImageSourceRef = args[1]
-
-			if err := i.Run(cmd.Context()); err != nil {
+			opts.Image = i.ImageSourceRef
+			if err := opts.validate(); err != nil {
+				log.Fatalf("failed to parse flags: %v", err)
+			}
+			i.DryRun = opts.DryRun
+			i.Output = opts.Output
+			i.AvailabilityMode = opts.AvailabilityMode
+			i.Priority = opts.Priority
+			i.Labels = opts.Labels
+			i.PollIntervalMinutes = opts.PollIntervalMinutes
+			catalogObj, err := i.Run(cmd.Context())
+			if err != nil {
 				log.Fatalf("failed to create catalog %q: %v", i.CatalogName, err)
 			}
-			log.Printf("catalog %q created", i.CatalogName)
+			if len(i.DryRun) == 0 {
+				log.Printf("catalog %q created", i.CatalogName)
+				return
+			}
+			if len(i.Output) == 0 {
+				log.Printf("catalog %q created (dry run)", i.CatalogName)
+				return
+			}
+
+			catalogObj.GetObjectKind().SetGroupVersionKind(schema.GroupVersionKind{Group: olmv1.GroupVersion.Group,
+				Version: olmv1.GroupVersion.Version, Kind: "ClusterCatalog"})
+			printFormattedCatalogs(i.Output, *catalogObj)
 		},
 	}
+	bindMutableCatalogFlags(cmd.Flags(), &opts.mutableCatalogOptions)
 	bindCatalogCreateFlags(cmd.Flags(), i)
+	bindDryRunFlags(cmd.Flags(), &opts.dryRunOptions)
 
 	return cmd
 }
 
 func bindCatalogCreateFlags(fs *pflag.FlagSet, i *v1action.CatalogCreate) {
-	fs.Int32Var(&i.Priority, "priority", 0, "priority determines the likelihood of a catalog being selected in conflict scenarios")
-	fs.BoolVar(&i.Available, "available", true, "true means that the catalog should be active and serving data")
-	fs.IntVar(&i.PollIntervalMinutes, "source-poll-interval-minutes", 10, "catalog source polling interval [in minutes]")
-	fs.StringToStringVar(&i.Labels, "labels", map[string]string{}, "labels that will be added to the catalog")
-	fs.DurationVar(&i.CleanupTimeout, "cleanup-timeout", time.Minute, "the amount of time to wait before cancelling cleanup after a failed creation attempt")
+	fs.DurationVar(&i.CleanupTimeout, "cleanup-timeout", time.Minute, "the amount of time to wait before cancelling cleanup after a failed creation attempt.")
+}
+
+func (o *catalogCreateOptions) validate() error {
+	var errs []error
+	if err := o.dryRunOptions.validate(); err != nil {
+		errs = append(errs, err)
+	}
+	if err := o.mutableCatalogOptions.validate(); err != nil {
+		errs = append(errs, err)
+	}
+	return errors.NewAggregate(errs)
 }

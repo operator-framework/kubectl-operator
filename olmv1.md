@@ -11,7 +11,7 @@ Within the repository, these are defined in `internal/cmd/olmv1.go`, which in tu
 ```bash
 $ kubectl operator olmv1 --help
 
-Manage extensions via `olmv1` in a cluster from the command line.
+Manage OLMv1 resources like clusterextensions and clustercatalogs from the command line.
 
 Usage:
   operator olmv1 [command]
@@ -21,6 +21,7 @@ Available Commands:
   delete      Delete a resource
   get         Display one or many resource(s)
   install     Install a resource
+  search      Search for packages
   update      Update a resource
 ```
 
@@ -58,11 +59,13 @@ Aliases:
   catalog, catalogs <catalog_name> <image_source_ref>
 
 Flags:
-      --available                          true means that the catalog should be active and serving data (default true)
-      --cleanup-timeout duration           the amount of time to wait before cancelling cleanup after a failed creation attempt (default 1m0s)
-      --labels stringToString              labels that will be added to the catalog (default [])
-      --priority int32                     priority determines the likelihood of a catalog being selected in conflict scenarios
-      --source-poll-interval-minutes int   catalog source polling interval [in minutes] (default 10)
+      --available string                   determines whether a catalog should be active and serving data. Setting the flag to false means the catalog will not serve its contents.
+      --cleanup-timeout duration           the amount of time to wait before cancelling cleanup after a failed creation attempt. (default 1m0s)
+      --dry-run string                     display the object that would be sent on a request without applying it. One of: (All)
+      --labels stringToString              labels to add to the catalog. Set a label's value as empty to remove it. (default [])
+  -o, --output string                      output format for dry-run manifests. One of: (json, yaml)
+      --priority int32                     relative priority of the catalog among all on-cluster catalogs for installing or updating packages. A higher number equals greater priority; negative values indicate less priority than the default.
+      --source-poll-interval-minutes int   the interval in minutes to poll the catalog's source image for new content. Only valid for tag based source image references. Set to 0 or -1 to disable polling.
 ```
 
 The flags allow for setting most mutable fields:
@@ -71,8 +74,10 @@ The flags allow for setting most mutable fields:
 - `--labels`: Additional labels to add to the newly created `ClusterCatalog` as `key=value` pairs. This flag may be specified multiple times.
 - `--priority`: Integer priority used for ordering `ClusterCatalogs` in case two extension packages have the same name across `ClusterCatalogs`, with a higher value indicating greater relative priority. Default: 0
 - `--source-poll-interval-minutes`: The polling interval to check for changes if the `ClusterCatalog` source image provided is not a digest based image, i.e, if it is referenced by tag. Set to 0 to disable polling. Default: 10
+- `--dry-run`: Generate the manifest that would be applied with the command without actually applying it to the cluster.
+- `--output`: The format for displaying manifests if `--dry-run` is specified.
 
-The command requires at minimum a resource name and image reference:
+The command requires at minimum a resource name and image reference.
 ```bash
 $ kubectl operator olmv1 create catalog mycatalog myorg/mycatalogrepo:tag
 ```
@@ -106,12 +111,18 @@ Usage:
   operator olmv1 install extension <extension_name> [flags]
 
 Flags:
-  -c, --channels strings           channels which would be used for getting updates, e.g, --channels "stable,dev-preview,preview"
-  -d, --cleanup-timeout duration   the amount of time to wait before cancelling cleanup after a failed creation attempt (default 1m0s)
-  -n, --namespace string           namespace to install the operator in
-  -p, --package-name string        package name of the operator to install
-  -s, --service-account string     service account name to use for the extension installation (default "default")
-  -v, --version string             version (or version range) from which to resolve bundles
+  -l, --catalog-selector string                 selector (label query) to filter catalogs to search for the package, supports '=', '==', '!=', 'in', 'notin'.(e.g. -l key1=value1,key2=value2,key3 in (value3)). Matching objects must satisfy all of the specified label constraints.
+  -c, --channels strings                        channels to be used for getting updates. If omitted, extension versions in all channels will be considered for upgrades. When used with '--version', only package versions meeting both constraints will be considered.
+      --cleanup-timeout duration                the amount of time to wait before cancelling cleanup after a failed creation attempt (default 1m0s)
+      --crd-upgrade-safety-enforcement string   policy for preflight CRD Upgrade safety checks. One of: [Strict None], (default Strict)
+      --dry-run string                          display the object that would be sent on a request without applying it. One of: (All)
+      --labels stringToString                   labels to add to the extension. Set a label's value as empty to remove that label (default [])
+  -n, --namespace string                        namespace to install the operator in (default "olmv1-system")
+  -o, --output string                           output format for dry-run manifests. One of: (json, yaml)
+  -p, --package-name string                     package name of the operator to install. Required.
+  -s, --service-account string                  service account name to use for the extension installation (default "default")
+      --upgrade-constraint-policy string        controls whether the package upgrade path(s) defined in the catalog are enforced. One of [CatalogProvided SelfCertified], (default CatalogProvided)
+  -v, --version string                          version (or version range) in semver format to limit the allowable package versions to. If used with '--channel', only package versions meeting both constraints will be considered.
 ```
 
 The flags allow for setting most mutable fields:
@@ -119,8 +130,14 @@ The flags allow for setting most mutable fields:
 - **`-p`, `--package-name`**: Name of the package to install. <span style="color:red">**Required**</span>
 - `-c`, `--channels`: An optional list of channels within a package to restrict searches for an installable version to. 
 - `-d`, `--cleanup-timeout`: If a `ClusterExtension` creation attempt fails due to the resource never becoming healthy, `olmv1` cleans up by deleting the failed resource, with a timeout specified by `--cleanup-timeout`. Default: 1 minute (1m)
-- `-s`, `--service-account`: Name of the service account present in the namespace specified by `--namespace` to use for creating and managing resources for the new `ClusterExtension`.
-- `-v`, `--version`: A version or version range to restrict search for an installable version to.
+- `-s`, `--service-account`: Name of the ServiceAccount present in the namespace specified by `--namespace` to use for creating and managing resources for the new `ClusterExtension`. If not specified, the command expects a ServiceAccount `default` to be present in the namespace provided by `--namespace` with the required permissions to create and manage all the resources the `ClusterExtension` may require.
+- `-v`, `--version`: A version or version range to restrict search for an installable version to.  If specified along with `--channels`, only versions in the version range belonging to one or more of the channels specified will be allowed.
+- `--dry-run`: Generate the manifest that would be applied with the command without actually applying it to the cluster.
+- `--output`: The format for displaying manifests if `--dry-run` is specified.
+- `--catalog-selector`: Limit the sources that the package specified by the ClusterExtension can be installed from to ClusterCatalogs matching the provided label selector. Only useful if the ClusterCatalogs on cluster have been labelled meaningfully, such as by maturity, provider etc. eg:
+- `--labels`: Labels to be added to the new ClusterExtension.
+- `--upgrade-constraint-policy`:Controls how upgrade versions are picked for the ClusterExtension. If set to `SelfCertified`, upgrade to any version of the package (even earlier versions, i.e, downgrades) are allowed. If set to `CatalogProvided`, only upgrade paths mentioned in the ClusterCatalog are allowed for the package. Note that `SelfCertified` upgrades may be unsafe and lead to data loss.
+- `--crd-upgrade-safety-enforcement`: configures pre-flight CRD Upgrade safety checks. If set to `Strict`, an upgrade will be blocked if it has breaking changes to a CRD on cluster. If set to `None`, this pre-flight check is skipped, which may cause unsafe changes during installs and upgrades.
 <br/>
 <br/>
 
@@ -164,13 +181,22 @@ Aliases:
   catalog, catalogs [catalog_name]
 
 Flags:
-      --all    delete all catalogs
+  -a, --all              delete all catalogs
+      --dry-run string   display the object that would be sent on a request without applying it. One of: (All)
+  -o, --output string    output format for dry-run manifests. One of: (json, yaml)
 ```
 
 The command requires exactly one of a resource name or the `--all` flag:
 ```bash
 $ kubectl operator olmv1 delete catalog mycatalog
 $ kubectl operator olmv1 delete catalog --all
+```
+
+Using `--all` along with a resource name is invalid. For example, the following command is invalid:
+```bash
+$ kubectl operator olmv1 delete catalog mycatalog --all
+
+failed to delete catalog: cannot specify both --all and a catalog name
 ```
 
 <br/>
@@ -187,13 +213,22 @@ Aliases:
   extension, extensions [extension_name]
 
 Flags:
-  -a, --all    delete all extensions
+  -a, --all              delete all extensions
+      --dry-run string   display the object that would be sent on a request without applying it. One of: (All)
+  -o, --output string    output format for dry-run manifests. One of: (json, yaml)
 ```
 
 The command requires exactly one of a resource name or the `--all` flag:
 ```bash
 $ kubectl operator olmv1 delete extension myex
 $ kubectl operator olmv1 delete extension --all
+```
+
+Using `--all` along with a resource name is invalid. For example, the following command is invalid:
+```bash
+$ kubectl operator olmv1 delete extension myex --all
+
+failed to delete extension: cannot specify both --all and an extension name
 ```
 
 <br/>
@@ -228,32 +263,37 @@ Usage:
   operator olmv1 update catalog <catalog_name> [flags]
 
 Flags:
-      --availability-mode string           available means that the catalog should be active and serving data
-      --ignore-unset                       when enabled, any unset flag value will not be changed. Disabling this flag replaces all other unset or empty values with a default value, overwriting any values on the existing CR (default true)
-      --image string                       Image reference for the catalog source. Leave unset to retain the current image.
-      --labels stringToString              labels that will be added to the catalog (default [])
-      --priority int32                     priority determines the likelihood of a catalog being selected in conflict scenarios
-      --source-poll-interval-minutes int   catalog source polling interval [in minutes]. Set to 0 or -1 to remove the polling interval. (default 5)
+      --available string                   determines whether a catalog should be active and serving data. Setting the flag to false means the catalog will not serve its contents. Set to true by default for new catalogs.
+      --dry-run string                     display the object that would be sent on a request without applying it. One of: (All)
+      --ignore-unset                       set to false to revert all values not specifically set with flags in the command to their default as defined by the clustercatalog customresoucedefinition. (default true)
+      --image string                       image reference for the catalog source. Leave unset to retain the current image.
+      --labels stringToString              labels to add to the catalog. Set a label's value as empty to remove it. (default [])
+  -o, --output string                      output format for dry-run manifests. One of: (json, yaml)
+      --priority int32                     relative priority of the catalog among all on-cluster catalogs for installing or updating packages. A higher number equals greater priority; negative values indicate less priority than the default.
+      --source-poll-interval-minutes int   the interval in minutes to poll the catalog's source image for new content. Only valid for tag based source image references. Set to 0 or -1 to disable polling.
+
 ```
 
 The flags allow for setting most mutable fields:
 - `--ignore-unset`: Sets the behavior of unspecified or empty flags, whether they should be ignored, preserving the current value on the resource, or treated as valid and used to set the field values to their default value.
-- `--availablity-mode`: Sets whether the `ClusterCatalog` should be actively serving and making its contents available on cluster. Valid values: `Available`|`Unavailable`.
+- `--available`: Sets whether the `ClusterCatalog` should be actively serving and making its contents available on cluster. Valid values: `true`|`false`.
 - `--image`: Update the image reference for the `ClusterCatalog`.
 - `--labels`: Additional labels to add to the `ClusterCatalog` as `key=value` pairs. This flag may be specified multiple times. Setting the value of a label to an empty string deletes the label from the resource.
 - `--priority`: Integer priority used for ordering `ClusterCatalogs` in case two extension packages have the same name across `ClusterCatalogs`, with a higher value indicating greater relative priority.
 - `--source-poll-interval-minutes`: The polling interval to check for changes if the `ClusterCatalog` source image provided is not a digest based image, i.e, if it is referenced by tag. Set to 0 or -1 to disable polling.
+- `--dry-run`: Generate the manifest that would be applied with the command without actually applying it to the cluster.
+- `--output`: The format for displaying manifests if `--dry-run` is specified.
 <br/>
 
 To update specific fields on a catalog, like adding a new label or setting availability, the required flag may be used on its own:
 ```bash
-$ kubectl operator olmv1 update catalog mycatalog --label newlabel=newkey --label labeltoremove=
-$ kubectl operator olmv1 update catalog --availability-mode Available
+$ kubectl operator olmv1 update catalog mycatalog --labels newlabel=newkey --labels labeltoremove=
+$ kubectl operator olmv1 update catalog --available true
 ```
 
 To reset a specific field on a catalog to its default, the value needs to be provided or all existing fields must be specified with `--ignore-unset`.
 ```bash
-$ kubectl operator olmv1 update catalog mycatalog --availability-mode Available
+$ kubectl operator olmv1 update catalog mycatalog --available true
 $ kubectl operator olmv1 update catalog mycatalog --ignore-unset=false --priority=10 --source-poll-interval-minutes=-1 --image=myorg/mycatalogrepo:tag --labels existing1=labelvalue1 --labels existing2=labelvalue2
 ```
 
@@ -268,31 +308,43 @@ Usage:
   operator olmv1 update extension <extension> [flags]
 
 Flags:
-      --channels stringArray               desired channels for extension versions. AND operation with version. If empty or not specified, all available channels will be taken into consideration
-      --ignore-unset                       when enabled, any unset flag value will not be changed. Disabling this flag replaces all other unset or empty values with a default value, overwriting any values on the existing CR (default true)
-      --labels stringToString              labels that will be set on the extension (default [])
-      --selector string                    filters the set of catalogs used in the bundle selection process. Empty means that all catalogs will be used in the bundle selection process
-      --upgrade-constraint-policy string   controls whether the upgrade path(s) defined in the catalog are enforced. One of CatalogProvided|SelfCertified, Default: CatalogProvided
-      --version string                     desired extension version (single or range) in semVer format. AND operation with channels
+  -l, --catalog-selector string                 selector (label query) to filter catalogs to search for the package, supports '=', '==', '!=', 'in', 'notin'.(e.g. -l key1=value1,key2=value2,key3 in (value3)). Matching objects must satisfy all of the specified label constraints.
+  -c, --channels strings                        channels to be used for getting updates. If omitted, extension versions in all channels will be considered for upgrades. When used with '--version', only package versions meeting both constraints will be considered.
+      --crd-upgrade-safety-enforcement string   policy for preflight CRD Upgrade safety checks. One of: [Strict None], (default Strict)
+      --dry-run string                          display the object that would be sent on a request without applying it. One of: (All)
+      --ignore-unset                            set to false to revert all values not specifically set with flags in the command to their default as defined by the clusterextension customresoucedefinition. (default true)
+      --labels stringToString                   labels to add to the extension. Set a label's value as empty to remove that label (default [])
+  -o, --output string                           output format for dry-run manifests. One of: (json, yaml)
+      --upgrade-constraint-policy string        controls whether the package upgrade path(s) defined in the catalog are enforced. One of [CatalogProvided SelfCertified], (default CatalogProvided)
+  -v, --version string                          version (or version range) in semver format to limit the allowable package versions to. If used with '--channel', only package versions meeting both constraints will be considered.
 ```
 
 The flags allow for setting most mutable fields:
 - `--ignore-unset`: Sets the behavior of unspecified or empty flags, whether they should be ignored, preserving the current value on the resource, or treated as valid and used to set the field values to their default value.
-- `-v`, `--version`: A version or version range to restrict search for a version upgrade.
+- `-v`, `--version`: A version or version range to restrict search for a version upgrade. If specified along with `--channels`, only versions in the version range belonging to one or more of the channels specified will be allowed.
+  Valid version range format examples:
+  - Exact: `--version 1.2.3`
+  - Range: `--version ">=1.0.0 <2.0.0"`
+  - Wildcard: `--version 1.2.x` (any patch version of 1.2)
+  - Minimum: `--version ">=1.5.0"`
 - `-c`, `--channels`: An optional list of channels within a package to restrict searches for updates. If empty or unspecified, no channel restrictions apply while searching for valid package versions for extension updates.
 - `--upgrade-constraint-policy`: Specifies upgrade selection behavior. Valid values: `CatalogProvided|SelfCertified`. `SelfCertified` can be used to override upgrade graphs within a catalog and upgrade to any version at the risk of using non-standard upgrade paths. `CatalogProvided` restricts upgrades to standard paths between versions explicitly allowed within the `ClusterCatalog`.
 - `--labels`: Additional labels to add to the `ClusterExtension` as `key=value` pairs. This flag may be specified multiple times. Setting the value of a label to an empty string deletes the label from the resource.
+- `--dry-run`: Generate the manifest that would be applied with the command without actually applying it to the cluster.
+- `--output`: The format for displaying manifests if `--dry-run` is specified.
+- `--catalog-selector`: Limit the sources that the package specified by the ClusterExtension can be installed from to ClusterCatalogs matching the provided label selector.
+- `--crd-upgrade-safety-enforcement`: configures pre-flight CRD Upgrade safety checks. If set to `Strict`, an upgrade will be blocked if it has breaking changes to a CRD on cluster. If set to `None`, this pre-flight check is skipped, which may cause unsafe changes during installs and upgrades.
 
 To update specific fields on an extension, like adding a new label or updating desired version range, the required flag may be used on its own:
 ```bash
-$ kubectl operator olmv1 update extension myex --label newlabel=newkey --label labeltoremove=
+$ kubectl operator olmv1 update extension myex --labels newlabel=newkey --labels labeltoremove=
 $ kubectl operator olmv1 update extension myex --version 1.2.x
 ```
 
 To reset a specific field to its default on an extension, the value needs to be provided or all existing fields must be specified with `--ignore-unset`.
 ```bash
-$ kubectl operator olmv1 update catalog --upgrade-constraint-policy CatalogProvided
-$ kubectl operator olmv1 update catalog --ignore-unset=false --version=1.0.x --channels=stable,candidate --labels existing1=labelvalue1 --labels existing2=labelvalue2
+$ kubectl operator olmv1 update extension --upgrade-constraint-policy CatalogProvided
+$ kubectl operator olmv1 update extension --ignore-unset=false --version=1.0.x --channels=stable,candidate --labels existing1=labelvalue1 --labels existing2=labelvalue2
 ```
 
 <br/>
@@ -326,7 +378,15 @@ Usage:
 
 Aliases:
   catalog, catalogs
+
+Flags:
+  -o, --output string     output format. One of: (json, yaml)
+  -l, --selector string   selector (label query) to filter on, supports '=', '==', '!=', 'in', 'notin'.(e.g. -l key1=value1,key2=value2,key3 in (value3)). Matching objects must satisfy all of the specified label constraints.
 ```
+
+The flags allow for limiting or formatting output:
+- `--output`: The format for displaying the resources. Valid values: json, yaml.
+- `--selector`: Limit the resources listed to those matching the provided label selector.
 
 ```bash
 $ kubectl operator olmv1 get catalog
@@ -346,10 +406,74 @@ Usage:
 
 Aliases:
   extension, extensions [extension_name]
+
+Flags:
+  -o, --output string     output format. One of: (json, yaml)
+  -l, --selector string   selector (label query) to filter on, supports '=', '==', '!=', 'in', 'notin'.(e.g. -l key1=value1,key2=value2,key3 in (value3)). Matching objects must satisfy all of the specified label constraints.
 ```
+
+The flags allow for limiting or formatting output:
+- `--output`: The format for displaying the resources. Valid values: json, yaml.
+- `--selector`: Limit the resources listed to those matching the provided label selector.
 
 ```bash
 $ kubectl operator olmv1 get extension
 NAME            INSTALLED BUNDLE            VERSION   SOURCE TYPE           INSTALLED   PROGRESSING   AGE
 test-operator   prometheusoperator.0.47.0   0.47.0    Community Operators Index True        False         44m
+```
+
+## olmv1 search
+Search available sources for packages or versions. Currently supports searching ClusterCatalogs
+
+```bash
+Search one or all available catalogs for packages or versions
+
+Usage:
+  operator olmv1 search [command]
+
+Available Commands:
+  catalog     Search catalogs for installable operators matching parameters
+```
+<br/>
+
+### olmv1 search catalog
+Search one or all available catalogs for packages or versions
+
+```bash
+kubectl-operator olmv1 search catalog --help
+Search catalogs for installable operators matching parameters
+
+Usage:
+  operator olmv1 search catalog [flags]
+
+Aliases:
+  catalog, catalogs
+
+Flags:
+      --catalog string              name of the catalog to search. If not provided, all available catalogs are searched.
+      --catalogd-namespace string   namespace for the catalogd controller (default "olmv1-system")
+      --list-versions               list all versions available for each package
+  -o, --output string               output format. One of: (yaml|json)
+      --package string              search for package by name. If empty, all available packages will be listed
+  -l, --selector string             selector (label query) to filter catalogs on, supports '=', '==', and '!='
+      --timeout string              timeout for fetching catalog contents (default "5m")
+```
+
+The flags allow for limiting or formatting output:
+- `--catalog`: When non-empty, limits the listed packages or bundles to only those from the catalog provided through this flag
+- `--selector`: When non-empty, limits the listed packages or bundles to only the ones from ClusterCatalogs matching the label selector provided through this flag.
+- `--timeout`: Time to wait before aborting the command
+- `--catalogd-namespace`: By default, the catalogd-controller is installed in `olmv1-system`. If the catalogd-controller's service is present in another namespace, it can be specified through this flag.
+- `--list-versions`: By default, the search command shows the package name, the source ClusterCatalog, the package maintainer and the valid channels available on the package, if any. If this flag is specified, it lists the versions available for each package instead of listing channels.
+- `--package`: If non-empty, limit the listed packages and bundles to only those with the package name specified by this flag.
+- `--output`: This flag allows the output to be provided in a specific format. Currently support yaml, json. If empty, provides a simplified table of packages instead.
+
+```bash
+$ kubectl operator olmv1 search catalog
+
+PACKAGE                                   CATALOG        PROVIDER  CHANNELS
+accuknox-operator                         operatorhubio            stable
+ack-acm-controller                        operatorhubio            alpha
+ack-acmpca-controller                     operatorhubio            alpha
+...
 ```

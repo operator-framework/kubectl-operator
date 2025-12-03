@@ -2,12 +2,10 @@ package client
 
 import (
 	"context"
-	"crypto/rand"
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
 	"io"
-	"math/big"
 	"net/http"
 	"net/url"
 	"os"
@@ -15,6 +13,7 @@ import (
 	"strings"
 
 	corev1 "k8s.io/api/core/v1"
+	discoveryv1 "k8s.io/api/discovery/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/portforward"
@@ -172,7 +171,8 @@ func (c *portForwardClientV1) All(ctx context.Context, cc *olmv1.ClusterCatalog)
 // Get a pod for a given service
 func (c *portForwardClient) getPodAndPortForService(ctx context.Context, namespace, serviceName string, servicePort int64) (string, int, error) {
 	svc := corev1.Service{}
-	if err := c.cl.Get(ctx, client.ObjectKey{Name: serviceName, Namespace: namespace}, &svc); err != nil {
+	svcKey := client.ObjectKey{Name: serviceName, Namespace: namespace}
+	if err := c.cl.Get(ctx, svcKey, &svc); err != nil {
 		return "", -1, err
 	}
 
@@ -187,29 +187,24 @@ func (c *portForwardClient) getPodAndPortForService(ctx context.Context, namespa
 		return "", -1, fmt.Errorf("service %q has no port %q", serviceName, servicePort)
 	}
 
-	endpoints := corev1.Endpoints{}
-	if err := c.cl.Get(ctx, client.ObjectKey{Name: serviceName, Namespace: namespace}, &endpoints); err != nil {
-		return "", -1, err
-	}
-
-	readyAddresses := []corev1.EndpointAddress{}
-	for _, subset := range endpoints.Subsets {
-		readyAddresses = append(readyAddresses, subset.Addresses...)
-	}
-	if len(readyAddresses) == 0 {
-		return "", -1, fmt.Errorf("no endpoints ready for service %s/%s", namespace, serviceName)
-	}
-
-	randAddress, err := rand.Int(rand.Reader, big.NewInt(int64(len(readyAddresses))))
+	ep := discoveryv1.EndpointSliceList{}
+	err := c.cl.List(ctx, &ep, client.MatchingLabels{discoveryv1.LabelServiceName: serviceName}, client.InNamespace(namespace))
 	if err != nil {
 		return "", -1, err
 	}
 
-	address := readyAddresses[randAddress.Int64()]
-	podName := address.TargetRef.Name
+	var pods []string
+	for _, e := range ep.Items {
+		for _, a := range e.Endpoints {
+			pods = append(pods, a.TargetRef.Name)
+		}
+	}
+	if len(pods) == 0 {
+		return "", -1, fmt.Errorf("no pods ready for service %q", svcKey)
+	}
 
 	// Select the first pod (or you could add load balancing logic here)
-	return podName, podPort, nil
+	return pods[0], podPort, nil
 }
 
 // Port forwarding logic to connect to a pod

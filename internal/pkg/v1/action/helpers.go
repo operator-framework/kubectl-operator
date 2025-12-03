@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/briandowns/spinner"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -17,6 +18,7 @@ import (
 )
 
 const pollInterval = 250 * time.Millisecond
+const DryRunAll = "All"
 
 func objectKeyForObject(obj client.Object) types.NamespacedName {
 	return types.NamespacedName{
@@ -32,6 +34,10 @@ func waitUntilCatalogStatusCondition(
 	conditionType string,
 	conditionStatus metav1.ConditionStatus,
 ) error {
+	fmt.Printf("waiting for ClusterCatalog %q to become healthy...\n", catalog.Name)
+	s := spinner.New(spinner.CharSets[1], 100*time.Millisecond)
+	s.Start()
+	defer s.Stop()
 	opKey := objectKeyForObject(catalog)
 	return wait.PollUntilContextCancel(ctx, pollInterval, true, func(conditionCtx context.Context) (bool, error) {
 		if err := cl.Get(conditionCtx, opKey, catalog); err != nil {
@@ -54,6 +60,10 @@ func waitUntilExtensionStatusCondition(
 	conditionType string,
 	conditionStatus metav1.ConditionStatus,
 ) error {
+	s := spinner.New(spinner.CharSets[1], 100*time.Millisecond)
+	s.Prefix = fmt.Sprintf("waiting for ClusterExtension %q to become healthy...", extension.Name)
+	s.Start()
+	defer s.Stop()
 	opKey := objectKeyForObject(extension)
 	return wait.PollUntilContextCancel(ctx, pollInterval, true, func(conditionCtx context.Context) (bool, error) {
 		if err := cl.Get(conditionCtx, opKey, extension); err != nil {
@@ -70,6 +80,10 @@ func waitUntilExtensionStatusCondition(
 }
 
 func deleteWithTimeout(cl deleter, obj client.Object, timeout time.Duration) error {
+	s := spinner.New(spinner.CharSets[1], 100*time.Millisecond)
+	s.Prefix = fmt.Sprintf("deleting %s...", obj.GetObjectKind().GroupVersionKind().Kind)
+	s.Start()
+	defer s.Stop()
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
@@ -81,6 +95,10 @@ func deleteWithTimeout(cl deleter, obj client.Object, timeout time.Duration) err
 }
 
 func waitForDeletion(ctx context.Context, cl getter, objs ...client.Object) error {
+	s := spinner.New(spinner.CharSets[1], 100*time.Millisecond)
+	s.Prefix = fmt.Sprintf("waiting for delete %s...", objs[0].GetObjectKind().GroupVersionKind().Kind)
+	s.Start()
+	defer s.Stop()
 	for _, obj := range objs {
 		lowerKind := strings.ToLower(obj.GetObjectKind().GroupVersionKind().Kind)
 		key := objectKeyForObject(obj)
@@ -92,7 +110,7 @@ func waitForDeletion(ctx context.Context, cl getter, objs ...client.Object) erro
 			}
 			return false, nil
 		}); err != nil {
-			return fmt.Errorf("wait for %s %q deleted: %v", lowerKind, key.Name, err)
+			return fmt.Errorf("wait for %s %q deleted: %w", lowerKind, key.Name, err)
 		}
 	}
 	return nil
