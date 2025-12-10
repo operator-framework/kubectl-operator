@@ -782,7 +782,7 @@ $kubectl operator olmv1 search catalog --package vault-helm -o yaml
 ---
 defaultChannel: alpha
 icon:
-  base64data: PHN2ZyBpZD0iTE9HT1MiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgdmlld0JveD0iMCAwIDE4MCAyNTgiPjxwYXRoIGQ9Ik02Mi4xNSwxOTQuNTZoNi43Nkw1OC42NCwyMjguOTRINDlMMzguNzYsMTk0LjU2aDYuNzZsOC4zMiwyOC42NVoiLz48cGF0aCBkPSJNODcuNywyMjguOTRIODIuNTRsLS40Ni0xLjdhMTMuNzYsMTMuNzYsMCwwLDEtNy40OSwyLjIyQzcwLDIyOS40Niw2OCwyMjYuMzEsNjgsMjIyYzAtNS4xMSwyLjIyLTcuMDcsNy4zMy03LjA3aDZ2LTIuNjNjMC0yLjc5LS43Ny0zLjc3LTQuOC0zLjc3YTM1LjUxLDM1LjUxLDAsMCwwLTcsLjc3bC0uNzctNC44YTMyLjg3LDMyLjg3LDAsMCwxLDguNjItMS4xOWM3LjksMCwxMC4yMiwyLjc5LDEwLjIyLDkuMDlabS02LjMtOS41SDc2Ljc2Yy0yLjA3LDAtMi42My41Ny0yLjYzLDIuNDhzLjU2LDIuNTMsMi41MywyLjUzYTkuODksOS44OSwwLDAsMCw0Ljc0LTEuMjlaIi8+PHBhdGggZD0iTTk3LjYyLDIwMy44djE3LjU1YzAsMS4zNS41NiwyLDIsMmExNy4zOSwxNy4zOSwwLDAsMCw2LjU2LTIuMTJWMjAzLjhoNi4yOXYyNS4xNGgtNC44bC0uNjItMi4xMUEyNS4xNCwyNS4xNCwwLDAsMSw5NywyMjkuNDZjLTQuMTksMC01LjY4LTIuOTQtNS42OC03LjQ0VjIwMy44WiIvPjxwYXRoIGQ9Ik0xMTUuODQsMjI4Ljk0VjE5My41M2w2LjMtLjg4djM2LjI5WiIvPjxwYXRoIGQ9Ik0xNDAuOTMsMjI4LjQ4YTE3LjM5LDE3LjM5LDAsMCwxLTUuNTMsMWMtNC41OSwwLTYuOTEtMi4xNy02LjkxLTYuNjZ2LTE0aC0zLjc3di01aDMuNzd2LTYuMjVsNi4zLS44N3Y3LjEyaDYuNDVsLS40MSw1aC02VjIyMmEyLDIsMCwwLDAsMi4yNywyLjIyLDEyLjEzLDEyLjEzLDAsMCwwLDMuMTUtLjUxWiIvPjxwYXRoIGQ9Ik00NS40NiwxODYuMTNWMTgxLjNINDEuMDV2NC44M0gzOC43OXYtMTEuNmgyLjI2djQuODZoNC40MXYtNC44NmgyLjI2djExLjZabTEwLjUyLDBINTQuMTlsLS4xNi0uNTdhNC44NSw0Ljg1LDAsMCwxLTIuNTkuNzRjLTEuNTksMC0yLjI3LTEuMDUtMi4yNy0yLjQ5LDAtMS43Ljc3LTIuMzYsMi41NC0yLjM2SDUzLjh2LS44N2MwLS45My0uMjctMS4yNi0xLjY2LTEuMjZhMTMuMDgsMTMuMDgsMCwwLDAtMi40Mi4yNmwtLjI3LTEuNmExMS45NCwxMS45NCwwLDAsMSwzLS4zOWMyLjc0LDAsMy41NC45MywzLjU0LDNaTTUzLjgsMTgzSDUyLjE5Yy0uNzEsMC0uOTEuMTktLjkxLjgycy4yLjg0Ljg3Ljg0YTMuNDYsMy40NiwwLDAsMCwxLjY1LS40M1ptNi43NSwzLjMzYTEwLjc2LDEwLjc2LDAsMCwxLTMtLjQ4bC4zLTEuNmExMCwxMCwwLDAsMCwyLjYuMzZjMSwwLDEuMTEtLjIxLDEuMTEtLjg0cy0uMTEtLjc3LTEuNTItMS4xYy0yLjEzLS41LTIuMzgtMS0yLjM4LTIuNjNzLjc3LTIuNDIsMy4yNS0yLjQyYTExLjgsMTEuOCwwLDAsMSwyLjYxLjI5bC0uMjEsMS42N2ExNiwxNiwwLDAsMC0yLjQtLjI0Yy0uOTUsMC0xLjExLjItMS4xMS43MnMuMDYuNzIsMS4yNCwxYzIuNDMuNjIsMi42Ni45MywyLjY2LDIuNjVTNjMuMTgsMTg2LjMsNjAuNTUsMTg2LjNabTEwLS4xN3YtNS44NGMwLS40NS0uMi0uNjctLjctLjY3YTYuMjEsNi4yMSwwLDAsMC0yLjI3Ljd2NS44MUg2NS4zOVYxNzQuMzdsMi4xOS4zMnYzLjcxYTcuOTIsNy45MiwwLDAsMSwzLjE4LS44MWMxLjQ1LDAsMiwxLDIsMi40N3Y2LjA3Wm00LTkuNTV2LTIuMDVoMi4xOHYyLjA1Wm0wLDkuNTV2LTguMzdoMi4xOHY4LjM3Wm0zLjkzLTguM2MwLTIuMSwxLjI3LTMuMzEsNC4yNC0zLjMxYTE0LDE0LDAsMCwxLDMuMjMuMzdsLS4yNSwxLjg4YTE3LjMyLDE3LjMyLDAsMCwwLTIuOTEtLjNjLTEuNTYsMC0yLjA2LjUyLTIuMDYsMS43NHY0LjRjMCwxLjIxLjUsMS43MywyLjA2LDEuNzNhMTguMzYsMTguMzYsMCwwLDAsMi45MS0uMjlsLjI1LDEuODdhMTQsMTQsMCwwLDEtMy4yMy4zOGMtMywwLTQuMjQtMS4yMi00LjI0LTMuMzJabTEyLjMsOC40N2MtMywwLTMuOC0xLjU4LTMuOC0zLjN2LTIuMTFjMC0xLjcyLjgxLTMuMywzLjgtMy4zczMuNzksMS41OCwzLjc5LDMuM1YxODNDOTQuNTgsMTg0LjcyLDkzLjc3LDE4Ni4zLDkwLjc5LDE4Ni4zWm0wLTYuOTJjLTEuMTcsMC0xLjYxLjQ5LTEuNjEsMS40NHYyLjI1YzAsLjk0LjQ0LDEuNDQsMS42MSwxLjQ0czEuNjEtLjUsMS42MS0xLjQ0di0yLjI1QzkyLjQsMTc5Ljg3LDkyLDE3OS4zOCw5MC43OSwxNzkuMzhabTkuOTMuMTNhMTYuODcsMTYuODcsMCwwLDAtMi4zLDEuMjJ2NS40SDk2LjIzdi04LjM3aDEuODVsLjE0LjkzYTEwLDEwLDAsMCwxLDIuMjktMS4xWm04LjczLDMuODNjMCwxLjg2LS44NiwzLTIuODgsM2ExMi4zNCwxMi4zNCwwLDAsMS0yLjMzLS4yNHYzLjQybC0yLjE4LjMydi0xMmgxLjc0bC4yMS43MWE0LjY1LDQuNjUsMCwwLDEsMi43NS0uODhjMS43NiwwLDIuNjksMSwyLjY5LDIuOVptLTUuMjEuOTVhMTAuMDksMTAuMDksMCwwLDAsMS45My4yMmMuNzksMCwxLjEtLjM2LDEuMS0xLjExdi0zYzAtLjY5LS4yNy0xLjA2LTEuMDgtMS4wNmEzLjE5LDMuMTksMCwwLDAtMiwuNzVaIi8+PHBhdGggZD0iTTI1LjcxLDI4LjU0LDg5Ljc3LDE1Ny4xMSwxNTQuMjksMjguNTRabTcxLjY4LDI1LjhoNy40NVY2MS44SDk3LjM5Wk04Mi41NSw4NC4xNkg3NS4wOVY3Ni43aDcuNDZabTAtMTEuMThINzUuMDlWNjUuNTJoNy40NlptMC0xMS4xOEg3NS4wOVY1NC4zNGg3LjQ2Wk05My43Myw5NS4zNEg4Ni4yN1Y4Ny44OGg3LjQ2Wm0wLTExLjE4SDg2LjI3Vjc2LjdoNy40NlptMC0xMS4xOEg4Ni4yN1Y2NS41Mmg3LjQ2Wm0wLTExLjE4SDg2LjI3VjU0LjM0aDcuNDZabTMuNjYsMy43Mmg3LjQ1VjczSDk3LjM5Wm0uMDYsMTguNjRWNzYuN2g3LjQ2djcuNDZaIi8+PC9zdmc+
+  base64data: PHN2ZyBp=
   mediatype: image/svg+xml
 name: vault-helm
 schema: olm.package
@@ -795,7 +795,7 @@ name: alpha
 package: vault-helm
 schema: olm.channel
 ---
-image: quay.io/operatorhubio/vault-helm@sha256:c2d00eeeed63fb61d1b7cc04ce9aaeda18ff7b599a1bb670d2c07e0f3c173b3f
+image: quay.io/brejohns/vault-helm:0.0.2
 name: vault-helm.v0.0.1
 package: vault-helm
 properties:
@@ -813,11 +813,9 @@ relatedImages:
   name: ""
 - image: quay.io/brejohns/vault-helm:0.0.1
   name: ""
-- image: quay.io/operatorhubio/vault-helm@sha256:c2d00eeeed63fb61d1b7cc04ce9aaeda18ff7b599a1bb670d2c07e0f3c173b3f
-  name: ""
 schema: olm.bundle
 ---
-image: quay.io/operatorhubio/vault-helm@sha256:d8032324d9197167d8d911f42bcdc9a8d2f97fafa5d3687eba48e47f35d5dc94
+image: quay.io/brejohns/vault-helm:0.0.2
 name: vault-helm.v0.0.2
 package: vault-helm
 properties:
@@ -838,183 +836,6 @@ properties:
           {
             "apiVersion": "vault.sdbrett.com/v1alpha1",
             "kind": "Vault",
-            "metadata": {
-              "name": "vault-sample"
-            },
-            "spec": {
-              "global": {
-                "enabled": true,
-                "imagePullSecrets": [],
-                "openshift": false,
-                "psp": {
-                  "annotations": "seccomp.security.alpha.kubernetes.io/allowedProfileNames: docker/default,runtime/default\napparmor.security.beta.kubernetes.io/allowedProfileNames: runtime/default\nseccomp.security.alpha.kubernetes.io/defaultProfileName:  runtime/default\napparmor.security.beta.kubernetes.io/defaultProfileName:  runtime/default\n",
-                  "enable": false
-                },
-                "tlsDisable": true
-              },
-              "injector": {
-                "affinity": null,
-                "agentImage": {
-                  "repository": "vault",
-                  "tag": "1.5.4"
-                },
-                "annotations": {},
-                "authPath": "auth/kubernetes",
-                "certs": {
-                  "caBundle": "",
-                  "certName": "tls.crt",
-                  "keyName": "tls.key",
-                  "secretName": null
-                },
-                "enabled": true,
-                "externalVaultAddr": "",
-                "extraEnvironmentVars": {},
-                "image": {
-                  "pullPolicy": "IfNotPresent",
-                  "repository": "hashicorp/vault-k8s",
-                  "tag": "0.6.0"
-                },
-                "logFormat": "standard",
-                "logLevel": "info",
-                "metrics": {
-                  "enabled": false
-                },
-                "namespaceSelector": {},
-                "nodeSelector": null,
-                "priorityClassName": "",
-                "resources": {},
-                "revokeOnShutdown": false,
-                "tolerations": null
-              },
-              "server": {
-                "affinity": "podAntiAffinity:\n  requiredDuringSchedulingIgnoredDuringExecution:\n    - labelSelector:\n        matchLabels:\n          app.kubernetes.io/name: {{ template \"vault.name\" . }}\n          app.kubernetes.io/instance: \"{{ .Release.Name }}\"\n          component: server\n      topologyKey: kubernetes.io/hostname\n",
-                "annotations": {},
-                "auditStorage": {
-                  "accessMode": "ReadWriteOnce",
-                  "annotations": {},
-                  "enabled": false,
-                  "mountPath": "/vault/audit",
-                  "size": "10Gi",
-                  "storageClass": null
-                },
-                "authDelegator": {
-                  "enabled": true
-                },
-                "dataStorage": {
-                  "accessMode": "ReadWriteOnce",
-                  "annotations": {},
-                  "enabled": true,
-                  "mountPath": "/vault/data",
-                  "size": "10Gi",
-                  "storageClass": null
-                },
-                "dev": {
-                  "enabled": false
-                },
-                "extraArgs": "",
-                "extraContainers": null,
-                "extraEnvironmentVars": {},
-                "extraInitContainers": null,
-                "extraLabels": {},
-                "extraSecretEnvironmentVars": [],
-                "extraVolumes": [],
-                "ha": {
-                  "apiAddr": null,
-                  "config": "ui = true\n\nlistener \"tcp\" {\n  tls_disable = 1\n  address = \"[::]:8200\"\n  cluster_address = \"[::]:8201\"\n}\nstorage \"consul\" {\n  path = \"vault\"\n  address = \"HOST_IP:8500\"\n}\n\nservice_registration \"kubernetes\" {}\n\n# Example configuration for using auto-unseal, using Google Cloud KMS. The\n# GKMS keys must already exist, and the cluster must have a service account\n# that is authorized to access GCP KMS.\n#seal \"gcpckms\" {\n#   project     = \"vault-helm-dev-246514\"\n#   region      = \"global\"\n#   key_ring    = \"vault-helm-unseal-kr\"\n#   crypto_key  = \"vault-helm-unseal-key\"\n#}\n",
-                  "disruptionBudget": {
-                    "enabled": true,
-                    "maxUnavailable": null
-                  },
-                  "enabled": false,
-                  "raft": {
-                    "config": "ui = true\n\nlistener \"tcp\" {\n  tls_disable = 1\n  address = \"[::]:8200\"\n  cluster_address = \"[::]:8201\"\n}\n\nstorage \"raft\" {\n  path = \"/vault/data\"\n}\n\nservice_registration \"kubernetes\" {}\n",
-                    "enabled": false,
-                    "setNodeId": false
-                  },
-                  "replicas": 3
-                },
-                "image": {
-                  "pullPolicy": "IfNotPresent",
-                  "repository": "vault",
-                  "tag": "1.5.4"
-                },
-                "ingress": {
-                  "annotations": {},
-                  "enabled": false,
-                  "hosts": [
-                    {
-                      "host": "chart-example.local",
-                      "paths": []
-                    }
-                  ],
-                  "labels": {},
-                  "tls": []
-                },
-                "livenessProbe": {
-                  "enabled": false,
-                  "failureThreshold": 2,
-                  "initialDelaySeconds": 60,
-                  "path": "/v1/sys/health?standbyok=true",
-                  "periodSeconds": 5,
-                  "successThreshold": 1,
-                  "timeoutSeconds": 3
-                },
-                "networkPolicy": {
-                  "enabled": false
-                },
-                "nodeSelector": null,
-                "postStart": [],
-                "preStopSleepSeconds": 5,
-                "priorityClassName": "",
-                "readinessProbe": {
-                  "enabled": true,
-                  "failureThreshold": 2,
-                  "initialDelaySeconds": 5,
-                  "periodSeconds": 5,
-                  "successThreshold": 1,
-                  "timeoutSeconds": 3
-                },
-                "resources": {},
-                "route": {
-                  "annotations": {},
-                  "enabled": false,
-                  "host": "chart-example.local",
-                  "labels": {}
-                },
-                "service": {
-                  "annotations": {},
-                  "enabled": true,
-                  "port": 8200,
-                  "targetPort": 8200
-                },
-                "serviceAccount": {
-                  "annotations": {},
-                  "create": true,
-                  "name": ""
-                },
-                "shareProcessNamespace": false,
-                "standalone": {
-                  "config": "ui = true\n\nlistener \"tcp\" {\n  tls_disable = 1\n  address = \"[::]:8200\"\n  cluster_address = \"[::]:8201\"\n}\nstorage \"file\" {\n  path = \"/vault/data\"\n}\n\n# Example configuration for using auto-unseal, using Google Cloud KMS. The\n# GKMS keys must already exist, and the cluster must have a service account\n# that is authorized to access GCP KMS.\n#seal \"gcpckms\" {\n#   project     = \"vault-helm-dev\"\n#   region      = \"global\"\n#   key_ring    = \"vault-helm-unseal-kr\"\n#   crypto_key  = \"vault-helm-unseal-key\"\n#}\n",
-                  "enabled": "-"
-                },
-                "statefulSet": {
-                  "annotations": {}
-                },
-                "tolerations": null,
-                "updateStrategyType": "OnDelete",
-                "volumeMounts": null,
-                "volumes": null
-              },
-              "ui": {
-                "activeVaultPodOnly": false,
-                "annotations": {},
-                "enabled": false,
-                "externalPort": 8200,
-                "publishNotReadyAddresses": true,
-                "serviceNodePort": null,
-                "serviceType": "ClusterIP"
-              }
-            }
           }
         ]
       capabilities: Basic Install
@@ -1063,8 +884,6 @@ relatedImages:
   name: ""
 - image: quay.io/brejohns/vault-helm:0.0.2
   name: ""
-- image: quay.io/operatorhubio/vault-helm@sha256:d8032324d9197167d8d911f42bcdc9a8d2f97fafa5d3687eba48e47f35d5dc94
-  name: ""
 schema: olm.bundle
 ---
 ```
@@ -1077,7 +896,7 @@ $ kubectl operator olmv1 search catalog --package vault-helm -o json
     "name": "vault-helm",
     "defaultChannel": "alpha",
     "icon": {
-        "base64data": "PHN2ZyBpZD0iTE9HT1MiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgdmlld0JveD0iMCAwIDE4MCAyNTgiPjxwYXRoIGQ9Ik02Mi4xNSwxOTQuNTZoNi43Nkw1OC42NCwyMjguOTRINDlMMzguNzYsMTk0LjU2aDYuNzZsOC4zMiwyOC42NVoiLz48cGF0aCBkPSJNODcuNywyMjguOTRIODIuNTRsLS40Ni0xLjdhMTMuNzYsMTMuNzYsMCwwLDEtNy40OSwyLjIyQzcwLDIyOS40Niw2OCwyMjYuMzEsNjgsMjIyYzAtNS4xMSwyLjIyLTcuMDcsNy4zMy03LjA3aDZ2LTIuNjNjMC0yLjc5LS43Ny0zLjc3LTQuOC0zLjc3YTM1LjUxLDM1LjUxLDAsMCwwLTcsLjc3bC0uNzctNC44YTMyLjg3LDMyLjg3LDAsMCwxLDguNjItMS4xOWM3LjksMCwxMC4yMiwyLjc5LDEwLjIyLDkuMDlabS02LjMtOS41SDc2Ljc2Yy0yLjA3LDAtMi42My41Ny0yLjYzLDIuNDhzLjU2LDIuNTMsMi41MywyLjUzYTkuODksOS44OSwwLDAsMCw0Ljc0LTEuMjlaIi8+PHBhdGggZD0iTTk3LjYyLDIwMy44djE3LjU1YzAsMS4zNS41NiwyLDIsMmExNy4zOSwxNy4zOSwwLDAsMCw2LjU2LTIuMTJWMjAzLjhoNi4yOXYyNS4xNGgtNC44bC0uNjItMi4xMUEyNS4xNCwyNS4xNCwwLDAsMSw5NywyMjkuNDZjLTQuMTksMC01LjY4LTIuOTQtNS42OC03LjQ0VjIwMy44WiIvPjxwYXRoIGQ9Ik0xMTUuODQsMjI4Ljk0VjE5My41M2w2LjMtLjg4djM2LjI5WiIvPjxwYXRoIGQ9Ik0xNDAuOTMsMjI4LjQ4YTE3LjM5LDE3LjM5LDAsMCwxLTUuNTMsMWMtNC41OSwwLTYuOTEtMi4xNy02LjkxLTYuNjZ2LTE0aC0zLjc3di01aDMuNzd2LTYuMjVsNi4zLS44N3Y3LjEyaDYuNDVsLS40MSw1aC02VjIyMmEyLDIsMCwwLDAsMi4yNywyLjIyLDEyLjEzLDEyLjEzLDAsMCwwLDMuMTUtLjUxWiIvPjxwYXRoIGQ9Ik00NS40NiwxODYuMTNWMTgxLjNINDEuMDV2NC44M0gzOC43OXYtMTEuNmgyLjI2djQuODZoNC40MXYtNC44NmgyLjI2djExLjZabTEwLjUyLDBINTQuMTlsLS4xNi0uNTdhNC44NSw0Ljg1LDAsMCwxLTIuNTkuNzRjLTEuNTksMC0yLjI3LTEuMDUtMi4yNy0yLjQ5LDAtMS43Ljc3LTIuMzYsMi41NC0yLjM2SDUzLjh2LS44N2MwLS45My0uMjctMS4yNi0xLjY2LTEuMjZhMTMuMDgsMTMuMDgsMCwwLDAtMi40Mi4yNmwtLjI3LTEuNmExMS45NCwxMS45NCwwLDAsMSwzLS4zOWMyLjc0LDAsMy41NC45MywzLjU0LDNaTTUzLjgsMTgzSDUyLjE5Yy0uNzEsMC0uOTEuMTktLjkxLjgycy4yLjg0Ljg3Ljg0YTMuNDYsMy40NiwwLDAsMCwxLjY1LS40M1ptNi43NSwzLjMzYTEwLjc2LDEwLjc2LDAsMCwxLTMtLjQ4bC4zLTEuNmExMCwxMCwwLDAsMCwyLjYuMzZjMSwwLDEuMTEtLjIxLDEuMTEtLjg0cy0uMTEtLjc3LTEuNTItMS4xYy0yLjEzLS41LTIuMzgtMS0yLjM4LTIuNjNzLjc3LTIuNDIsMy4yNS0yLjQyYTExLjgsMTEuOCwwLDAsMSwyLjYxLjI5bC0uMjEsMS42N2ExNiwxNiwwLDAsMC0yLjQtLjI0Yy0uOTUsMC0xLjExLjItMS4xMS43MnMuMDYuNzIsMS4yNCwxYzIuNDMuNjIsMi42Ni45MywyLjY2LDIuNjVTNjMuMTgsMTg2LjMsNjAuNTUsMTg2LjNabTEwLS4xN3YtNS44NGMwLS40NS0uMi0uNjctLjctLjY3YTYuMjEsNi4yMSwwLDAsMC0yLjI3Ljd2NS44MUg2NS4zOVYxNzQuMzdsMi4xOS4zMnYzLjcxYTcuOTIsNy45MiwwLDAsMSwzLjE4LS44MWMxLjQ1LDAsMiwxLDIsMi40N3Y2LjA3Wm00LTkuNTV2LTIuMDVoMi4xOHYyLjA1Wm0wLDkuNTV2LTguMzdoMi4xOHY4LjM3Wm0zLjkzLTguM2MwLTIuMSwxLjI3LTMuMzEsNC4yNC0zLjMxYTE0LDE0LDAsMCwxLDMuMjMuMzdsLS4yNSwxLjg4YTE3LjMyLDE3LjMyLDAsMCwwLTIuOTEtLjNjLTEuNTYsMC0yLjA2LjUyLTIuMDYsMS43NHY0LjRjMCwxLjIxLjUsMS43MywyLjA2LDEuNzNhMTguMzYsMTguMzYsMCwwLDAsMi45MS0uMjlsLjI1LDEuODdhMTQsMTQsMCwwLDEtMy4yMy4zOGMtMywwLTQuMjQtMS4yMi00LjI0LTMuMzJabTEyLjMsOC40N2MtMywwLTMuOC0xLjU4LTMuOC0zLjN2LTIuMTFjMC0xLjcyLjgxLTMuMywzLjgtMy4zczMuNzksMS41OCwzLjc5LDMuM1YxODNDOTQuNTgsMTg0LjcyLDkzLjc3LDE4Ni4zLDkwLjc5LDE4Ni4zWm0wLTYuOTJjLTEuMTcsMC0xLjYxLjQ5LTEuNjEsMS40NHYyLjI1YzAsLjk0LjQ0LDEuNDQsMS42MSwxLjQ0czEuNjEtLjUsMS42MS0xLjQ0di0yLjI1QzkyLjQsMTc5Ljg3LDkyLDE3OS4zOCw5MC43OSwxNzkuMzhabTkuOTMuMTNhMTYuODcsMTYuODcsMCwwLDAtMi4zLDEuMjJ2NS40SDk2LjIzdi04LjM3aDEuODVsLjE0LjkzYTEwLDEwLDAsMCwxLDIuMjktMS4xWm04LjczLDMuODNjMCwxLjg2LS44NiwzLTIuODgsM2ExMi4zNCwxMi4zNCwwLDAsMS0yLjMzLS4yNHYzLjQybC0yLjE4LjMydi0xMmgxLjc0bC4yMS43MWE0LjY1LDQuNjUsMCwwLDEsMi43NS0uODhjMS43NiwwLDIuNjksMSwyLjY5LDIuOVptLTUuMjEuOTVhMTAuMDksMTAuMDksMCwwLDAsMS45My4yMmMuNzksMCwxLjEtLjM2LDEuMS0xLjExdi0zYzAtLjY5LS4yNy0xLjA2LTEuMDgtMS4wNmEzLjE5LDMuMTksMCwwLDAtMiwuNzVaIi8+PHBhdGggZD0iTTI1LjcxLDI4LjU0LDg5Ljc3LDE1Ny4xMSwxNTQuMjksMjguNTRabTcxLjY4LDI1LjhoNy40NVY2MS44SDk3LjM5Wk04Mi41NSw4NC4xNkg3NS4wOVY3Ni43aDcuNDZabTAtMTEuMThINzUuMDlWNjUuNTJoNy40NlptMC0xMS4xOEg3NS4wOVY1NC4zNGg3LjQ2Wk05My43Myw5NS4zNEg4Ni4yN1Y4Ny44OGg3LjQ2Wm0wLTExLjE4SDg2LjI3Vjc2LjdoNy40NlptMC0xMS4xOEg4Ni4yN1Y2NS41Mmg3LjQ2Wm0wLTExLjE4SDg2LjI3VjU0LjM0aDcuNDZabTMuNjYsMy43Mmg3LjQ1VjczSDk3LjM5Wm0uMDYsMTguNjRWNzYuN2g3LjQ2djcuNDZaIi8+PC9zdmc+",
+        "base64data": "PHN2ZyBpZD0i=",
         "mediatype": "image/svg+xml"
     }
 }
@@ -1099,7 +918,7 @@ $ kubectl operator olmv1 search catalog --package vault-helm -o json
     "schema": "olm.bundle",
     "name": "vault-helm.v0.0.1",
     "package": "vault-helm",
-    "image": "quay.io/operatorhubio/vault-helm@sha256:c2d00eeeed63fb61d1b7cc04ce9aaeda18ff7b599a1bb670d2c07e0f3c173b3f",
+    "image": "quay.io/brejohns/vault-helm:0.0.1",
     "properties": [
         {
             "type": "olm.gvk",
@@ -1126,17 +945,13 @@ $ kubectl operator olmv1 search catalog --package vault-helm -o json
             "name": "",
             "image": "quay.io/brejohns/vault-helm:0.0.1"
         },
-        {
-            "name": "",
-            "image": "quay.io/operatorhubio/vault-helm@sha256:c2d00eeeed63fb61d1b7cc04ce9aaeda18ff7b599a1bb670d2c07e0f3c173b3f"
-        }
     ]
 }
 {
     "schema": "olm.bundle",
     "name": "vault-helm.v0.0.2",
     "package": "vault-helm",
-    "image": "quay.io/operatorhubio/vault-helm@sha256:d8032324d9197167d8d911f42bcdc9a8d2f97fafa5d3687eba48e47f35d5dc94",
+    "image": "quay.io/brejohns/vault-helm:0.0.2",
     "properties": [
         {
             "type": "olm.gvk",
@@ -1157,7 +972,7 @@ $ kubectl operator olmv1 search catalog --package vault-helm -o json
             "type": "olm.csv.metadata",
             "value": {
                 "annotations": {
-                    "alm-examples": "[\n  {\n    \"apiVersion\": \"vault.sdbrett.com/v1alpha1\",\n    \"kind\": \"Vault\",\n    \"metadata\": {\n      \"name\": \"vault-sample\"\n    },\n    \"spec\": {\n      \"global\": {\n        \"enabled\": true,\n        \"imagePullSecrets\": [],\n        \"openshift\": false,\n        \"psp\": {\n          \"annotations\": \"seccomp.security.alpha.kubernetes.io/allowedProfileNames: docker/default,runtime/default\\napparmor.security.beta.kubernetes.io/allowedProfileNames: runtime/default\\nseccomp.security.alpha.kubernetes.io/defaultProfileName:  runtime/default\\napparmor.security.beta.kubernetes.io/defaultProfileName:  runtime/default\\n\",\n          \"enable\": false\n        },\n        \"tlsDisable\": true\n      },\n      \"injector\": {\n        \"affinity\": null,\n        \"agentImage\": {\n          \"repository\": \"vault\",\n          \"tag\": \"1.5.4\"\n        },\n        \"annotations\": {},\n        \"authPath\": \"auth/kubernetes\",\n        \"certs\": {\n          \"caBundle\": \"\",\n          \"certName\": \"tls.crt\",\n          \"keyName\": \"tls.key\",\n          \"secretName\": null\n        },\n        \"enabled\": true,\n        \"externalVaultAddr\": \"\",\n        \"extraEnvironmentVars\": {},\n        \"image\": {\n          \"pullPolicy\": \"IfNotPresent\",\n          \"repository\": \"hashicorp/vault-k8s\",\n          \"tag\": \"0.6.0\"\n        },\n        \"logFormat\": \"standard\",\n        \"logLevel\": \"info\",\n        \"metrics\": {\n          \"enabled\": false\n        },\n        \"namespaceSelector\": {},\n        \"nodeSelector\": null,\n        \"priorityClassName\": \"\",\n        \"resources\": {},\n        \"revokeOnShutdown\": false,\n        \"tolerations\": null\n      },\n      \"server\": {\n        \"affinity\": \"podAntiAffinity:\\n  requiredDuringSchedulingIgnoredDuringExecution:\\n    - labelSelector:\\n        matchLabels:\\n          app.kubernetes.io/name: {{ template \\\"vault.name\\\" . }}\\n          app.kubernetes.io/instance: \\\"{{ .Release.Name }}\\\"\\n          component: server\\n      topologyKey: kubernetes.io/hostname\\n\",\n        \"annotations\": {},\n        \"auditStorage\": {\n          \"accessMode\": \"ReadWriteOnce\",\n          \"annotations\": {},\n          \"enabled\": false,\n          \"mountPath\": \"/vault/audit\",\n          \"size\": \"10Gi\",\n          \"storageClass\": null\n        },\n        \"authDelegator\": {\n          \"enabled\": true\n        },\n        \"dataStorage\": {\n          \"accessMode\": \"ReadWriteOnce\",\n          \"annotations\": {},\n          \"enabled\": true,\n          \"mountPath\": \"/vault/data\",\n          \"size\": \"10Gi\",\n          \"storageClass\": null\n        },\n        \"dev\": {\n          \"enabled\": false\n        },\n        \"extraArgs\": \"\",\n        \"extraContainers\": null,\n        \"extraEnvironmentVars\": {},\n        \"extraInitContainers\": null,\n        \"extraLabels\": {},\n        \"extraSecretEnvironmentVars\": [],\n        \"extraVolumes\": [],\n        \"ha\": {\n          \"apiAddr\": null,\n          \"config\": \"ui = true\\n\\nlistener \\\"tcp\\\" {\\n  tls_disable = 1\\n  address = \\\"[::]:8200\\\"\\n  cluster_address = \\\"[::]:8201\\\"\\n}\\nstorage \\\"consul\\\" {\\n  path = \\\"vault\\\"\\n  address = \\\"HOST_IP:8500\\\"\\n}\\n\\nservice_registration \\\"kubernetes\\\" {}\\n\\n# Example configuration for using auto-unseal, using Google Cloud KMS. The\\n# GKMS keys must already exist, and the cluster must have a service account\\n# that is authorized to access GCP KMS.\\n#seal \\\"gcpckms\\\" {\\n#   project     = \\\"vault-helm-dev-246514\\\"\\n#   region      = \\\"global\\\"\\n#   key_ring    = \\\"vault-helm-unseal-kr\\\"\\n#   crypto_key  = \\\"vault-helm-unseal-key\\\"\\n#}\\n\",\n          \"disruptionBudget\": {\n            \"enabled\": true,\n            \"maxUnavailable\": null\n          },\n          \"enabled\": false,\n          \"raft\": {\n            \"config\": \"ui = true\\n\\nlistener \\\"tcp\\\" {\\n  tls_disable = 1\\n  address = \\\"[::]:8200\\\"\\n  cluster_address = \\\"[::]:8201\\\"\\n}\\n\\nstorage \\\"raft\\\" {\\n  path = \\\"/vault/data\\\"\\n}\\n\\nservice_registration \\\"kubernetes\\\" {}\\n\",\n            \"enabled\": false,\n            \"setNodeId\": false\n          },\n          \"replicas\": 3\n        },\n        \"image\": {\n          \"pullPolicy\": \"IfNotPresent\",\n          \"repository\": \"vault\",\n          \"tag\": \"1.5.4\"\n        },\n        \"ingress\": {\n          \"annotations\": {},\n          \"enabled\": false,\n          \"hosts\": [\n            {\n              \"host\": \"chart-example.local\",\n              \"paths\": []\n            }\n          ],\n          \"labels\": {},\n          \"tls\": []\n        },\n        \"livenessProbe\": {\n          \"enabled\": false,\n          \"failureThreshold\": 2,\n          \"initialDelaySeconds\": 60,\n          \"path\": \"/v1/sys/health?standbyok=true\",\n          \"periodSeconds\": 5,\n          \"successThreshold\": 1,\n          \"timeoutSeconds\": 3\n        },\n        \"networkPolicy\": {\n          \"enabled\": false\n        },\n        \"nodeSelector\": null,\n        \"postStart\": [],\n        \"preStopSleepSeconds\": 5,\n        \"priorityClassName\": \"\",\n        \"readinessProbe\": {\n          \"enabled\": true,\n          \"failureThreshold\": 2,\n          \"initialDelaySeconds\": 5,\n          \"periodSeconds\": 5,\n          \"successThreshold\": 1,\n          \"timeoutSeconds\": 3\n        },\n        \"resources\": {},\n        \"route\": {\n          \"annotations\": {},\n          \"enabled\": false,\n          \"host\": \"chart-example.local\",\n          \"labels\": {}\n        },\n        \"service\": {\n          \"annotations\": {},\n          \"enabled\": true,\n          \"port\": 8200,\n          \"targetPort\": 8200\n        },\n        \"serviceAccount\": {\n          \"annotations\": {},\n          \"create\": true,\n          \"name\": \"\"\n        },\n        \"shareProcessNamespace\": false,\n        \"standalone\": {\n          \"config\": \"ui = true\\n\\nlistener \\\"tcp\\\" {\\n  tls_disable = 1\\n  address = \\\"[::]:8200\\\"\\n  cluster_address = \\\"[::]:8201\\\"\\n}\\nstorage \\\"file\\\" {\\n  path = \\\"/vault/data\\\"\\n}\\n\\n# Example configuration for using auto-unseal, using Google Cloud KMS. The\\n# GKMS keys must already exist, and the cluster must have a service account\\n# that is authorized to access GCP KMS.\\n#seal \\\"gcpckms\\\" {\\n#   project     = \\\"vault-helm-dev\\\"\\n#   region      = \\\"global\\\"\\n#   key_ring    = \\\"vault-helm-unseal-kr\\\"\\n#   crypto_key  = \\\"vault-helm-unseal-key\\\"\\n#}\\n\",\n          \"enabled\": \"-\"\n        },\n        \"statefulSet\": {\n          \"annotations\": {}\n        },\n        \"tolerations\": null,\n        \"updateStrategyType\": \"OnDelete\",\n        \"volumeMounts\": null,\n        \"volumes\": null\n      },\n      \"ui\": {\n        \"activeVaultPodOnly\": false,\n        \"annotations\": {},\n        \"enabled\": false,\n        \"externalPort\": 8200,\n        \"publishNotReadyAddresses\": true,\n        \"serviceNodePort\": null,\n        \"serviceType\": \"ClusterIP\"\n      }\n    }\n  }\n]",
+                    "alm-examples": "[\n{\n\"apiVersion\": \"vault.sdbrett.com/v1alpha1\",\n\"kind\" \"Vault\"}\n]",
                     "capabilities": "Basic Install",
                     "categories": "Security",
                     "containerImage": "quay.io/brejohns/vault-helm:0.0.2",
@@ -1228,10 +1043,6 @@ $ kubectl operator olmv1 search catalog --package vault-helm -o json
             "name": "",
             "image": "quay.io/brejohns/vault-helm:0.0.2"
         },
-        {
-            "name": "",
-            "image": "quay.io/operatorhubio/vault-helm@sha256:d8032324d9197167d8d911f42bcdc9a8d2f97fafa5d3687eba48e47f35d5dc94"
-        }
     ]
 }
 ```
