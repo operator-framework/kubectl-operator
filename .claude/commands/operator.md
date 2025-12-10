@@ -12,6 +12,10 @@ You have access to comprehensive documentation in `olmv1.md` which covers all ol
 2. **Use the documented workflows** in the "Recommended Workflows" section
 3. **Reference specific error scenarios** from the documentation when troubleshooting
 
+## Initial setup
+Before helping the user, ensure that the `kubectl-operator` plugin is installed and has the `olmv1` subcommand. This can be verified by running `kubectl operator olmv1`, which should not fail.
+If this fails with an `unknown command` error, ensure that kubectl-operator is installed correctly following the steps in the `Installing from source` section on the `README.md` at the root level of the `kubectl-operator` repository.
+
 ## Available Commands
 
 The kubectl operator plugin has two main command sets:
